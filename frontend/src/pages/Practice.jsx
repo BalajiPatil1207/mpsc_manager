@@ -82,7 +82,7 @@ const Practice = () => {
   }, []);
 
   const filteredHistory = history.filter(h => {
-    return filterSubject ? h.subject.toLowerCase().includes(filterSubject.toLowerCase()) : true;
+    return filterSubject ? (h.subject || '').toLowerCase().includes(filterSubject.toLowerCase()) : true;
   });
 
   if (loading) return null;
