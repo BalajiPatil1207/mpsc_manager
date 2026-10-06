@@ -19,7 +19,7 @@ const TakeTest = () => {
   useEffect(() => {
     const fetchTest = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/custom-tests/${testId}`);
+        const res = await axios.get(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}`);
         if(res.data.success) {
           setTest(res.data.data);
           setTimeLeft(res.data.data.timeLimit * 60);
@@ -60,7 +60,7 @@ const TakeTest = () => {
     setSubmitted(true);
 
     try {
-      const res = await axios.post(`http://localhost:5000/api/custom-tests/${testId}/submit`, {
+      const res = await axios.post(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}/submit`, {
         answers,
         userId: auth.currentUser?.uid || 'anonymous'
       });

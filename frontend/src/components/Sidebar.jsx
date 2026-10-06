@@ -19,7 +19,7 @@ const Sidebar = ({ user, isOpen, closeSidebar }) => {
     const fetchAiCoachOptions = async () => {
       try {
         const payload = { weakTopics: ['Geography (Physical)', 'Trigonometry'], mockScore: 72 };
-        const res = await axios.post('http://localhost:5000/api/ai/coach', payload);
+        const res = await axios.post('https://mpsc-manager.onrender.com/api/ai/coach', payload);
         if (res.data.success) setAiAdvice(res.data.advice);
       } catch (err) {
         setAiAdvice("Focus on your weak topics like Geography today. You can do this!");
@@ -34,7 +34,7 @@ const Sidebar = ({ user, isOpen, closeSidebar }) => {
     const tId = toast.loading('Applying AI instructions...');
     try {
       const today = new Date().toISOString().split('T')[0];
-      await axios.post('http://localhost:5000/api/tasks', {
+      await axios.post('https://mpsc-manager.onrender.com/api/tasks', {
         title: 'Revise Weak Topics: Geography & Trigonometry',
         status: 'pending',
         estimatedMinutes: 60,

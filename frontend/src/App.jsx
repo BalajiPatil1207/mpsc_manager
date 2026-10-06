@@ -38,7 +38,7 @@ function App() {
             });
           }
           
-          await axios.post('http://localhost:5000/api/notifications/subscribe', {
+          await axios.post('https://mpsc-manager.onrender.com/api/notifications/subscribe', {
             subscription,
             userId: uid
           });

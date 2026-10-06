@@ -22,7 +22,7 @@ const TestMaker = () => {
 
   const fetchHistory = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/custom-tests/all');
+      const res = await axios.get('https://mpsc-manager.onrender.com/api/custom-tests/all');
       if(res.data.success) {
         setHistory(res.data.data);
       }
@@ -40,7 +40,7 @@ const TestMaker = () => {
       const parsedQuestions = JSON.parse(jsonInput);
       if(!Array.isArray(parsedQuestions)) return toast.error("JSON must be an array of objects!");
       
-      const res = await axios.post('http://localhost:5000/api/custom-tests', {
+      const res = await axios.post('https://mpsc-manager.onrender.com/api/custom-tests', {
         title,
         subject,
         timeLimit: timeLimit,
@@ -61,7 +61,7 @@ const TestMaker = () => {
   const handleGenerateMegaTest = async () => {
     const tId = toast.loading('Aggregating rules for Mega Test...');
     try {
-      const res = await axios.post('http://localhost:5000/api/custom-tests/mega-generate');
+      const res = await axios.post('https://mpsc-manager.onrender.com/api/custom-tests/mega-generate');
       if(res.data.success) {
         toast.success(res.data.message, { id: tId });
         fetchHistory();
@@ -79,7 +79,7 @@ const TestMaker = () => {
   const processDelete = async () => {
     if(!deleteTarget) return;
     try {
-      await axios.delete(`http://localhost:5000/api/custom-tests/${deleteTarget}`);
+      await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${deleteTarget}`);
       toast.success("Test deleted!");
       setDeleteTarget(null);
       fetchHistory();
@@ -93,7 +93,7 @@ const TestMaker = () => {
     const newTitle = window.prompt("Enter new Title:", test.title);
     if(newTitle && newTitle !== test.title) {
        try {
-         await axios.put(`http://localhost:5000/api/custom-tests/${test.id}`, {
+         await axios.put(`https://mpsc-manager.onrender.com/api/custom-tests/${test.id}`, {
            title: newTitle, subject: test.subject, timeLimit: test.timeLimit
          });
          toast.success("Test updated!");

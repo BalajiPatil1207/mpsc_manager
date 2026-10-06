@@ -16,7 +16,7 @@ const ReelViewer = () => {
   useEffect(() => {
     const fetchReel = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/reels/${reelId}`);
+        const res = await axios.get(`https://mpsc-manager.onrender.com/api/reels/${reelId}`);
         if(res.data.success) {
           setReel(res.data.data);
         }

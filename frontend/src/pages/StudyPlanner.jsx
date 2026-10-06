@@ -13,7 +13,7 @@ const StudyPlanner = ({ user }) => {
   useEffect(() => {
     const fetchProfiles = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/exams/profiles');
+        const res = await axios.get('https://mpsc-manager.onrender.com/api/exams/profiles');
         if (res.data.success) {
           setProfiles(res.data.data);
         }
@@ -24,7 +24,7 @@ const StudyPlanner = ({ user }) => {
     const fetchPlan = async () => {
       try {
         if(user?.uid) {
-          const res = await axios.get(`http://localhost:5000/api/plans/user/${user.uid}`);
+          const res = await axios.get(`https://mpsc-manager.onrender.com/api/plans/user/${user.uid}`);
           if (res.data.success && res.data.hasPlan) {
             setPlanGenerated(true);
             setExam(res.data.plan.examId);
@@ -57,7 +57,7 @@ const StudyPlanner = ({ user }) => {
         dailyStudyHours: hours
       };
       
-      const res = await axios.post('http://localhost:5000/api/plans/generate', payload);
+      const res = await axios.post('https://mpsc-manager.onrender.com/api/plans/generate', payload);
       
       if (res.data.success) {
         setTimeout(() => {

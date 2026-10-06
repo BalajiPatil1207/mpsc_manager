@@ -17,7 +17,7 @@ const NoteReels = () => {
 
   const fetchHistory = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/reels/all');
+      const res = await axios.get('https://mpsc-manager.onrender.com/api/reels/all');
       if(res.data.success) {
         setHistory(res.data.data);
       }
@@ -44,7 +44,7 @@ const NoteReels = () => {
       
     try {
       const toastId = toast.loading("Creating Study Reel...");
-      const res = await axios.post('http://localhost:5000/api/reels', {
+      const res = await axios.post('https://mpsc-manager.onrender.com/api/reels', {
         title,
         subject,
         cards: parsedCards
@@ -70,7 +70,7 @@ const NoteReels = () => {
   const processDelete = async () => {
     if(!deleteTarget) return;
     try {
-      await axios.delete(`http://localhost:5000/api/reels/${deleteTarget}`);
+      await axios.delete(`https://mpsc-manager.onrender.com/api/reels/${deleteTarget}`);
       toast.success("Reel deleted!");
       setDeleteTarget(null);
       fetchHistory();

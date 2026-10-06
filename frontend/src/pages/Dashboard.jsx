@@ -11,7 +11,7 @@ const Dashboard = ({ user }) => {
     const fetchTasks = async () => {
       try {
         const today = new Date().toISOString().split('T')[0];
-        const res = await axios.get(`http://localhost:5000/api/tasks?userId=${user?.uid || 'testUser'}&date=${today}`);
+        const res = await axios.get(`https://mpsc-manager.onrender.com/api/tasks?userId=${user?.uid || 'testUser'}&date=${today}`);
         if(res.data.success) {
           setTasks(res.data.data);
         }

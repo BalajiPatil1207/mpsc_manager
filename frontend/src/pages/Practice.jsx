@@ -13,7 +13,7 @@ const Practice = () => {
     const fetchPlan = async () => {
       try {
         const uid = auth.currentUser?.uid || 'testUser';
-        const res = await axios.get(`http://localhost:5000/api/plans/user/${uid}`);
+        const res = await axios.get(`https://mpsc-manager.onrender.com/api/plans/user/${uid}`);
         if(res.data.success && res.data.hasPlan) {
           setHasPlan(true);
         }
