@@ -5,22 +5,37 @@ import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
 const Dashboard = ({ user }) => {
-  const [tasks, setTasks] = useState([]);
+  const initialDailyTasks = [
+    { id: 'reasoning', title: '🧠 Reasoning Practice (Set 1, 2, 3)', duration: '1 hr', completed: false },
+    { id: 'maths', title: '📐 Maths Practice', duration: '2 hr', completed: false },
+    { id: 'gk_geo', title: '🌍 Geography (GKGS)', duration: '30 min', completed: false },
+    { id: 'gk_his', title: '📜 History (GKGS)', duration: '30 min', completed: false },
+    { id: 'gk_sci', title: '🔬 Science (GKGS)', duration: '30 min', completed: false },
+    { id: 'gk_eco', title: '💰 Economics (GKGS)', duration: '30 min', completed: false },
+    { id: 'gk_pol', title: '🏛️ Polity (GKGS)', duration: '30 min', completed: false },
+    { id: 'gk_ca', title: '📰 Current Affairs', duration: '30 min', completed: false }
+  ];
+
+  const [dailyTasks, setDailyTasks] = useState(() => {
+    const saved = localStorage.getItem('user_daily_tasks');
+    return saved ? JSON.parse(saved) : initialDailyTasks;
+  });
+
+  const toggleTask = (taskId, isUndo = false) => {
+    const updated = dailyTasks.map(t => {
+      if (t.id === taskId) {
+        return { ...t, completed: !isUndo };
+      }
+      return t;
+    });
+    setDailyTasks(updated);
+    localStorage.setItem('user_daily_tasks', JSON.stringify(updated));
+    if (!isUndo) {
+      toast.success('Task marked as completed! 🎉');
+    }
+  };
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      try {
-        const today = new Date().toISOString().split('T')[0];
-        const res = await axios.get(`https://mpsc-manager.onrender.com/api/tasks?userId=${user?.uid || 'testUser'}&date=${today}`);
-        if(res.data.success) {
-          setTasks(res.data.data);
-        }
-      } catch(err) {
-        console.error(err);
-      }
-    };
-    fetchTasks();
-    
     // Request permission on load
     requestNotificationPermission();
 
@@ -102,14 +117,14 @@ const Dashboard = ({ user }) => {
       <div className="stat-cards">
         <div className="glass-card stat-card">
           <span className="stat-label">Tasks</span>
-          <span className="stat-value">{tasks.length}</span>
+          <span className="stat-value">{dailyTasks.length}</span>
           <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Total assigned today</span>
         </div>
         <div className="glass-card stat-card">
           <span className="stat-label">Completed</span>
-          <span className="stat-value">{tasks.filter(t=>t.status==='completed').length}</span>
+          <span className="stat-value">{dailyTasks.filter(t=>t.completed).length}</span>
           <div className="progress-container">
-            <div className="progress-bar" style={{ width: `${tasks.length > 0 ? (tasks.filter(t=>t.status==='completed').length / tasks.length)*100 : 0}%` }}></div>
+            <div className="progress-bar" style={{ width: `${dailyTasks.length > 0 ? (dailyTasks.filter(t=>t.completed).length / dailyTasks.length)*100 : 0}%` }}></div>
           </div>
         </div>
         <div className="glass-card stat-card">
@@ -137,24 +152,21 @@ const Dashboard = ({ user }) => {
               <button className="btn" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>View All</button>
             </div>
             
-            <div className="flex-col">
-              {tasks.length === 0 ? <p style={{color:'var(--text-muted)'}}>No tasks scheduled yet. Start a Study Plan!</p> : null}
-              {tasks.map(task => (
-                <div key={task.id} className="task-item" style={{ background: task.status === 'in-progress' ? 'rgba(99, 102, 241, 0.05)' : '', borderRadius: '12px' }}>
-                  <div className="flex-row gap-4">
-                    {task.status === 'completed' ? <FiCheckCircle size={24} color="var(--success)" /> : <FiClock size={24} color={task.status === 'in-progress' ? 'var(--accent-primary)' : 'var(--text-muted)'} />}
-                    <div className="flex-col gap-1">
-                      <span style={{ fontWeight: 600, color: task.status === 'pending' ? 'var(--text-secondary)' : 'var(--text-primary)' }}>{task.title}</span>
-                      <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{task.startTime} • {task.estimatedMinutes} mins</span>
+            <div className="flex-col gap-3">
+              {dailyTasks.map(task => (
+                <div key={task.id} className="task-item" style={{ background: task.completed ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', borderRadius: '12px', opacity: task.completed ? 0.7 : 1, transition: 'all 0.3s ease', padding: '16px' }}>
+                  <div className="flex-row gap-4" style={{ alignItems: 'center' }}>
+                    {task.completed ? <FiCheckCircle size={24} color="var(--success)" /> : <FiClock size={24} color="var(--accent-primary)" />}
+                    <div className="flex-col gap-1" style={{ flex: 1 }}>
+                      <span style={{ fontWeight: 600, color: task.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title}</span>
+                      <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Duration: {task.duration}</span>
                     </div>
+                    {task.completed ? (
+                      <button onClick={() => toggleTask(task.id, true)} className="btn" style={{ padding: '6px 12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.75rem' }}>Undo</button>
+                    ) : (
+                      <button onClick={() => toggleTask(task.id, false)} className="btn btn-primary" style={{ padding: '8px 16px' }}>Complete</button>
+                    )}
                   </div>
-                  {task.status === 'completed' ? (
-                     <span className="badge done">Completed</span>
-                  ) : task.status === 'in-progress' ? (
-                     <button className="btn btn-primary" style={{ padding: '8px 16px' }}><FiPlay /> Start</button>
-                  ) : (
-                     <span className="badge pending">Upcoming</span>
-                  )}
                 </div>
               ))}
             </div>
