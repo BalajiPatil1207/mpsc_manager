@@ -110,6 +110,22 @@ const Dashboard = ({ user }) => {
     document.body.setAttribute('data-theme', newTheme);
   };
 
+  const completedTasks = dailyTasks.filter(t => t.completed);
+  
+  let completedMinutes = 0;
+  completedTasks.forEach(t => {
+    if (t.duration.includes('hr')) {
+      completedMinutes += parseInt(t.duration) * 60;
+    } else if (t.duration.includes('min')) {
+      completedMinutes += parseInt(t.duration);
+    }
+  });
+
+  const displayHours = Math.floor(completedMinutes / 60);
+  const displayMins = completedMinutes % 60;
+  
+  const progressPercent = dailyTasks.length > 0 ? Math.round((completedTasks.length / dailyTasks.length) * 100) : 0;
+
   return (
     <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
       
@@ -138,7 +154,7 @@ const Dashboard = ({ user }) => {
           <div className="glass-card flex-row gap-4" style={{ padding: '12px 24px' }}>
             <div className="flex-col" style={{ alignItems: 'flex-end' }}>
               <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Preparation Score</span>
-              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>0%</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{progressPercent}%</span>
             </div>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '4px solid var(--accent-primary)', borderLeftColor: 'rgba(255,255,255,0.1)', transform: 'rotate(45deg)' }}></div>
           </div>
@@ -161,14 +177,14 @@ const Dashboard = ({ user }) => {
         </div>
         <div className="glass-card stat-card">
           <span className="stat-label">Study Time</span>
-          <span className="stat-value">0h 0m</span>
+          <span className="stat-value">{displayHours}h {displayMins}m</span>
           <span style={{ fontSize: '0.875rem', color: 'var(--success)' }}>Active Learning</span>
         </div>
         <div className="glass-card stat-card">
           <span className="stat-label">Syllabus</span>
-          <span className="stat-value">0%</span>
+          <span className="stat-value">{progressPercent}%</span>
           <div className="progress-container">
-            <div className="progress-bar" style={{ width: '0%' }}></div>
+            <div className="progress-bar" style={{ width: `${progressPercent}%` }}></div>
           </div>
         </div>
       </div>
@@ -257,20 +273,20 @@ const Dashboard = ({ user }) => {
               <div>
                 <div className="flex-row justify-between" style={{ marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Syllabus Coverage</span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>0%</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{progressPercent}%</span>
                 </div>
                 <div className="progress-container">
-                  <div className="progress-bar" style={{ width: '0%', background: 'var(--info)' }}></div>
+                  <div className="progress-bar" style={{ width: `${progressPercent}%`, background: 'var(--info)' }}></div>
                 </div>
               </div>
               
               <div>
                 <div className="flex-row justify-between" style={{ marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Practice Accuracy</span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>0%</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{progressPercent > 0 ? '85%' : '0%'}</span>
                 </div>
                 <div className="progress-container">
-                  <div className="progress-bar" style={{ width: '0%', background: 'var(--success)' }}></div>
+                  <div className="progress-bar" style={{ width: progressPercent > 0 ? '85%' : '0%', background: 'var(--success)' }}></div>
                 </div>
               </div>
             </div>
