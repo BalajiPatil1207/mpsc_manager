@@ -3,11 +3,30 @@ import { FiTarget, FiBarChart2, FiPlay } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { auth } from '../firebase';
+import { toast } from 'react-hot-toast';
 
 const MockTests = () => {
   const [hasPlan, setHasPlan] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const startMockTest = async () => {
+    const tId = toast.loading('Generating Pre 2027 Mock...');
+    try {
+      const uid = auth.currentUser?.uid || 'testUser';
+      const res = await axios.post('https://mpsc-manager.onrender.com/api/tests', {
+        title: "MPSC Pre 2027 • Foundation Mock 1",
+        subject: "General Studies",
+        topics: "History, Geo, Polity, Science, Current Affairs",
+        difficulty: "hard",
+        userId: uid
+      });
+      toast.success('Mock Test Ready!', { id: tId });
+      navigate(`/take-test/${res.data.test.id}`);
+    } catch (e) {
+      toast.error('Generation failed. Try again.', { id: tId });
+    }
+  };
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -50,7 +69,7 @@ const MockTests = () => {
                  <h3 style={{ fontSize: '1.125rem', color: 'var(--text-primary)', margin: 0 }}>MPSC Pre 2027 • Foundation Mock 1</h3>
                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>100 Questions • 120 Mins • Standard</span>
                </div>
-               <button onClick={() => navigate('/test-maker')} className="btn btn-primary" style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiPlay /> Start</button>
+               <button onClick={startMockTest} className="btn btn-primary" style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiPlay /> Start</button>
              </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { FiBookOpen, FiZap, FiPlayCircle, FiCheckCircle } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { auth } from '../firebase';
+import { toast } from 'react-hot-toast';
 
 const Practice = () => {
   const initialPyqs = [
@@ -26,6 +27,24 @@ const Practice = () => {
     });
     setPyqs(updated);
     localStorage.setItem('practice_pyqs', JSON.stringify(updated));
+  };
+
+  const startTest = async (title, subject) => {
+    const tId = toast.loading(`Generating test for ${title}...`);
+    try {
+      const uid = auth.currentUser?.uid || 'testUser';
+      const res = await axios.post('https://mpsc-manager.onrender.com/api/tests', {
+        title: title,
+        subject: subject || "General Studies",
+        topics: "Revision and Practice Sets",
+        difficulty: "medium",
+        userId: uid
+      });
+      toast.success('Test Ready!', { id: tId });
+      navigate(`/take-test/${res.data.test.id}`);
+    } catch (e) {
+      toast.error('Failed to generate test. Try again.', { id: tId });
+    }
   };
 
   useEffect(() => {
@@ -80,7 +99,7 @@ const Practice = () => {
                         </button>
                       ) : (
                         <div className="flex-row gap-2">
-                          <button onClick={() => navigate('/test-maker')} className="btn btn-primary" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', padding: '6px 12px' }}>Start</button>
+                          <button onClick={() => startTest(p.title, p.title.includes('History') ? 'History' : 'Geography')} className="btn btn-primary" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', padding: '6px 12px' }}>Start</button>
                           <button onClick={() => togglePyq(p.id)} className="btn" style={{ padding: '6px 12px', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>Done</button>
                         </div>
                       )}
@@ -96,7 +115,7 @@ const Practice = () => {
               {['Polity', 'Economics', 'Science', 'Current Affairs'].map((subject) => (
                  <div key={subject} className="flex-row justify-between" style={{ alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
                    <span style={{ color: 'var(--text-primary)' }}>{subject}</span>
-                   <button className="btn" onClick={() => navigate('/test-maker')} style={{ padding: '6px 16px', fontSize: '0.75rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>Drill</button>
+                   <button className="btn" onClick={() => startTest(`${subject} Drill`, subject)} style={{ padding: '6px 16px', fontSize: '0.75rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>Drill</button>
                  </div>
               ))}
             </div>
