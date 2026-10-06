@@ -230,9 +230,9 @@ const Dashboard = ({ user }) => {
               <button onClick={() => setShowAllTasks(!showAllTasks)} className="btn" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}>{showAllTasks ? 'View Less' : 'View All'}</button>
             </div>
             
-            <div className="flex-col gap-3">
+            <div className="flex-col gap-4">
               {(showAllTasks ? dailyTasks : dailyTasks.slice(0, 3)).map(task => (
-                <div key={task.id} className="task-item" style={{ background: task.completed ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', borderRadius: '12px', opacity: task.completed ? 0.7 : 1, transition: 'all 0.3s ease', padding: '16px' }}>
+                <div key={task.id} className="task-item" style={{ background: task.completed ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', borderRadius: '12px', borderBottom: '1px solid var(--border-color)', opacity: task.completed ? 0.7 : 1, transition: 'all 0.3s ease', padding: '18px 16px', marginBottom: '8px' }}>
                   <div className="flex-row gap-4" style={{ alignItems: 'center' }}>
                     {task.completed ? <FiCheckCircle size={24} color="var(--success)" /> : <FiClock size={24} color="var(--accent-primary)" />}
                     <div className="flex-col gap-1" style={{ flex: 1 }}>
