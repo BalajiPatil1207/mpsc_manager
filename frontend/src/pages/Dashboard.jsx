@@ -28,11 +28,11 @@ const Dashboard = ({ user }) => {
   const initialDailyTasks = [
     { id: 'reasoning', title: `🧠 Reasoning Practice (Set ${currentReasoningSet})`, duration: '1 hr', completed: false },
     { id: 'maths', title: '📐 Maths Practice', duration: '2 hr', completed: false },
-    { id: 'gk_geo', title: '🌍 Geography (GKGS)', duration: '30 min', completed: false },
-    { id: 'gk_his', title: '📜 History (GKGS)', duration: '30 min', completed: false },
-    { id: 'gk_sci', title: '🔬 Science (GKGS)', duration: '30 min', completed: false },
-    { id: 'gk_eco', title: '💰 Economics (GKGS)', duration: '30 min', completed: false },
-    { id: 'gk_pol', title: '🏛️ Polity (GKGS)', duration: '30 min', completed: false },
+    { id: 'gk_geo', title: '🌍 Geography', duration: '30 min', completed: false },
+    { id: 'gk_his', title: '📜 History', duration: '30 min', completed: false },
+    { id: 'gk_sci', title: '🔬 Science', duration: '30 min', completed: false },
+    { id: 'gk_eco', title: '💰 Economics', duration: '30 min', completed: false },
+    { id: 'gk_pol', title: '🏛️ Polity', duration: '30 min', completed: false },
     { id: 'gk_ca', title: '📰 Current Affairs', duration: '30 min', completed: false }
   ];
 
