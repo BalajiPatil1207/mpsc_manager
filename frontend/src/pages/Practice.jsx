@@ -14,6 +14,9 @@ const Practice = () => {
 
   const [hasPlan, setHasPlan] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [history, setHistory] = useState([]);
+  const [filterSubject, setFilterSubject] = useState('');
+  
   const [pyqs, setPyqs] = useState(() => {
     const saved = localStorage.getItem('practice_pyqs');
     return saved ? JSON.parse(saved) : initialPyqs;
@@ -61,8 +64,26 @@ const Practice = () => {
         setLoading(false);
       }
     };
+    
+    const fetchHistory = async () => {
+      try {
+        const res = await axios.get('https://mpsc-manager.onrender.com/api/custom-tests/all');
+        if(res.data.success) {
+          const practiceTests = res.data.data.filter(t => !(t.subject || '').includes('Mega') && !(t.title || '').includes('Mock'));
+          setHistory(practiceTests);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    
     fetchPlan();
+    fetchHistory();
   }, []);
+
+  const filteredHistory = history.filter(h => {
+    return filterSubject ? h.subject.toLowerCase().includes(filterSubject.toLowerCase()) : true;
+  });
 
   if (loading) return null;
 
@@ -120,6 +141,37 @@ const Practice = () => {
               ))}
             </div>
           </div>
+          
+          <div className="glass-panel" style={{ padding: '24px', gridColumn: '1 / -1' }}>
+             <div className="flex-row justify-between align-center" style={{ marginBottom: '16px' }}>
+               <h2 style={{ fontSize: '1.25rem', margin: 0 }}>🔍 Auto-Generated Daily Tests</h2>
+               <select className="glass-card" value={filterSubject} onChange={(e)=>setFilterSubject(e.target.value)} style={{ padding: '6px 12px', fontSize: '0.875rem', outline: 'none', background: 'transparent' }}>
+                 <option value="">All Subjects</option>
+                 <option value="GK">GK / GS</option>
+                 <option value="Math">Maths</option>
+                 <option value="Reasoning">Reasoning</option>
+               </select>
+             </div>
+             
+             <div className="flex-col gap-4">
+               {filteredHistory.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No auto-generated tests found.</p> : null}
+               {filteredHistory.map(test => (
+                 <div key={test.id} className="glass-card" style={{ padding: '16px', borderLeft: '4px solid var(--accent-primary)' }}>
+                   <div className="flex-row justify-between align-center" style={{ marginBottom: '8px' }}>
+                     <h3 style={{ fontSize: '1.125rem', margin: 0 }}>{test.title}</h3>
+                     <span className="badge pending" style={{ background: 'rgba(99, 102, 241, 0.2)', color: 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
+                   </div>
+                   <div className="flex-row justify-between align-center">
+                     <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                       {test.subject} • {test.questions?.length || 0} Qs • {new Date(test.createdAt).toLocaleDateString()}
+                     </p>
+                     <button title="Take Test" className="btn btn-primary" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '6px 12px', fontSize: '0.75rem' }}>Start</button>
+                   </div>
+                 </div>
+               ))}
+             </div>
+          </div>
+
         </div>
       )}
     </div>
