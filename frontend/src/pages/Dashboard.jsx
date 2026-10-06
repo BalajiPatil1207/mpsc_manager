@@ -82,11 +82,11 @@ const Dashboard = ({ user }) => {
       const resetTasks = [
         { id: 'reasoning', title: `🧠 Reasoning Practice (Set ${nextSet})`, duration: '1 hr', completed: false },
         { id: 'maths', title: '📐 Maths Practice', duration: '2 hr', completed: false },
-        { id: 'gk_geo', title: '🌍 Geography (GKGS)', duration: '30 min', completed: false },
-        { id: 'gk_his', title: '📜 History (GKGS)', duration: '30 min', completed: false },
-        { id: 'gk_sci', title: '🔬 Science (GKGS)', duration: '30 min', completed: false },
-        { id: 'gk_eco', title: '💰 Economics (GKGS)', duration: '30 min', completed: false },
-        { id: 'gk_pol', title: '🏛️ Polity (GKGS)', duration: '30 min', completed: false },
+        { id: 'gk_geo', title: '🌍 Geography', duration: '30 min', completed: false },
+        { id: 'gk_his', title: '📜 History', duration: '30 min', completed: false },
+        { id: 'gk_sci', title: '🔬 Science', duration: '30 min', completed: false },
+        { id: 'gk_eco', title: '💰 Economics', duration: '30 min', completed: false },
+        { id: 'gk_pol', title: '🏛️ Polity', duration: '30 min', completed: false },
         { id: 'gk_ca', title: '📰 Current Affairs', duration: '30 min', completed: false }
       ];
       setDailyTasks(resetTasks);
@@ -236,7 +236,7 @@ const Dashboard = ({ user }) => {
                   <div className="flex-row gap-4" style={{ alignItems: 'center' }}>
                     {task.completed ? <FiCheckCircle size={24} color="var(--success)" /> : <FiClock size={24} color="var(--accent-primary)" />}
                     <div className="flex-col gap-1" style={{ flex: 1 }}>
-                      <span style={{ fontWeight: 600, color: task.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title}</span>
+                      <span style={{ fontWeight: 600, color: task.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title.replace(' (GKGS)', '')}</span>
                       <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                         🕒 {task.duration} {getTopic(task.id) && <span>• <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', letterSpacing: '0.5px' }}>topic: {getTopic(task.id)}</span></span>}
                       </span>
