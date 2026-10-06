@@ -8,6 +8,23 @@ const Dashboard = ({ user }) => {
   const [showAllTasks, setShowAllTasks] = useState(false);
   const currentReasoningSet = parseInt(localStorage.getItem('reasoningSetNumber')) || 1;
 
+  const topicsMap = {
+    reasoning: ["Number Series", "Alphabet Series", "Coding-Decoding", "Analogy", "Blood Relations", "Direction Test"],
+    maths: ["Number System", "BODMAS & Fractions", "LCM & HCF", "Percentage", "Profit & Loss", "Simple Interest"],
+    gk_geo: ["earth & latitudes", "mountains & plateaus", "rivers & oceans", "atmosphere & weather", "monsoon & climate", "soils & natural vegetation"],
+    gk_his: ["indus valley civilization", "vedic period", "maurya & gupta empires", "delhi sultanate", "mughal empire", "maratha empire"],
+    gk_sci: ["measurements & motion", "force & work", "energy & heat", "light & sound", "electricity & magnetism", "atoms & molecules"],
+    gk_eco: ["gdp & national income", "inflation & unemployment", "poverty & basic concepts", "rbi & banking", "monetary policy", "public finance (tax)"],
+    gk_pol: ["historical background", "making of the constitution", "preamble", "fundamental rights", "directive principles", "fundamental duties"],
+    gk_ca:  ["jan 2025: maharashtra", "jan 2025: india", "jan 2025: world", "jan 2025: economy", "jan 2025: science", "jan 2025: sports"]
+  };
+
+  const getTopic = (id) => {
+    const arr = topicsMap[id];
+    if (!arr) return "";
+    return arr[(currentReasoningSet - 1) % arr.length];
+  };
+
   const initialDailyTasks = [
     { id: 'reasoning', title: `🧠 Reasoning Practice (Set ${currentReasoningSet})`, duration: '1 hr', completed: false },
     { id: 'maths', title: '📐 Maths Practice', duration: '2 hr', completed: false },
@@ -220,7 +237,9 @@ const Dashboard = ({ user }) => {
                     {task.completed ? <FiCheckCircle size={24} color="var(--success)" /> : <FiClock size={24} color="var(--accent-primary)" />}
                     <div className="flex-col gap-1" style={{ flex: 1 }}>
                       <span style={{ fontWeight: 600, color: task.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title}</span>
-                      <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Duration: {task.duration}</span>
+                      <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                        🕒 {task.duration} {getTopic(task.id) && <span>• <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', letterSpacing: '0.5px' }}>topic: {getTopic(task.id)}</span></span>}
+                      </span>
                     </div>
                     {task.completed ? (
                       <button onClick={() => toggleTask(task.id, true)} className="btn task-action-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>
