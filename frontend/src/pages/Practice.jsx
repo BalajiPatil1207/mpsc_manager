@@ -5,9 +5,28 @@ import axios from 'axios';
 import { auth } from '../firebase';
 
 const Practice = () => {
+  const initialPyqs = [
+    { id: 'his_foundation', title: 'Phase 1 Foundation', meta: '15 Questions • MPSC History', completed: false },
+    { id: 'geo_basics', title: 'Geography Basics', meta: '20 Questions • Maharashtra Geo', completed: false },
+    { id: 'polity_drill', title: 'Panchayat Raj Drill', meta: '30 Questions • Polity', completed: false }
+  ];
+
   const [hasPlan, setHasPlan] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pyqs, setPyqs] = useState(() => {
+    const saved = localStorage.getItem('practice_pyqs');
+    return saved ? JSON.parse(saved) : initialPyqs;
+  });
   const navigate = useNavigate();
+
+  const togglePyq = (id) => {
+    const updated = pyqs.map(p => {
+      if (p.id === id) return { ...p, completed: !p.completed };
+      return p;
+    });
+    setPyqs(updated);
+    localStorage.setItem('practice_pyqs', JSON.stringify(updated));
+  };
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -48,24 +67,26 @@ const Practice = () => {
           <div className="glass-panel" style={{ padding: '24px' }}>
              <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Today's Assigned PYQs</h2>
              <div className="flex-col gap-4">
-                <div className="glass-card" style={{ padding: '16px', borderLeft: '4px solid var(--accent-primary)' }}>
-                   <div className="flex-row justify-between" style={{ alignItems: 'center' }}>
-                     <div>
-                       <h3 style={{ fontSize: '1.125rem', color: 'var(--text-primary)' }}>Phase 1 Foundation</h3>
-                       <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>15 Questions • MPSC History</p>
-                     </div>
-                     <button onClick={() => navigate('/test-maker')} className="btn btn-primary" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)' }}>Start</button>
-                   </div>
-                </div>
-                <div className="glass-card" style={{ padding: '16px', borderLeft: '4px solid var(--success)' }}>
-                   <div className="flex-row justify-between" style={{ alignItems: 'center' }}>
-                     <div>
-                       <h3 style={{ fontSize: '1.125rem', color: 'var(--text-primary)' }}>Geography Basics</h3>
-                       <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>20 Questions • Completed Today</p>
-                     </div>
-                     <FiCheckCircle size={24} color="var(--success)" />
-                   </div>
-                </div>
+               {pyqs.map(p => (
+                 <div key={p.id} className="glass-card" style={{ padding: '16px', borderLeft: `4px solid ${p.completed ? 'var(--success)' : 'var(--accent-primary)'}`, transition: 'all 0.3s ease' }}>
+                    <div className="flex-row justify-between" style={{ alignItems: 'center' }}>
+                      <div className="flex-col gap-1">
+                        <h3 style={{ fontSize: '1.125rem', color: p.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: p.completed ? 'line-through' : 'none' }}>{p.title}</h3>
+                        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{p.completed ? 'Completed Today' : p.meta}</p>
+                      </div>
+                      {p.completed ? (
+                        <button className="btn" onClick={() => togglePyq(p.id)} title="Undo" style={{ padding: '8px' }}>
+                          <FiCheckCircle size={24} color="var(--success)" />
+                        </button>
+                      ) : (
+                        <div className="flex-row gap-2">
+                          <button onClick={() => navigate('/test-maker')} className="btn btn-primary" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', padding: '6px 12px' }}>Start</button>
+                          <button onClick={() => togglePyq(p.id)} className="btn" style={{ padding: '6px 12px', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>Done</button>
+                        </div>
+                      )}
+                    </div>
+                 </div>
+               ))}
              </div>
           </div>
           
