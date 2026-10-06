@@ -5,7 +5,7 @@ exports.getCoachAdvice = async (req, res) => {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) return res.status(500).json({ success: false, error: "API Key missing" });
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
     
     const prompt = `Act as an expert competitive exam coach for MPSC/Talathi. 
     The student recently scored ${mockScore}% in their mock test. 
