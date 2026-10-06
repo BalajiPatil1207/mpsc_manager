@@ -60,7 +60,7 @@ cron.schedule('0 9 * * *', async () => {
         title: '🔔 MahaPrep AI: Daily Challenge Ready!',
         body: 'Your AI-generated Master Test and Mistake Book revisions are unlocked for today. Start practicing now!',
         icon: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
-        url: 'http://localhost:5173/'
+        url: 'https://mpsc-manager.vercel.app/'
       });
 
       webpush.sendNotification(subscription, payload).catch(e => console.error("WebPush Send Failed:", e));

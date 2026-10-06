@@ -3,7 +3,7 @@ self.addEventListener('push', function(event) {
   const options = {
     body: data.body || 'Your daily tasks are ready.',
     icon: data.icon || 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
-    data: { url: data.url || 'http://localhost:5173/' }
+    data: { url: data.url || 'https://mpsc-manager.vercel.app/' }
   };
   event.waitUntil(
     self.registration.showNotification(data.title || 'MahaPrep AI', options)
