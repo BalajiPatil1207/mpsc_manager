@@ -33,21 +33,9 @@ const Practice = () => {
   };
 
   const startTest = async (title, subject) => {
-    const tId = toast.loading(`Generating test for ${title}...`);
-    try {
-      const uid = auth.currentUser?.uid || 'testUser';
-      const res = await axios.post('https://mpsc-manager.onrender.com/api/tests', {
-        title: title,
-        subject: subject || "General Studies",
-        topics: "Revision and Practice Sets",
-        difficulty: "medium",
-        userId: uid
-      });
-      toast.success('Test Ready!', { id: tId });
-      navigate(`/take-test/${res.data.test.id}`);
-    } catch (e) {
-      toast.error('Failed to generate test. Try again.', { id: tId });
-    }
+    // Navigate to Custom Maker since AI API generation requires detailed input
+    toast.success("Ready to create your targeted Drill!");
+    navigate('/test-maker');
   };
 
   useEffect(() => {

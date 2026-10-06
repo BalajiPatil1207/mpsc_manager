@@ -13,21 +13,8 @@ const MockTests = () => {
   const navigate = useNavigate();
 
   const startMockTest = async () => {
-    const tId = toast.loading('Generating Pre 2027 Mock...');
-    try {
-      const uid = auth.currentUser?.uid || 'testUser';
-      const res = await axios.post('https://mpsc-manager.onrender.com/api/tests', {
-        title: "MPSC Pre 2027 • Foundation Mock 1",
-        subject: "General Studies",
-        topics: "History, Geo, Polity, Science, Current Affairs",
-        difficulty: "hard",
-        userId: uid
-      });
-      toast.success('Mock Test Ready!', { id: tId });
-      navigate(`/take-test/${res.data.test.id}`);
-    } catch (e) {
-      toast.error('Generation failed. Try again.', { id: tId });
-    }
+    toast.success("Ready to create your Mock Exam!");
+    navigate('/test-maker');
   };
 
   useEffect(() => {
