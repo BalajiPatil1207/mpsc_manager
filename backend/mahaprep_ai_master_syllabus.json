@@ -1,0 +1,1404 @@
+{
+  "project": {
+    "name": "MahaPrep AI",
+    "type": "AI-Powered MPSC & Talathi Study Platform",
+    "version": "1.0",
+    "note": "Study-content master syllabus based on the user's supplied book/index photos. Verify the latest official notification before using it as an official examination syllabus."
+  },
+  "exam_profiles": [
+    {
+      "id": "mpsc_rajyaseva",
+      "name": "MPSC Rajyaseva",
+      "syllabus_key": "MPSC_RAJYASEVA"
+    },
+    {
+      "id": "talathi_group_c",
+      "name": "Talathi / Group-C",
+      "syllabus_key": "TALATHI_GROUP_C"
+    }
+  ],
+  "defaults": {
+    "negative_marking": 0.25,
+    "default_question_marks": 1,
+    "revision_intervals_days": [
+      1,
+      3,
+      7,
+      15,
+      30
+    ],
+    "daily_test_sizes": [
+      10,
+      20,
+      25
+    ],
+    "weekly_test_day": "Sunday"
+  },
+  "current_affairs": {
+    "years": {
+      "2025": {
+        "January": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "February": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "March": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "April": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "May": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "June": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "July": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "August": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "September": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "October": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "November": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "December": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ]
+      },
+      "2026": {
+        "January": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "February": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "March": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "April": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "May": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "June": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "July": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "August": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "September": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "October": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "November": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ],
+        "December": [
+          "Maharashtra",
+          "India",
+          "World",
+          "Economy",
+          "Science & Technology",
+          "Environment",
+          "Defence",
+          "Sports",
+          "Awards",
+          "Appointments",
+          "Government Schemes",
+          "Reports & Index",
+          "Important Days",
+          "Books & Authors"
+        ]
+      }
+    },
+    "categories": [
+      "Maharashtra",
+      "India",
+      "World",
+      "Economy",
+      "Science & Technology",
+      "Environment",
+      "Defence",
+      "Sports",
+      "Awards",
+      "Appointments",
+      "Government Schemes",
+      "Reports & Index",
+      "Important Days",
+      "Books & Authors"
+    ],
+    "note": "2026 October-December are future placeholders as of 21 September 2026; populate only when actual events are available."
+  },
+  "syllabus": {
+    "MPSC_RAJYASEVA": [
+      {
+        "subject": "इतिहास",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "प्राचीन भारत",
+            "subtopics": [
+              "प्रागैतिहासिक काळ",
+              "सिंधू संस्कृती",
+              "हडप्पा",
+              "मोहेंजोदडो",
+              "लोथल",
+              "धोलावीरा",
+              "वैदिक काळ",
+              "महाजनपदे",
+              "बौद्ध धर्म",
+              "जैन धर्म",
+              "मौर्य साम्राज्य",
+              "अशोक",
+              "गुप्त काळ",
+              "प्राचीन कला व स्थापत्य"
+            ]
+          },
+          {
+            "name": "मध्ययुगीन भारत",
+            "subtopics": [
+              "दिल्ली सल्तनत",
+              "मुघल साम्राज्य",
+              "विजयनगर साम्राज्य",
+              "भक्ती चळवळ",
+              "सूफी चळवळ",
+              "मराठा साम्राज्य",
+              "छत्रपती शिवाजी महाराज",
+              "स्वराज्य स्थापना",
+              "अष्टप्रधान मंडळ",
+              "मराठा प्रशासन",
+              "आरमार",
+              "किल्ले",
+              "संभाजी महाराज",
+              "राजाराम महाराज",
+              "महाराणी ताराबाई",
+              "पेशवाई"
+            ]
+          },
+          {
+            "name": "आधुनिक भारत",
+            "subtopics": [
+              "युरोपीयांचे आगमन",
+              "ईस्ट इंडिया कंपनी",
+              "ब्रिटिश सत्तेचा विस्तार",
+              "ब्रिटिश प्रशासन",
+              "1857 चा उठाव",
+              "सामाजिक व धार्मिक सुधारणा",
+              "भारतीय राष्ट्रीय काँग्रेस",
+              "बंगाल विभाजन",
+              "स्वदेशी चळवळ",
+              "गांधी युग",
+              "असहकार चळवळ",
+              "सविनय कायदेभंग",
+              "भारत छोडो आंदोलन",
+              "क्रांतिकारी चळवळ",
+              "स्वातंत्र्य व फाळणी"
+            ]
+          },
+          {
+            "name": "महाराष्ट्राचा इतिहास",
+            "subtopics": [
+              "सातवाहन",
+              "वाकाटक",
+              "चालुक्य",
+              "यादव",
+              "बहामनी",
+              "निजामशाही",
+              "आदिलशाही",
+              "शिवकाल",
+              "पेशवाई",
+              "ब्रिटिशकालीन महाराष्ट्र",
+              "महात्मा ज्योतिराव फुले",
+              "सावित्रीबाई फुले",
+              "राजर्षी शाहू महाराज",
+              "डॉ. बाबासाहेब आंबेडकर",
+              "सामाजिक सुधारणा चळवळी",
+              "संयुक्त महाराष्ट्र चळवळ",
+              "महाराष्ट्र राज्य निर्मिती"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "भूगोल",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "भौतिक भूगोल",
+            "subtopics": [
+              "पृथ्वी",
+              "अक्षांश व रेखांश",
+              "पृथ्वीच्या हालचाली",
+              "भूरचना",
+              "पर्वत",
+              "पठारे",
+              "मैदाने",
+              "नद्या",
+              "समुद्र",
+              "वातावरण",
+              "तापमान",
+              "वायुदाब",
+              "वारे",
+              "मान्सून",
+              "पर्जन्य",
+              "हवामान",
+              "मृदा"
+            ]
+          },
+          {
+            "name": "भारताचा भूगोल",
+            "subtopics": [
+              "स्थान व सीमा",
+              "भौगोलिक विभाग",
+              "हिमालय",
+              "उत्तर भारतीय मैदाने",
+              "दख्खनचे पठार",
+              "किनारपट्टी",
+              "बेटे",
+              "नद्या",
+              "हवामान",
+              "मृदा",
+              "नैसर्गिक वनस्पती",
+              "शेती",
+              "सिंचन",
+              "खनिजे",
+              "उद्योग",
+              "वाहतूक",
+              "लोकसंख्या"
+            ]
+          },
+          {
+            "name": "महाराष्ट्राचा भूगोल",
+            "subtopics": [
+              "स्थान व सीमा",
+              "प्रशासकीय विभाग",
+              "जिल्हे",
+              "कोकण",
+              "सह्याद्री",
+              "महाराष्ट्र पठार",
+              "मराठवाडा",
+              "विदर्भ",
+              "नद्या",
+              "धरणे",
+              "जलसंपदा",
+              "हवामान",
+              "पर्जन्य",
+              "मृदा",
+              "पिके",
+              "शेती",
+              "सिंचन",
+              "खनिजे",
+              "उद्योग",
+              "वनसंपदा",
+              "लोकसंख्या",
+              "शहरे",
+              "वाहतूक",
+              "पर्यटन"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "भारतीय राज्यव्यवस्था",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "भारतीय संविधान",
+            "subtopics": [
+              "ऐतिहासिक पार्श्वभूमी",
+              "संविधान निर्मिती",
+              "उद्देशिका",
+              "संविधानाची वैशिष्ट्ये",
+              "मूलभूत अधिकार",
+              "मूलभूत कर्तव्ये",
+              "राज्याच्या मार्गदर्शक तत्त्वे",
+              "नागरिकत्व",
+              "घटनादुरुस्ती"
+            ]
+          },
+          {
+            "name": "केंद्र शासन",
+            "subtopics": [
+              "राष्ट्रपती",
+              "उपराष्ट्रपती",
+              "पंतप्रधान",
+              "मंत्रिमंडळ",
+              "संसद",
+              "लोकसभा",
+              "राज्यसभा",
+              "सर्वोच्च न्यायालय",
+              "केंद्र-राज्य संबंध",
+              "आणीबाणी"
+            ]
+          },
+          {
+            "name": "राज्य शासन",
+            "subtopics": [
+              "राज्यपाल",
+              "मुख्यमंत्री",
+              "मंत्रिमंडळ",
+              "विधानसभा",
+              "विधानपरिषद",
+              "उच्च न्यायालय",
+              "राज्य प्रशासन"
+            ]
+          },
+          {
+            "name": "स्थानिक स्वराज्य",
+            "subtopics": [
+              "पंचायतराज",
+              "ग्रामसभा",
+              "ग्रामपंचायत",
+              "पंचायत समिती",
+              "जिल्हा परिषद",
+              "नगरपालिका",
+              "महानगरपालिका"
+            ]
+          },
+          {
+            "name": "संवैधानिक व वैधानिक संस्था",
+            "subtopics": [
+              "निवडणूक आयोग",
+              "UPSC",
+              "MPSC",
+              "CAG",
+              "वित्त आयोग",
+              "राज्य लोकसेवा आयोग",
+              "RTI",
+              "इतर महत्त्वाच्या संस्था"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "अर्थव्यवस्था",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "मूलभूत संकल्पना",
+            "subtopics": [
+              "GDP",
+              "GNP",
+              "NNP",
+              "राष्ट्रीय उत्पन्न",
+              "दरडोई उत्पन्न",
+              "महागाई",
+              "बेरोजगारी",
+              "गरिबी"
+            ]
+          },
+          {
+            "name": "बँकिंग व चलन",
+            "subtopics": [
+              "RBI",
+              "चलन",
+              "पत",
+              "व्याजदर",
+              "बँकांचे प्रकार",
+              "मौद्रिक धोरण",
+              "डिजिटल पेमेंट्स"
+            ]
+          },
+          {
+            "name": "सार्वजनिक वित्त",
+            "subtopics": [
+              "कर",
+              "GST",
+              "केंद्रीय अर्थसंकल्प",
+              "महाराष्ट्र अर्थसंकल्प",
+              "राजकोषीय धोरण",
+              "सार्वजनिक कर्ज"
+            ]
+          },
+          {
+            "name": "भारतीय व महाराष्ट्र अर्थव्यवस्था",
+            "subtopics": [
+              "शेती",
+              "उद्योग",
+              "सेवा क्षेत्र",
+              "सहकार",
+              "MSME",
+              "परकीय व्यापार",
+              "Balance of Payments",
+              "आर्थिक सुधारणा",
+              "उदारीकरण",
+              "खासगीकरण",
+              "जागतिकीकरण",
+              "सरकारी योजना"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "सामान्य विज्ञान",
+        "priority": "medium",
+        "topics": [
+          {
+            "name": "भौतिकशास्त्र",
+            "subtopics": [
+              "मापन",
+              "गती",
+              "बल",
+              "काम",
+              "ऊर्जा",
+              "उष्णता",
+              "प्रकाश",
+              "ध्वनी",
+              "विद्युत",
+              "चुंबकत्व"
+            ]
+          },
+          {
+            "name": "रसायनशास्त्र",
+            "subtopics": [
+              "पदार्थ",
+              "अणू",
+              "रेणू",
+              "मूलद्रव्य",
+              "आवर्त सारणी",
+              "रासायनिक अभिक्रिया",
+              "आम्ल",
+              "आम्लारी",
+              "क्षार",
+              "धातू",
+              "अधातू",
+              "कार्बन",
+              "हायड्रोकार्बन्स",
+              "रेडिओअॅक्टिव्हिटी"
+            ]
+          },
+          {
+            "name": "जीवशास्त्र",
+            "subtopics": [
+              "सजीवांचे वर्गीकरण",
+              "वनस्पती",
+              "वनस्पती पोषण",
+              "वनस्पती संप्रेरके",
+              "प्राणी वर्गीकरण",
+              "मानवी शरीर",
+              "रक्त",
+              "हाडे",
+              "स्नायू",
+              "पचनसंस्था",
+              "श्वसनसंस्था",
+              "रक्ताभिसरण",
+              "मज्जासंस्था",
+              "अंतःस्रावी ग्रंथी",
+              "रोग",
+              "पोषण",
+              "आनुवंशिकता"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "पर्यावरण",
+        "priority": "medium",
+        "topics": [
+          {
+            "name": "परिसंस्था",
+            "subtopics": [
+              "Ecosystem",
+              "Food Chain",
+              "Food Web",
+              "Biodiversity",
+              "जैवविविधता",
+              "ऊर्जा प्रवाह"
+            ]
+          },
+          {
+            "name": "प्रदूषण व हवामान",
+            "subtopics": [
+              "वायू प्रदूषण",
+              "जलप्रदूषण",
+              "मृदा प्रदूषण",
+              "ध्वनी प्रदूषण",
+              "Greenhouse Effect",
+              "Global Warming",
+              "Climate Change",
+              "Ozone Layer"
+            ]
+          },
+          {
+            "name": "संवर्धन",
+            "subtopics": [
+              "राष्ट्रीय उद्याने",
+              "अभयारण्ये",
+              "Ramsar Sites",
+              "वन्यजीव",
+              "वनसंपदा",
+              "संरक्षित क्षेत्रे",
+              "शाश्वत विकास",
+              "पर्यावरणीय करार"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "अंकगणित",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "संख्या पद्धती",
+            "subtopics": [
+              "Natural Numbers",
+              "Whole Numbers",
+              "Integers",
+              "Odd Numbers",
+              "Even Numbers",
+              "Prime Numbers",
+              "Composite Numbers",
+              "Co-prime Numbers",
+              "Rational Numbers",
+              "Irrational Numbers",
+              "Real Numbers",
+              "Square Numbers",
+              "Triangular Numbers",
+              "Pentagonal Numbers",
+              "Hexagonal Numbers",
+              "Twin Prime Numbers",
+              "Comparison",
+              "Place Value",
+              "Face Value"
+            ]
+          },
+          {
+            "name": "मूलभूत गणित",
+            "subtopics": [
+              "बेरीज",
+              "वजाबाकी",
+              "गुणाकार",
+              "भागाकार",
+              "VBODMAS",
+              "Fractions",
+              "LCM",
+              "HCF",
+              "Average",
+              "Indices",
+              "Square Root",
+              "Surds"
+            ]
+          },
+          {
+            "name": "अंकगणितीय अनुप्रयोग",
+            "subtopics": [
+              "Percentage",
+              "Profit and Loss",
+              "Simple Interest",
+              "Compound Interest",
+              "Discount",
+              "Commission",
+              "Brokerage",
+              "Ratio and Proportion",
+              "Partnership",
+              "Alligation and Mixture",
+              "Age",
+              "Time and Work",
+              "Pipes and Cisterns",
+              "Boat and Streams",
+              "Speed Time Distance",
+              "Trains",
+              "Area",
+              "Volume",
+              "Measurements",
+              "Statistics",
+              "Probability",
+              "Permutation and Combination",
+              "Progression",
+              "Shares",
+              "Variation",
+              "Trigonometry"
+            ]
+          },
+          {
+            "name": "बीजगणित",
+            "subtopics": [
+              "Algebraic Expressions",
+              "Polynomials",
+              "Algebraic Ratios",
+              "Simultaneous Equations",
+              "Linear Equations",
+              "Identities",
+              "Equations in One Variable",
+              "Quadratic Equations"
+            ]
+          },
+          {
+            "name": "भूमिती",
+            "subtopics": [
+              "Basic Geometry",
+              "Parallel Lines",
+              "Types of Triangles",
+              "Quadrilateral",
+              "Pythagoras Theorem",
+              "Circle",
+              "Coordinate Geometry"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "बुद्धिमत्ता व CSAT",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "तार्किक क्षमता",
+            "subtopics": [
+              "Number Series",
+              "Alphabet Series",
+              "Analogy",
+              "Classification",
+              "Coding-Decoding",
+              "Blood Relations",
+              "Direction Test",
+              "Ranking",
+              "Clock",
+              "Calendar",
+              "Venn Diagram",
+              "Syllogism",
+              "Statement and Conclusion",
+              "Statement and Assumption",
+              "Cause and Effect",
+              "Logical Reasoning",
+              "Analytical Reasoning",
+              "Data Sufficiency",
+              "Decision Making",
+              "Problem Solving"
+            ]
+          },
+          {
+            "name": "Data Interpretation",
+            "subtopics": [
+              "Tables",
+              "Bar Graph",
+              "Line Graph",
+              "Pie Chart",
+              "Charts",
+              "Data Analysis"
+            ]
+          },
+          {
+            "name": "Comprehension",
+            "subtopics": [
+              "Marathi Comprehension",
+              "English Comprehension",
+              "Reading Comprehension"
+            ]
+          },
+          {
+            "name": "Basic Numeracy",
+            "subtopics": [
+              "Percentage",
+              "Ratio",
+              "Average",
+              "Profit and Loss",
+              "Time and Work",
+              "Time Speed Distance",
+              "Basic Arithmetic"
+            ]
+          }
+        ]
+      }
+    ],
+    "TALATHI_GROUP_C": [
+      {
+        "subject": "इतिहास",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "भारतीय इतिहास",
+            "subtopics": [
+              "आधुनिक भारत",
+              "भारतीय स्वातंत्र्य चळवळ",
+              "ब्रिटिश काळ",
+              "सामाजिक सुधारणा",
+              "राष्ट्रीय चळवळी"
+            ]
+          },
+          {
+            "name": "महाराष्ट्राचा इतिहास",
+            "subtopics": [
+              "शिवकाल",
+              "मराठा इतिहास",
+              "महाराष्ट्रातील समाजसुधारक",
+              "सामाजिक व राजकीय चळवळी",
+              "संयुक्त महाराष्ट्र चळवळ"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "भूगोल",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "भारताचा भूगोल",
+            "subtopics": [
+              "भौगोलिक रचना",
+              "नद्या",
+              "हवामान",
+              "मृदा",
+              "शेती",
+              "खनिजे",
+              "उद्योग",
+              "लोकसंख्या"
+            ]
+          },
+          {
+            "name": "महाराष्ट्राचा भूगोल",
+            "subtopics": [
+              "जिल्हे",
+              "नद्या",
+              "धरणे",
+              "सह्याद्री",
+              "कोकण",
+              "मराठवाडा",
+              "विदर्भ",
+              "शेती",
+              "पिके",
+              "हवामान",
+              "उद्योग",
+              "लोकसंख्या"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "राज्यशास्त्र",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "भारतीय संविधान",
+            "subtopics": [
+              "उद्देशिका",
+              "मूलभूत अधिकार",
+              "मूलभूत कर्तव्ये",
+              "राज्याच्या मार्गदर्शक तत्त्वे",
+              "संसद",
+              "राष्ट्रपती",
+              "पंतप्रधान",
+              "न्यायव्यवस्था"
+            ]
+          },
+          {
+            "name": "महाराष्ट्र शासन व स्थानिक स्वराज्य",
+            "subtopics": [
+              "राज्यपाल",
+              "मुख्यमंत्री",
+              "विधानसभा",
+              "विधानपरिषद",
+              "पंचायतराज",
+              "ग्रामपंचायत",
+              "पंचायत समिती",
+              "जिल्हा परिषद",
+              "नगरपालिका",
+              "महानगरपालिका"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "अर्थव्यवस्था",
+        "priority": "medium",
+        "topics": [
+          {
+            "name": "मूलभूत अर्थव्यवस्था",
+            "subtopics": [
+              "GDP",
+              "राष्ट्रीय उत्पन्न",
+              "महागाई",
+              "बेरोजगारी",
+              "गरिबी",
+              "बँकिंग",
+              "RBI",
+              "चलन",
+              "कर",
+              "GST",
+              "बजेट"
+            ]
+          },
+          {
+            "name": "महाराष्ट्र अर्थव्यवस्था",
+            "subtopics": [
+              "शेती",
+              "उद्योग",
+              "सहकार",
+              "MSME",
+              "सरकारी योजना",
+              "महाराष्ट्राच्या आर्थिक योजना"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "सामान्य विज्ञान",
+        "priority": "medium",
+        "topics": [
+          {
+            "name": "Physics",
+            "subtopics": [
+              "मापन",
+              "गती",
+              "बल",
+              "काम",
+              "ऊर्जा",
+              "उष्णता",
+              "प्रकाश",
+              "ध्वनी",
+              "विद्युत"
+            ]
+          },
+          {
+            "name": "Chemistry",
+            "subtopics": [
+              "पदार्थ",
+              "अणू",
+              "मूलद्रव्य",
+              "आवर्त सारणी",
+              "रासायनिक अभिक्रिया",
+              "आम्ल",
+              "क्षार",
+              "धातू",
+              "अधातू"
+            ]
+          },
+          {
+            "name": "Biology",
+            "subtopics": [
+              "मानवी शरीर",
+              "रक्त",
+              "पोषण",
+              "रोग",
+              "वनस्पती",
+              "प्राणी",
+              "पर्यावरण",
+              "जैवविविधता"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "अंकगणित",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "Number System",
+            "subtopics": [
+              "Natural Numbers",
+              "Whole Numbers",
+              "Integers",
+              "Prime Numbers",
+              "Composite Numbers",
+              "Fractions",
+              "Decimals",
+              "LCM",
+              "HCF"
+            ]
+          },
+          {
+            "name": "Arithmetic",
+            "subtopics": [
+              "VBODMAS",
+              "Average",
+              "Percentage",
+              "Profit and Loss",
+              "Simple Interest",
+              "Compound Interest",
+              "Ratio and Proportion",
+              "Age",
+              "Time and Work",
+              "Pipes and Cisterns",
+              "Speed Time Distance",
+              "Trains",
+              "Boat and Streams",
+              "Partnership",
+              "Mixture",
+              "Area",
+              "Volume"
+            ]
+          },
+          {
+            "name": "Basic Algebra",
+            "subtopics": [
+              "Algebraic Expressions",
+              "Linear Equations",
+              "Identities",
+              "Basic Equations"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "बुद्धिमत्ता",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "Reasoning",
+            "subtopics": [
+              "Series",
+              "Analogy",
+              "Classification",
+              "Coding-Decoding",
+              "Blood Relations",
+              "Direction",
+              "Ranking",
+              "Clock",
+              "Calendar",
+              "Venn Diagram",
+              "Logical Reasoning",
+              "Statement-Conclusion",
+              "Puzzles",
+              "Data Interpretation"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "मराठी",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "व्याकरण",
+            "subtopics": [
+              "नाम",
+              "सर्वनाम",
+              "विशेषण",
+              "क्रियापद",
+              "क्रियाविशेषण",
+              "अव्यय",
+              "लिंग",
+              "वचन",
+              "पुरुष",
+              "काळ",
+              "विभक्ती",
+              "प्रयोग",
+              "वाक्यप्रकार",
+              "वाक्यशुद्धी",
+              "शब्दशुद्धी",
+              "संधी",
+              "समास",
+              "उपसर्ग",
+              "प्रत्यय"
+            ]
+          },
+          {
+            "name": "शब्दसंपदा",
+            "subtopics": [
+              "समानार्थी शब्द",
+              "विरुद्धार्थी शब्द",
+              "अनेकार्थी शब्द",
+              "म्हणी",
+              "वाक्प्रचार",
+              "एका शब्दात उत्तर",
+              "शुद्ध-अशुद्ध शब्द"
+            ]
+          }
+        ]
+      },
+      {
+        "subject": "English",
+        "priority": "high",
+        "topics": [
+          {
+            "name": "Grammar",
+            "subtopics": [
+              "Parts of Speech",
+              "Noun",
+              "Pronoun",
+              "Adjective",
+              "Verb",
+              "Adverb",
+              "Preposition",
+              "Conjunction",
+              "Articles",
+              "Tenses",
+              "Voice",
+              "Narration",
+              "Subject-Verb Agreement",
+              "Sentence Formation",
+              "Error Detection"
+            ]
+          },
+          {
+            "name": "Vocabulary",
+            "subtopics": [
+              "Synonyms",
+              "Antonyms",
+              "One Word Substitution",
+              "Idioms and Phrases",
+              "Spelling",
+              "Fill in the Blanks",
+              "Reading Comprehension"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "question_schema": {
+    "question": "string",
+    "options": [
+      "string",
+      "string",
+      "string",
+      "string"
+    ],
+    "correctAnswerIndex": 0,
+    "explanation": "string",
+    "subject": "string",
+    "topic": "string",
+    "subTopic": "string",
+    "examTags": [
+      "MPSC",
+      "Talathi"
+    ],
+    "difficulty": "easy|medium|hard",
+    "sourceType": "book|notes|ai|current_affairs",
+    "sourceReference": "optional"
+  },
+  "revision_logic": {
+    "wrong_question": "Schedule for revision; default first review after 3 days.",
+    "repeated_wrong": "Increase priority and bring the concept into the next available revision/test.",
+    "repeated_correct": "Increase revision interval.",
+    "similar_question_generation": "Generate new questions testing the same concept, not only the same wording."
+  },
+  "core_modules": [
+    "Dashboard",
+    "Exam Setup",
+    "Master Syllabus",
+    "AI Study Planner",
+    "Study Room",
+    "AI Notes",
+    "PDF/Image Scan",
+    "AI Tutor",
+    "MCQ Engine",
+    "Daily Test",
+    "3-Day Mistake Test",
+    "Weekly Maha Test",
+    "Monthly Test",
+    "Cumulative Test",
+    "Full Mock Test",
+    "Mistake Book",
+    "Spaced Revision",
+    "Flashcards",
+    "Current Affairs",
+    "Analytics",
+    "Streaks",
+    "Notifications",
+    "Admin Panel"
+  ]
+}
