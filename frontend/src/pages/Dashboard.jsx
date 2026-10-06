@@ -5,8 +5,10 @@ import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
 const Dashboard = ({ user }) => {
+  const currentReasoningSet = parseInt(localStorage.getItem('reasoningSetNumber')) || 1;
+
   const initialDailyTasks = [
-    { id: 'reasoning', title: '🧠 Reasoning Practice (Set 1, 2, 3)', duration: '1 hr', completed: false },
+    { id: 'reasoning', title: `🧠 Reasoning Practice (Set ${currentReasoningSet})`, duration: '1 hr', completed: false },
     { id: 'maths', title: '📐 Maths Practice', duration: '2 hr', completed: false },
     { id: 'gk_geo', title: '🌍 Geography (GKGS)', duration: '30 min', completed: false },
     { id: 'gk_his', title: '📜 History (GKGS)', duration: '30 min', completed: false },
@@ -36,6 +38,36 @@ const Dashboard = ({ user }) => {
   };
 
   useEffect(() => {
+    // Check for a New Day to Reset Tasks and Advance Practice Sets
+    const today = new Date().toLocaleDateString();
+    const lastDate = localStorage.getItem('last_task_date');
+    if (lastDate !== today) {
+      // It's a new day!
+      const savedTasks = JSON.parse(localStorage.getItem('user_daily_tasks') || '[]');
+      const reasoningTask = savedTasks.find(t => t.id === 'reasoning');
+      
+      let nextSet = currentReasoningSet;
+      // If reasoning was completed yesterday, increment the set number for today!
+      if (reasoningTask && reasoningTask.completed) {
+        nextSet += 1;
+        localStorage.setItem('reasoningSetNumber', nextSet);
+      }
+      
+      const resetTasks = [
+        { id: 'reasoning', title: `🧠 Reasoning Practice (Set ${nextSet})`, duration: '1 hr', completed: false },
+        { id: 'maths', title: '📐 Maths Practice', duration: '2 hr', completed: false },
+        { id: 'gk_geo', title: '🌍 Geography (GKGS)', duration: '30 min', completed: false },
+        { id: 'gk_his', title: '📜 History (GKGS)', duration: '30 min', completed: false },
+        { id: 'gk_sci', title: '🔬 Science (GKGS)', duration: '30 min', completed: false },
+        { id: 'gk_eco', title: '💰 Economics (GKGS)', duration: '30 min', completed: false },
+        { id: 'gk_pol', title: '🏛️ Polity (GKGS)', duration: '30 min', completed: false },
+        { id: 'gk_ca', title: '📰 Current Affairs', duration: '30 min', completed: false }
+      ];
+      setDailyTasks(resetTasks);
+      localStorage.setItem('user_daily_tasks', JSON.stringify(resetTasks));
+      localStorage.setItem('last_task_date', today);
+    }
+    
     // Request permission on load
     requestNotificationPermission();
 
