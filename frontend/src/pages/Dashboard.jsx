@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
 const Dashboard = ({ user }) => {
+  const [showAllTasks, setShowAllTasks] = useState(false);
   const currentReasoningSet = parseInt(localStorage.getItem('reasoningSetNumber')) || 1;
 
   const initialDailyTasks = [
@@ -45,6 +46,14 @@ const Dashboard = ({ user }) => {
       // It's a new day!
       const savedTasks = JSON.parse(localStorage.getItem('user_daily_tasks') || '[]');
       const reasoningTask = savedTasks.find(t => t.id === 'reasoning');
+      
+      const yesterdaysCompletedCount = savedTasks.filter(t => t.completed).length;
+      let pastWeekly = parseInt(localStorage.getItem('weekly_completed')) || 0;
+      pastWeekly += yesterdaysCompletedCount;
+      if (new Date().getDay() === 1) { 
+        pastWeekly = 0; // Reset weekly progress on Monday
+      }
+      localStorage.setItem('weekly_completed', pastWeekly);
       
       let nextSet = currentReasoningSet;
       // If reasoning was completed yesterday, increment the set number for today!
@@ -125,6 +134,10 @@ const Dashboard = ({ user }) => {
   const displayMins = completedMinutes % 60;
   
   const progressPercent = dailyTasks.length > 0 ? Math.round((completedTasks.length / dailyTasks.length) * 100) : 0;
+  
+  const pastWeeklyTasks = parseInt(localStorage.getItem('weekly_completed')) || 0;
+  const currentWeeklyTotal = pastWeeklyTasks + completedTasks.length;
+  const weeklySyllabusPercent = Math.min(100, Math.round((currentWeeklyTotal / 56) * 100)); // 8 tasks * 7 days = 56
 
   return (
     <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
@@ -197,11 +210,11 @@ const Dashboard = ({ user }) => {
           <div className="glass-panel" style={{ padding: '24px' }}>
             <div className="flex-row justify-between" style={{ marginBottom: '20px' }}>
               <h2 style={{ fontSize: '1.25rem' }}>📋 Today's Tasks</h2>
-              <button className="btn" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>View All</button>
+              <button onClick={() => setShowAllTasks(!showAllTasks)} className="btn" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}>{showAllTasks ? 'View Less' : 'View All'}</button>
             </div>
             
             <div className="flex-col gap-3">
-              {dailyTasks.map(task => (
+              {(showAllTasks ? dailyTasks : dailyTasks.slice(0, 3)).map(task => (
                 <div key={task.id} className="task-item" style={{ background: task.completed ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', borderRadius: '12px', opacity: task.completed ? 0.7 : 1, transition: 'all 0.3s ease', padding: '16px' }}>
                   <div className="flex-row gap-4" style={{ alignItems: 'center' }}>
                     {task.completed ? <FiCheckCircle size={24} color="var(--success)" /> : <FiClock size={24} color="var(--accent-primary)" />}
@@ -273,20 +286,20 @@ const Dashboard = ({ user }) => {
               <div>
                 <div className="flex-row justify-between" style={{ marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Syllabus Coverage</span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{progressPercent}%</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{weeklySyllabusPercent}%</span>
                 </div>
                 <div className="progress-container">
-                  <div className="progress-bar" style={{ width: `${progressPercent}%`, background: 'var(--info)' }}></div>
+                  <div className="progress-bar" style={{ width: `${weeklySyllabusPercent}%`, background: 'var(--info)' }}></div>
                 </div>
               </div>
               
               <div>
                 <div className="flex-row justify-between" style={{ marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Practice Accuracy</span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{progressPercent > 0 ? '85%' : '0%'}</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{currentWeeklyTotal > 0 ? '85%' : '0%'}</span>
                 </div>
                 <div className="progress-container">
-                  <div className="progress-bar" style={{ width: progressPercent > 0 ? '85%' : '0%', background: 'var(--success)' }}></div>
+                  <div className="progress-bar" style={{ width: currentWeeklyTotal > 0 ? '85%' : '0%', background: 'var(--success)' }}></div>
                 </div>
               </div>
             </div>
