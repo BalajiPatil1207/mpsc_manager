@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiClock, FiCheckCircle, FiPlay, FiAlertTriangle, FiBell, FiMoon, FiSun } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiPlay, FiAlertTriangle, FiBell, FiMoon, FiSun, FiCheck, FiRotateCcw } from 'react-icons/fi';
 import { requestNotificationPermission, sendPushNotification } from '../utils/notify';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
@@ -194,9 +194,15 @@ const Dashboard = ({ user }) => {
                       <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Duration: {task.duration}</span>
                     </div>
                     {task.completed ? (
-                      <button onClick={() => toggleTask(task.id, true)} className="btn" style={{ padding: '6px 12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.75rem' }}>Undo</button>
+                      <button onClick={() => toggleTask(task.id, true)} className="btn task-action-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>
+                        <span className="desktop-text">Undo</span>
+                        <FiRotateCcw className="mobile-icon" size={18} />
+                      </button>
                     ) : (
-                      <button onClick={() => toggleTask(task.id, false)} className="btn btn-primary" style={{ padding: '8px 16px' }}>Complete</button>
+                      <button onClick={() => toggleTask(task.id, false)} className="btn btn-primary task-action-btn">
+                        <span className="desktop-text">Complete</span>
+                        <FiCheck className="mobile-icon" size={18} />
+                      </button>
                     )}
                   </div>
                 </div>
