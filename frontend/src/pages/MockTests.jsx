@@ -97,7 +97,7 @@ const MockTests = () => {
              <div className="glass-panel" style={{ padding: '24px', marginTop: '24px' }}>
                 <div className="flex-row justify-between align-center" style={{ marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.25rem', margin: 0 }}>🏆 Auto-Generated Mocks</h2>
-                  <input type="date" className="glass-card" style={{ padding: '6px 12px', color: 'black', fontSize: '0.875rem' }} 
+                  <input type="date" className="glass-card" style={{ padding: '6px 12px', color: 'var(--text-primary)', background: 'rgba(255,255,255,0.05)', fontSize: '0.875rem', colorScheme: 'dark' }} 
                          value={filterDate} onChange={(e)=>setFilterDate(e.target.value)} />
                 </div>
                 
