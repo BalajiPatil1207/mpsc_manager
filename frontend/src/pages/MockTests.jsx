@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiTarget, FiBarChart2, FiPlay, FiShare2 } from 'react-icons/fi';
+import { FiTarget, FiBarChart2, FiPlay, FiShare2, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { auth } from '../firebase';
@@ -115,7 +115,7 @@ const MockTests = () => {
                 
                 <div className="flex-col gap-4">
                   {filteredHistory.map(test => (
-                    <div key={test.id} className="glass-card" style={{ padding: '20px', borderLeft: '4px solid var(--success)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={test.id} className="glass-card" style={{ padding: '20px', borderLeft: '4px solid var(--success)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                       <div className="flex-col gap-2">
                         <div className="flex-row gap-2 align-center">
                            <h3 style={{ fontSize: '1.125rem', color: 'var(--text-primary)', margin: 0 }}>{test.title}</h3>
@@ -126,9 +126,15 @@ const MockTests = () => {
                         </span>
                       </div>
                       <div className="flex-row gap-2">
-                        <button title="Share Test" className="btn" onClick={() => copyShareLink(test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}><FiShare2 /> Share</button>
-                        <button title="Edit Test" className="btn" onClick={() => setEditingTest(test)} style={{ padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>Edit</button>
-                        <button title="Delete Test" className="btn" onClick={async () => {
+                        <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiShare2 /> Share</span>
+                          <FiShare2 className="mobile-icon" size={16} />
+                        </button>
+                        <button title="Edit Test" className="btn task-action-btn" onClick={() => setEditingTest(test)} style={{ padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>
+                          <span className="desktop-text">Edit</span>
+                          <FiEdit className="mobile-icon" size={16} />
+                        </button>
+                        <button title="Delete Test" className="btn task-action-btn" onClick={async () => {
                           if(window.confirm('Delete this generated test permanently?')) {
                             try {
                               const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${test.id}`);
@@ -140,8 +146,14 @@ const MockTests = () => {
                               toast.error('Failed to delete test');
                             }
                           }
-                        }} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>Delete</button>
-                        <button title="Take Test" className="btn btn-primary" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiPlay /> Start</button>
+                        }} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>
+                          <span className="desktop-text">Delete</span>
+                          <FiTrash2 className="mobile-icon" size={16} />
+                        </button>
+                        <button title="Take Test" className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'8px'}}><FiPlay /> Start</span>
+                          <FiPlay className="mobile-icon" size={16} />
+                        </button>
                       </div>
                     </div>
                   ))}

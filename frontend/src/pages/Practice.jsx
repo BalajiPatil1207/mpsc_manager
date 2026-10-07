@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiBookOpen, FiZap, FiPlayCircle, FiCheckCircle, FiShare2 } from 'react-icons/fi';
+import { FiBookOpen, FiZap, FiPlayCircle, FiCheckCircle, FiShare2, FiEdit, FiTrash2 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { auth } from '../firebase';
@@ -169,33 +169,45 @@ const Practice = () => {
              <div className="flex-col gap-4">
                {filteredHistory.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No auto-generated tests found.</p> : null}
                {filteredHistory.map(test => (
-                 <div key={test.id} className="glass-card" style={{ padding: '16px', borderLeft: '4px solid var(--accent-primary)' }}>
-                   <div className="flex-row justify-between align-center" style={{ marginBottom: '8px' }}>
-                     <h3 style={{ fontSize: '1.125rem', margin: 0 }}>{test.title}</h3>
-                     <span className="badge pending" style={{ background: 'rgba(99, 102, 241, 0.2)', color: 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
-                   </div>
-                   <div className="flex-row justify-between align-center">
+                 <div key={test.id} className="glass-card" style={{ padding: '16px', borderLeft: '4px solid var(--accent-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                   <div className="flex-col gap-2">
+                     <div className="flex-row gap-2 align-center">
+                       <h3 style={{ fontSize: '1.125rem', margin: 0 }}>{test.title}</h3>
+                       <span className="badge pending" style={{ background: 'rgba(99, 102, 241, 0.2)', color: 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
+                     </div>
                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                        {test.subject} • {test.questions?.length || 0} Qs • {new Date(test.createdAt).toLocaleDateString()}
                      </p>
-                     <div className="flex-row gap-2">
-                       <button title="Share Test" className="btn" onClick={() => copyShareLink(test.id)} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)' }}><FiShare2 /> Share</button>
-                       <button title="Edit Test" className="btn" onClick={() => setEditingTest(test)} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)' }}>Edit</button>
-                       <button title="Delete Test" className="btn" onClick={async () => {
-                          if(window.confirm('Delete this generated test permanently?')) {
-                            try {
-                              const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${test.id}`);
-                              if(res.data.success) {
-                                toast.success('Test deleted successfully');
-                                setHistory(history.filter(h => h.id !== test.id));
-                              }
-                            } catch(err) {
-                              toast.error('Failed to delete test');
+                   </div>
+                   <div className="flex-row gap-2">
+                     <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test.id)} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                       <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiShare2 /> Share</span>
+                       <FiShare2 className="mobile-icon" size={16} />
+                     </button>
+                     <button title="Edit Test" className="btn task-action-btn" onClick={() => setEditingTest(test)} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>
+                       <span className="desktop-text">Edit</span>
+                       <FiEdit className="mobile-icon" size={16} />
+                     </button>
+                     <button title="Delete Test" className="btn task-action-btn" onClick={async () => {
+                        if(window.confirm('Delete this generated test permanently?')) {
+                          try {
+                            const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${test.id}`);
+                            if(res.data.success) {
+                              toast.success('Test deleted successfully');
+                              setHistory(history.filter(h => h.id !== test.id));
                             }
+                          } catch(err) {
+                            toast.error('Failed to delete test');
                           }
-                       }} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>Delete</button>
-                       <button title="Take Test" className="btn btn-primary" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '6px 12px', fontSize: '0.75rem' }}>Start</button>
-                     </div>
+                        }
+                     }} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>
+                       <span className="desktop-text">Delete</span>
+                       <FiTrash2 className="mobile-icon" size={16} />
+                     </button>
+                     <button title="Take Test" className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                       <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiPlayCircle /> Start</span>
+                       <FiPlayCircle className="mobile-icon" size={16} />
+                     </button>
                    </div>
                  </div>
                ))}
