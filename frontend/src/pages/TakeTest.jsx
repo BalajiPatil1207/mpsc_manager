@@ -64,8 +64,22 @@ const TakeTest = () => {
         answers,
         userId: auth.currentUser?.uid || 'anonymous'
       });
-      if(res.data.success && res.data.message.includes('Mistake Mock')) {
-        toast.success(res.data.message, { duration: 5000, icon: '🔥' });
+      if(res.data.success) {
+        if (res.data.message.includes('Mistake Mock')) {
+          toast.success(res.data.message, { duration: 5000, icon: '🔥' });
+        }
+        
+        // Add Points!
+        if (res.data.scoreEarned > 0) {
+           const sub = res.data.subject || 'General';
+           const oldPoints = parseFloat(localStorage.getItem(`xp_${sub}`)) || 0;
+           localStorage.setItem(`xp_${sub}`, (oldPoints + res.data.scoreEarned).toFixed(2));
+           
+           const totalOld = parseFloat(localStorage.getItem('xp_total')) || 0;
+           localStorage.setItem('xp_total', (totalOld + res.data.scoreEarned).toFixed(2));
+           
+           toast.success(`🎉 Earned +${res.data.scoreEarned} XP for ${sub}!`);
+        }
       }
     } catch(err) {
       console.error(err);

@@ -73,8 +73,13 @@ const MockTests = () => {
     fetchHistory();
   }, []);
 
+  const currentUser = auth.currentUser?.uid || 'anonymous';
   const filteredHistory = history.filter(h => {
     return filterDate ? h.createdAt.includes(filterDate) : true;
+  }).sort((a, b) => {
+    const aSolved = a.attemptedBy?.includes(currentUser) ? 1 : 0;
+    const bSolved = b.attemptedBy?.includes(currentUser) ? 1 : 0;
+    return aSolved - bSolved;
   });
 
   if (loading) return null;
@@ -114,15 +119,17 @@ const MockTests = () => {
                 </div>
                 
                 <div className="flex-col gap-4">
-                  {filteredHistory.map(test => (
-                    <div key={test.id} className="glass-card" style={{ padding: '20px', borderLeft: '4px solid var(--success)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                  {filteredHistory.map(test => {
+                    const isSolved = test.attemptedBy?.includes(currentUser);
+                    return (
+                    <div key={test.id} className="glass-card" style={{ padding: '20px', borderLeft: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                       <div className="flex-col gap-2">
                         <div className="flex-row gap-2 align-center">
-                           <h3 style={{ fontSize: '1.125rem', color: 'var(--text-primary)', margin: 0 }}>{test.title}</h3>
-                           <span className="badge" style={{ background: 'rgba(34, 197, 94, 0.2)', color: 'var(--success)' }}>{test.timeLimit} Mins</span>
+                           <h3 style={{ fontSize: '1.125rem', margin: 0, textDecoration: isSolved ? 'line-through' : 'none', color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)' }}>{test.title}</h3>
+                           <span className="badge" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'rgba(99, 102, 241, 0.2)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
                         </div>
                         <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                          {test.questions?.length || 0} Questions • Mega Test Engine
+                          {test.questions?.length || 0} Questions • Mega Test Engine {isSolved && <span style={{color:'var(--success)', fontWeight:'bold'}}> • Solved ✅</span>}
                         </span>
                       </div>
                       <div className="flex-row gap-2">
@@ -156,7 +163,8 @@ const MockTests = () => {
                         </button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
              </div>
            )}

@@ -108,16 +108,25 @@ exports.submitTest = async (req, res, next) => {
     if (!doc.exists) return res.status(404).json({ success: false, message: "Test not found" });
     const test = doc.data();
 
+    let attemptedBy = test.attemptedBy || [];
+    if (userId && userId !== 'anonymous' && !attemptedBy.includes(userId)) {
+      attemptedBy.push(userId);
+      await db.collection('customTests').doc(testId).update({ attemptedBy });
+    }
+
     let wrongQuestions = [];
+    let scoreEarned = 0;
+    
     test.questions.forEach((q, idx) => {
-      // Catch wrong attempts
-      if (answers[idx] !== undefined && answers[idx] !== q.correctOption) {
+      if (answers[idx] === q.correctOption) {
+        scoreEarned += 1;
+      } else if (answers[idx] !== undefined && answers[idx] !== null) {
         wrongQuestions.push(q);
+        scoreEarned -= 0.25;
       }
     });
 
     if (wrongQuestions.length > 0) {
-      // Count previous mistakes
       const mistakeDocs = await db.collection('customTests')
         .where('createdBy', '==', userId || 'anonymous')
         .where('isMistakeMock', '==', true)
@@ -136,10 +145,10 @@ exports.submitTest = async (req, res, next) => {
       };
 
       await db.collection('customTests').add(newTest);
-      return res.json({ success: true, message: `Created Mistake Mock Test-${count} for next day revision!` });
+      return res.json({ success: true, message: `Created Mistake Mock Test-${count} for next day revision!`, scoreEarned, subject: test.subject });
     }
 
-    res.json({ success: true, message: "Perfect! No mistakes!" });
+    res.json({ success: true, message: "Perfect! No mistakes!", scoreEarned, subject: test.subject });
   } catch(err) {
     next(err);
   }

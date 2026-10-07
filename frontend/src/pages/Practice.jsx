@@ -94,8 +94,13 @@ const Practice = () => {
     fetchHistory();
   }, []);
 
+  const currentUser = auth.currentUser?.uid || 'anonymous';
   const filteredHistory = history.filter(h => {
     return filterSubject ? (h.subject || '').toLowerCase().includes(filterSubject.toLowerCase()) : true;
+  }).sort((a, b) => {
+    const aSolved = a.attemptedBy?.includes(currentUser) ? 1 : 0;
+    const bSolved = b.attemptedBy?.includes(currentUser) ? 1 : 0;
+    return aSolved - bSolved;
   });
 
   if (loading) return null;
@@ -146,12 +151,18 @@ const Practice = () => {
           <div className="glass-panel" style={{ padding: '24px' }}>
             <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Topic Wise Mastery</h2>
             <div className="flex-col gap-4">
-              {['Polity', 'Economics', 'Science', 'Current Affairs'].map((subject) => (
+              {['Polity', 'Economics', 'Science', 'Current Affairs', 'History', 'Geography'].map((subject) => {
+                 const xp = parseFloat(localStorage.getItem(`xp_${subject}`)) || 0;
+                 return (
                  <div key={subject} className="flex-row justify-between" style={{ alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
-                   <span style={{ color: 'var(--text-primary)' }}>{subject}</span>
+                   <div style={{ display: 'flex', flexDirection: 'column' }}>
+                     <span style={{ color: 'var(--text-primary)' }}>{subject}</span>
+                     <span style={{ color: 'var(--accent-secondary)', fontSize: '0.75rem', fontWeight: 'bold' }}>{xp} XP Earned</span>
+                   </div>
                    <button className="btn" onClick={() => startTest(`${subject} Drill`, subject)} style={{ padding: '6px 16px', fontSize: '0.75rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>Drill</button>
                  </div>
-              ))}
+                 );
+              })}
             </div>
           </div>
           
@@ -168,15 +179,17 @@ const Practice = () => {
              
              <div className="flex-col gap-4">
                {filteredHistory.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No auto-generated tests found.</p> : null}
-               {filteredHistory.map(test => (
-                 <div key={test.id} className="glass-card" style={{ padding: '16px', borderLeft: '4px solid var(--accent-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+               {filteredHistory.map(test => {
+                 const isSolved = test.attemptedBy?.includes(currentUser);
+                 return (
+                 <div key={test.id} className="glass-card" style={{ padding: '16px', borderLeft: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                    <div className="flex-col gap-2">
                      <div className="flex-row gap-2 align-center">
-                       <h3 style={{ fontSize: '1.125rem', margin: 0 }}>{test.title}</h3>
-                       <span className="badge pending" style={{ background: 'rgba(99, 102, 241, 0.2)', color: 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
+                       <h3 style={{ fontSize: '1.125rem', margin: 0, textDecoration: isSolved ? 'line-through' : 'none', color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)' }}>{test.title}</h3>
+                       <span className="badge pending" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'rgba(99, 102, 241, 0.2)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
                      </div>
                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                       {test.subject} • {test.questions?.length || 0} Qs • {new Date(test.createdAt).toLocaleDateString()}
+                       {test.subject} • {test.questions?.length || 0} Qs • {new Date(test.createdAt).toLocaleDateString()} {isSolved && <span style={{color:'var(--success)', fontWeight:'bold'}}> • Solved ✅</span>}
                      </p>
                    </div>
                    <div className="flex-row gap-2">
@@ -210,7 +223,8 @@ const Practice = () => {
                      </button>
                    </div>
                  </div>
-               ))}
+                 );
+               })}
              </div>
           </div>
 

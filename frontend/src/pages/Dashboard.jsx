@@ -216,8 +216,8 @@ const Dashboard = ({ user }) => {
 
           <div className="glass-card flex-row gap-4" style={{ padding: '12px 24px' }}>
             <div className="flex-col" style={{ alignItems: 'flex-end' }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Preparation Score</span>
-              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{progressPercent}%</span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Total XP Earned</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-secondary)' }}>{parseFloat(localStorage.getItem('xp_total')) || 0}</span>
             </div>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '4px solid var(--accent-primary)', borderLeftColor: 'rgba(255,255,255,0.1)', transform: 'rotate(45deg)' }}></div>
           </div>
