@@ -44,87 +44,57 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 exports.generateMegaTest = async (req, res, next) => {
   try {
-    let megaQuestions = [];
+    const snapshot = await db.collection('customTests').get();
     
-    // Attempt AI Generation first
-    try {
-      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "dummy");
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const prompt = `Generate a 100-question MPSC objective test in Marathi. Format MUST be a strict, valid JSON array.
-Breakdown: 30 Maths, 30 Reasoning, 40 GK (Geo, His, Sci, Polity, Eco, CA).
-Format:
-[
-  {
-    "question": "question text in marathi",
-    "options": ["opt1", "opt2", "opt3", "opt4"],
-    "correctOption": 1,
-    "subject": "History"
-  }
-]
-Output ONLY raw JSON. No markdown blocks, no text before or after.`;
+    let gkQuestionsMap = new Map();
+    let mathQuestionsMap = new Map();
+    let reasoningQuestionsMap = new Map();
 
-      const result = await model.generateContent(prompt);
-      let text = result.response.text();
-      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(text);
-      
-      if(Array.isArray(parsed) && parsed.length > 50) {
-         megaQuestions = parsed;
-      } else {
-         throw new Error("AI returned too few questions");
-      }
-    } catch(aiErr) {
-      console.log("AI Generation failed for Mega Test, falling back to DB pool:", aiErr.message);
-      
-      // Fallback: Fetch all previous questions from customTests
-      const snapshot = await db.collection('customTests').get();
-      
-      let gkQuestions = [];
-      let mathQuestions = [];
-      let reasoningQuestions = [];
+    snapshot.forEach(doc => {
+      const test = doc.data();
+      if (test.isMistakeMock) return;
 
-      snapshot.forEach(doc => {
-        const test = doc.data();
-        if (test.isMistakeMock) return;
-
-        const testSubject = test.subject ? test.subject.toLowerCase() : '';
+      const testSubject = test.subject ? test.subject.toLowerCase() : '';
+      
+      test.questions.forEach(q => {
+        if (!q || !q.question) return;
+        const qSub = (q.subject || testSubject).toLowerCase();
         
-        test.questions.forEach(q => {
-          const qSub = (q.subject || testSubject).toLowerCase();
-          
-          if (qSub.includes('math') || qSub.includes('गणित')) {
-            mathQuestions.push(q);
-          } else if (qSub.includes('reasoning') || qSub.includes('बुद्धिमत्ता')) {
-            reasoningQuestions.push(q);
-          } else {
-            gkQuestions.push(q);
-          }
-        });
+        // Deduplicate using Map based on question text string
+        const qText = q.question.trim().toLowerCase();
+        
+        if (qSub.includes('math') || qSub.includes('गणित')) {
+          if(!mathQuestionsMap.has(qText)) mathQuestionsMap.set(qText, q);
+        } else if (qSub.includes('reasoning') || qSub.includes('बुद्धिमत्ता')) {
+          if(!reasoningQuestionsMap.has(qText)) reasoningQuestionsMap.set(qText, q);
+        } else {
+          if(!gkQuestionsMap.has(qText)) gkQuestionsMap.set(qText, q);
+        }
       });
+    });
 
-      const shuffle = (array) => array.sort(() => 0.5 - Math.random());
-      const selectedGk = shuffle(gkQuestions).slice(0, 40);
-      const selectedMath = shuffle(mathQuestions).slice(0, 30);
-      const selectedReasoning = shuffle(reasoningQuestions).slice(0, 30);
+    const shuffle = (array) => array.sort(() => 0.5 - Math.random());
+    const selectedGk = shuffle(Array.from(gkQuestionsMap.values())).slice(0, 40);
+    const selectedMath = shuffle(Array.from(mathQuestionsMap.values())).slice(0, 30);
+    const selectedReasoning = shuffle(Array.from(reasoningQuestionsMap.values())).slice(0, 30);
 
-      megaQuestions = [...selectedGk, ...selectedMath, ...selectedReasoning];
-    }
+    const megaQuestions = [...selectedGk, ...selectedMath, ...selectedReasoning];
     
     if(megaQuestions.length === 0) {
-      return res.status(400).json({ success: false, message: 'Not enough custom questions available to generate a Mega Test.'});
+      return res.status(400).json({ success: false, message: 'Not enough custom questions available in database to generate a Mega Test.'});
     }
 
     const newTest = {
-      title: `🔥 Auto AI Mega Test (${megaQuestions.length} Qs) - ${new Date().toLocaleDateString('mr-IN')}`,
-      subject: 'Mega AI Engine (GK, Math, Reasoning)',
+      title: `🔥 Automatic Mega Test (100 Qs) - ${new Date().toLocaleDateString('mr-IN')}`,
+      subject: 'Mega Database Engine (GK, Math, Reasoning)',
       timeLimit: 90, 
-      questions: megaQuestions.sort(() => 0.5 - Math.random()), 
+      questions: shuffle(megaQuestions), 
       createdBy: 'System Engine',
       createdAt: new Date().toISOString()
     };
 
     const docRef = await db.collection('customTests').add(newTest);
-    res.json({ success: true, testId: docRef.id, message: "100 Q Mega Test Generated successfully!" });
+    res.json({ success: true, testId: docRef.id, message: "100 Q Mega Test Generated successfully from Database!" });
   } catch(err) {
     next(err);
   }
