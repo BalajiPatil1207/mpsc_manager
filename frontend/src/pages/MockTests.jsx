@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiTarget, FiBarChart2, FiPlay } from 'react-icons/fi';
+import { FiTarget, FiBarChart2, FiPlay, FiShare2 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { auth } from '../firebase';
@@ -34,6 +34,12 @@ const MockTests = () => {
   const startMockTest = async () => {
     toast.success("Ready to create your Mock Exam!");
     navigate('/test-maker');
+  };
+
+  const copyShareLink = (testId) => {
+    const link = `${window.location.origin}/test/${testId}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Test link copied to clipboard! 📋");
   };
 
   useEffect(() => {
@@ -120,6 +126,7 @@ const MockTests = () => {
                         </span>
                       </div>
                       <div className="flex-row gap-2">
+                        <button title="Share Test" className="btn" onClick={() => copyShareLink(test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}><FiShare2 /> Share</button>
                         <button title="Edit Test" className="btn" onClick={() => setEditingTest(test)} style={{ padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>Edit</button>
                         <button title="Delete Test" className="btn" onClick={async () => {
                           if(window.confirm('Delete this generated test permanently?')) {

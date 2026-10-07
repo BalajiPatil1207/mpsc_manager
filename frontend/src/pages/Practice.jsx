@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiBookOpen, FiZap, FiPlayCircle, FiCheckCircle } from 'react-icons/fi';
+import { FiBookOpen, FiZap, FiPlayCircle, FiCheckCircle, FiShare2 } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { auth } from '../firebase';
@@ -55,6 +55,12 @@ const Practice = () => {
     // Navigate to Custom Maker since AI API generation requires detailed input
     toast.success("Ready to create your targeted Drill!");
     navigate('/test-maker');
+  };
+
+  const copyShareLink = (testId) => {
+    const link = `${window.location.origin}/test/${testId}`;
+    navigator.clipboard.writeText(link);
+    toast.success("Test link copied to clipboard! 📋");
   };
 
   useEffect(() => {
@@ -173,6 +179,7 @@ const Practice = () => {
                        {test.subject} • {test.questions?.length || 0} Qs • {new Date(test.createdAt).toLocaleDateString()}
                      </p>
                      <div className="flex-row gap-2">
+                       <button title="Share Test" className="btn" onClick={() => copyShareLink(test.id)} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)' }}><FiShare2 /> Share</button>
                        <button title="Edit Test" className="btn" onClick={() => setEditingTest(test)} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)' }}>Edit</button>
                        <button title="Delete Test" className="btn" onClick={async () => {
                           if(window.confirm('Delete this generated test permanently?')) {
