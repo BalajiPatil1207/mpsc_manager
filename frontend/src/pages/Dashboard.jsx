@@ -19,21 +19,43 @@ const Dashboard = ({ user }) => {
     gk_ca:  ["jan 2025: maharashtra", "jan 2025: india", "jan 2025: world", "jan 2025: economy", "jan 2025: science", "jan 2025: sports"]
   };
 
-  const getTopic = (id) => {
-    const arr = topicsMap[id];
+  const getTopicIndexes = () => {
+    return JSON.parse(localStorage.getItem('task_indexes') || '{}');
+  };
+
+  const getTopicForTask = (taskId, indexOverride) => {
+    const arr = topicsMap[taskId];
     if (!arr) return "";
-    return arr[(currentReasoningSet - 1) % arr.length];
+    const indexes = getTopicIndexes();
+    const idx = indexOverride !== undefined ? indexOverride : (indexes[taskId] || 0);
+    return arr[idx % arr.length];
+  };
+
+  const getTitleForTask = (taskId, indexOverride) => {
+    const indexes = getTopicIndexes();
+    const idx = indexOverride !== undefined ? indexOverride : (indexes[taskId] || 0);
+    const titles = {
+      'reasoning': `🧠 Reasoning Practice (Set ${idx + 1})`,
+      'maths': '📐 Maths Practice',
+      'gk_geo': '🌍 Geography',
+      'gk_his': '📜 History',
+      'gk_sci': '🔬 Science',
+      'gk_eco': '💰 Economics',
+      'gk_pol': '🏛️ Polity',
+      'gk_ca': '📰 Current Affairs'
+    };
+    return titles[taskId];
   };
 
   const initialDailyTasks = [
-    { id: 'reasoning', title: `🧠 Reasoning Practice (Set ${currentReasoningSet})`, duration: '1 hr', completed: false },
-    { id: 'maths', title: '📐 Maths Practice', duration: '2 hr', completed: false },
-    { id: 'gk_geo', title: '🌍 Geography', duration: '30 min', completed: false },
-    { id: 'gk_his', title: '📜 History', duration: '30 min', completed: false },
-    { id: 'gk_sci', title: '🔬 Science', duration: '30 min', completed: false },
-    { id: 'gk_eco', title: '💰 Economics', duration: '30 min', completed: false },
-    { id: 'gk_pol', title: '🏛️ Polity', duration: '30 min', completed: false },
-    { id: 'gk_ca', title: '📰 Current Affairs', duration: '30 min', completed: false }
+    { id: 'reasoning', title: getTitleForTask('reasoning'), duration: '1 hr', completed: false },
+    { id: 'maths', title: getTitleForTask('maths'), duration: '2 hr', completed: false },
+    { id: 'gk_geo', title: getTitleForTask('gk_geo'), duration: '30 min', completed: false },
+    { id: 'gk_his', title: getTitleForTask('gk_his'), duration: '30 min', completed: false },
+    { id: 'gk_sci', title: getTitleForTask('gk_sci'), duration: '30 min', completed: false },
+    { id: 'gk_eco', title: getTitleForTask('gk_eco'), duration: '30 min', completed: false },
+    { id: 'gk_pol', title: getTitleForTask('gk_pol'), duration: '30 min', completed: false },
+    { id: 'gk_ca', title: getTitleForTask('gk_ca'), duration: '30 min', completed: false }
   ];
 
   const [dailyTasks, setDailyTasks] = useState(() => {
@@ -55,49 +77,50 @@ const Dashboard = ({ user }) => {
     }
   };
 
+  const advanceToNextDay = () => {
+    const savedTasks = JSON.parse(localStorage.getItem('user_daily_tasks') || '[]');
+    const oldIndexes = getTopicIndexes();
+    let newIndexes = { ...oldIndexes };
+    
+    // Add completed tasks to weekly tally
+    const completedCount = savedTasks.filter(t => t.completed).length;
+    let pastWeekly = parseInt(localStorage.getItem('weekly_completed')) || 0;
+    if (new Date().getDay() === 1) pastWeekly = 0; // Reset on Monday
+    pastWeekly += completedCount;
+    localStorage.setItem('weekly_completed', pastWeekly);
+
+    // Create next set of tasks
+    const resetTasks = savedTasks.map(t => {
+      // Only increment index if the task was completed!
+      if (t.completed) {
+        newIndexes[t.id] = (newIndexes[t.id] || 0) + 1;
+      }
+      return {
+        id: t.id,
+        title: getTitleForTask(t.id, newIndexes[t.id] || 0),
+        duration: t.duration,
+        completed: false
+      };
+    });
+
+    localStorage.setItem('task_indexes', JSON.stringify(newIndexes));
+    setDailyTasks(resetTasks);
+    localStorage.setItem('user_daily_tasks', JSON.stringify(resetTasks));
+    localStorage.setItem('last_task_date', new Date().toLocaleDateString());
+    toast.success("Advanced to the next study session! 🚀");
+  };
+
   useEffect(() => {
-    // Check for a New Day to Reset Tasks and Advance Practice Sets
     const today = new Date().toLocaleDateString();
     const lastDate = localStorage.getItem('last_task_date');
-    if (lastDate !== today) {
-      // It's a new day!
-      const savedTasks = JSON.parse(localStorage.getItem('user_daily_tasks') || '[]');
-      const reasoningTask = savedTasks.find(t => t.id === 'reasoning');
-      
-      const yesterdaysCompletedCount = savedTasks.filter(t => t.completed).length;
-      let pastWeekly = parseInt(localStorage.getItem('weekly_completed')) || 0;
-      pastWeekly += yesterdaysCompletedCount;
-      if (new Date().getDay() === 1) { 
-        pastWeekly = 0; // Reset weekly progress on Monday
-      }
-      localStorage.setItem('weekly_completed', pastWeekly);
-      
-      let nextSet = currentReasoningSet;
-      // If reasoning was completed yesterday, increment the set number for today!
-      if (reasoningTask && reasoningTask.completed) {
-        nextSet += 1;
-        localStorage.setItem('reasoningSetNumber', nextSet);
-      }
-      
-      const resetTasks = [
-        { id: 'reasoning', title: `🧠 Reasoning Practice (Set ${nextSet})`, duration: '1 hr', completed: false },
-        { id: 'maths', title: '📐 Maths Practice', duration: '2 hr', completed: false },
-        { id: 'gk_geo', title: '🌍 Geography', duration: '30 min', completed: false },
-        { id: 'gk_his', title: '📜 History', duration: '30 min', completed: false },
-        { id: 'gk_sci', title: '🔬 Science', duration: '30 min', completed: false },
-        { id: 'gk_eco', title: '💰 Economics', duration: '30 min', completed: false },
-        { id: 'gk_pol', title: '🏛️ Polity', duration: '30 min', completed: false },
-        { id: 'gk_ca', title: '📰 Current Affairs', duration: '30 min', completed: false }
-      ];
-      setDailyTasks(resetTasks);
-      localStorage.setItem('user_daily_tasks', JSON.stringify(resetTasks));
+    if (lastDate !== today && lastDate) {
+      advanceToNextDay();
+    } else if (!lastDate) {
       localStorage.setItem('last_task_date', today);
     }
     
-    // Request permission on load
     requestNotificationPermission();
 
-    // Setup an interval to check task times every minute
     const interval = setInterval(() => {
       const now = new Date();
       const currentHours = now.getHours().toString().padStart(2, '0');
@@ -225,9 +248,12 @@ const Dashboard = ({ user }) => {
           
           {/* Today's Tasks */}
           <div className="glass-panel" style={{ padding: '24px' }}>
-            <div className="flex-row justify-between" style={{ marginBottom: '20px' }}>
+            <div className="flex-row justify-between" style={{ marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
               <h2 style={{ fontSize: '1.25rem' }}>📋 Today's Tasks</h2>
-              <button onClick={() => setShowAllTasks(!showAllTasks)} className="btn" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}>{showAllTasks ? 'View Less' : 'View All'}</button>
+              <div className="flex-row gap-2">
+                <button onClick={advanceToNextDay} className="btn" style={{ padding: '6px 12px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-primary)', border: '1px solid rgba(99, 102, 241, 0.2)', outline: 'none', fontSize: '0.75rem' }}>Wrap Up Day 🚀</button>
+                <button onClick={() => setShowAllTasks(!showAllTasks)} className="btn" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}>{showAllTasks ? 'View Less' : 'View All'}</button>
+              </div>
             </div>
             
             <div className="flex-col gap-4">
