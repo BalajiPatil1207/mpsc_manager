@@ -62,7 +62,10 @@ const MockTests = () => {
       try {
         const res = await axios.get('https://mpsc-manager.onrender.com/api/custom-tests/all');
         if(res.data.success) {
-          const mockTests = res.data.data.filter(t => (t.subject || '').includes('Mega') || (t.title || '').includes('Mock'));
+          const mockTests = res.data.data.filter(t => 
+             !t.isMistakeMock && 
+             ((t.subject || '').includes('Mega') || (t.title || '').includes('Mock'))
+          );
           setHistory(mockTests);
         }
       } catch (e) {

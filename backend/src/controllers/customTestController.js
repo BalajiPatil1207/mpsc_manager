@@ -51,6 +51,8 @@ exports.generateMegaTest = async (req, res, next) => {
 
     snapshot.forEach(doc => {
       const test = doc.data();
+      if (test.isMistakeMock) return; // Ignore mistake tests to prevent duplicate looping
+
       const testSubject = test.subject ? test.subject.toLowerCase() : '';
       
       test.questions.forEach(q => {
