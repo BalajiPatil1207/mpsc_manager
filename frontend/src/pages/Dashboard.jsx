@@ -264,7 +264,7 @@ const Dashboard = ({ user }) => {
                     <div className="flex-col gap-1" style={{ flex: 1 }}>
                       <span style={{ fontWeight: 600, color: task.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title.replace(' (GKGS)', '')}</span>
                       <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                        🕒 {task.duration} {getTopic(task.id) && <span>• <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', letterSpacing: '0.5px' }}>topic: {getTopic(task.id)}</span></span>}
+                        🕒 {task.duration} {getTopicForTask(task.id) && <span>• <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', letterSpacing: '0.5px' }}>topic: {getTopicForTask(task.id)}</span></span>}
                       </span>
                     </div>
                     {task.completed ? (
