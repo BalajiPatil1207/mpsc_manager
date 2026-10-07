@@ -40,62 +40,91 @@ exports.getAllTests = async (req, res, next) => {
   }
 };
 
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
 exports.generateMegaTest = async (req, res, next) => {
   try {
-    // 1. Fetch all previous questions from customTests
-    const snapshot = await db.collection('customTests').get();
+    let megaQuestions = [];
     
-    let gkQuestions = [];
-    let mathQuestions = [];
-    let reasoningQuestions = [];
+    // Attempt AI Generation first
+    try {
+      const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "dummy");
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const prompt = `Generate a 100-question MPSC objective test in Marathi. Format MUST be a strict, valid JSON array.
+Breakdown: 30 Maths, 30 Reasoning, 40 GK (Geo, His, Sci, Polity, Eco, CA).
+Format:
+[
+  {
+    "question": "question text in marathi",
+    "options": ["opt1", "opt2", "opt3", "opt4"],
+    "correctOption": 1,
+    "subject": "History"
+  }
+]
+Output ONLY raw JSON. No markdown blocks, no text before or after.`;
 
-    snapshot.forEach(doc => {
-      const test = doc.data();
-      if (test.isMistakeMock) return; // Ignore mistake tests to prevent duplicate looping
-
-      const testSubject = test.subject ? test.subject.toLowerCase() : '';
+      const result = await model.generateContent(prompt);
+      let text = result.response.text();
+      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(text);
       
-      test.questions.forEach(q => {
-        // Tag question with test subject if not explicitly defined
-        const qSub = (q.subject || testSubject).toLowerCase();
+      if(Array.isArray(parsed) && parsed.length > 50) {
+         megaQuestions = parsed;
+      } else {
+         throw new Error("AI returned too few questions");
+      }
+    } catch(aiErr) {
+      console.log("AI Generation failed for Mega Test, falling back to DB pool:", aiErr.message);
+      
+      // Fallback: Fetch all previous questions from customTests
+      const snapshot = await db.collection('customTests').get();
+      
+      let gkQuestions = [];
+      let mathQuestions = [];
+      let reasoningQuestions = [];
+
+      snapshot.forEach(doc => {
+        const test = doc.data();
+        if (test.isMistakeMock) return;
+
+        const testSubject = test.subject ? test.subject.toLowerCase() : '';
         
-        if (qSub.includes('math') || qSub.includes('गणित')) {
-          mathQuestions.push(q);
-        } else if (qSub.includes('reasoning') || qSub.includes('बुद्धिमत्ता')) {
-          reasoningQuestions.push(q);
-        } else {
-          // Assume GK/GS for everything else
-          gkQuestions.push(q);
-        }
+        test.questions.forEach(q => {
+          const qSub = (q.subject || testSubject).toLowerCase();
+          
+          if (qSub.includes('math') || qSub.includes('गणित')) {
+            mathQuestions.push(q);
+          } else if (qSub.includes('reasoning') || qSub.includes('बुद्धिमत्ता')) {
+            reasoningQuestions.push(q);
+          } else {
+            gkQuestions.push(q);
+          }
+        });
       });
-    });
 
-    // Shuffle helper
-    const shuffle = (array) => array.sort(() => 0.5 - Math.random());
+      const shuffle = (array) => array.sort(() => 0.5 - Math.random());
+      const selectedGk = shuffle(gkQuestions).slice(0, 40);
+      const selectedMath = shuffle(mathQuestions).slice(0, 30);
+      const selectedReasoning = shuffle(reasoningQuestions).slice(0, 30);
 
-    // Select 40 GK, 30 Math, 30 Reasoning
-    const selectedGk = shuffle(gkQuestions).slice(0, 40);
-    const selectedMath = shuffle(mathQuestions).slice(0, 30);
-    const selectedReasoning = shuffle(reasoningQuestions).slice(0, 30);
-
-    const megaQuestions = [...selectedGk, ...selectedMath, ...selectedReasoning];
+      megaQuestions = [...selectedGk, ...selectedMath, ...selectedReasoning];
+    }
     
     if(megaQuestions.length === 0) {
       return res.status(400).json({ success: false, message: 'Not enough custom questions available to generate a Mega Test.'});
     }
 
-    // Create the Mega Test
     const newTest = {
-      title: `🔥 Automatic Mega Test (100 Qs) - ${new Date().toLocaleDateString('mr-IN')}`,
-      subject: 'Mega Test (GK 40, Math 30, Reasoning 30)',
-      timeLimit: 90, // 90 Mins for 100 Qs
-      questions: shuffle(megaQuestions), // mix them up
+      title: `🔥 Auto AI Mega Test (${megaQuestions.length} Qs) - ${new Date().toLocaleDateString('mr-IN')}`,
+      subject: 'Mega AI Engine (GK, Math, Reasoning)',
+      timeLimit: 90, 
+      questions: megaQuestions.sort(() => 0.5 - Math.random()), 
       createdBy: 'System Engine',
       createdAt: new Date().toISOString()
     };
 
     const docRef = await db.collection('customTests').add(newTest);
-    res.json({ success: true, testId: docRef.id, message: "100 Q Mega Test Generated!" });
+    res.json({ success: true, testId: docRef.id, message: "100 Q Mega Test Generated successfully!" });
   } catch(err) {
     next(err);
   }
