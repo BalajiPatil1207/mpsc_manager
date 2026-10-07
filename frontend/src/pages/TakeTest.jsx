@@ -82,7 +82,7 @@ const TakeTest = () => {
   if (!test) return <div style={{color:'var(--text-primary)', padding: '40px', textAlign: 'center'}}>Test not found or invalid link.</div>;
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', color: 'var(--text-primary)', padding: '20px', fontFamily: 'system-ui' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', color: 'var(--text-primary)', padding: '20px', paddingBottom: '100px', fontFamily: 'system-ui' }}>
       
       {/* Header Sticky */}
       <div style={{ position: 'sticky', top: 0, background: 'var(--bg-secondary)', backdropFilter: 'blur(10px)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50, marginBottom: '24px' }}>
@@ -94,7 +94,7 @@ const TakeTest = () => {
              </h2>
           )}
           {!submitted && (
-            <button onClick={handleSubmit} className="btn btn-primary" style={{ padding: '8px 16px' }}>Submit Test</button>
+            <button onClick={handleSubmit} className="btn btn-primary desktop-submit-btn" style={{ padding: '8px 16px' }}>Submit Test</button>
           )}
         </div>
       </div>
@@ -236,6 +236,13 @@ const TakeTest = () => {
         )}
 
       </div>
+      
+      {/* Mobile Sticky Submit Button */}
+      {!submitted && (
+         <button onClick={handleSubmit} className="btn btn-primary mobile-submit-btn">
+           Submit Test
+         </button>
+      )}
     </div>
   );
 };

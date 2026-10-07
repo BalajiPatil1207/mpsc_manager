@@ -311,6 +311,8 @@ h1, h2, h3, h4, h5, h6 {
 .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99; backdrop-filter: blur(4px); } 
 .sidebar-overlay.open { display: block; } 
 
+.mobile-submit-btn { display: none; }
+
 @media (max-width: 768px) { 
   .sidebar { position: fixed; left: -320px; height: 100dvh; padding-bottom: 32px; z-index: 100; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
   .sidebar.open { left: 0; } 
@@ -353,8 +355,8 @@ h1, h2, h3, h4, h5, h6 {
   .palette-grid {
     display: flex !important;
     overflow-x: auto;
-    gap: 8px !important;
-    padding-bottom: 8px;
+    gap: 12px !important;
+    padding-bottom: 12px;
     max-height: auto;
   }
   .palette-grid::-webkit-scrollbar {
@@ -365,12 +367,26 @@ h1, h2, h3, h4, h5, h6 {
     background: var(--border-color);
     border-radius: 4px;
   }
-  .palette-grid button {
-    flex: 0 0 36px !important;
-    height: 36px !important;
+  .palette-grid div {
+    flex: 0 0 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
     padding: 0 !important;
     display: flex;
     justify-content: center;
     align-items: center;
+    border-radius: 8px !important;
+  }
+  .desktop-submit-btn { display: none !important; }
+  .mobile-submit-btn { 
+    display: flex !important; 
+    position: fixed; 
+    bottom: 0; 
+    left: 0; 
+    right: 0; 
+    border-radius: 0 !important;
+    padding: 18px !important;
+    font-size: 1.1rem !important;
+    z-index: 1000;
   }
 }
