@@ -16,6 +16,25 @@ const Practice = () => {
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState([]);
   const [filterSubject, setFilterSubject] = useState('');
+  const [editingTest, setEditingTest] = useState(null);
+  
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await axios.put(`https://mpsc-manager.onrender.com/api/custom-tests/${editingTest.id}`, {
+        title: editingTest.title,
+        subject: editingTest.subject,
+        timeLimit: editingTest.timeLimit
+      });
+      if(res.data.success) {
+        toast.success("Test updated successfully!");
+        setHistory(history.map(h => h.id === editingTest.id ? editingTest : h));
+        setEditingTest(null);
+      }
+    } catch(err) {
+      toast.error("Failed to update test");
+    }
+  };
   
   const [pyqs, setPyqs] = useState(() => {
     const saved = localStorage.getItem('practice_pyqs');
@@ -154,6 +173,7 @@ const Practice = () => {
                        {test.subject} • {test.questions?.length || 0} Qs • {new Date(test.createdAt).toLocaleDateString()}
                      </p>
                      <div className="flex-row gap-2">
+                       <button title="Edit Test" className="btn" onClick={() => setEditingTest(test)} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)' }}>Edit</button>
                        <button title="Delete Test" className="btn" onClick={async () => {
                           if(window.confirm('Delete this generated test permanently?')) {
                             try {
@@ -177,6 +197,34 @@ const Practice = () => {
 
         </div>
       )}
+
+      {/* Edit Test Modal */}
+      {editingTest && (
+        <div className="modal-overlay" onClick={() => setEditingTest(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', textAlign: 'left', minWidth: '300px' }}>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>✏️ Edit Test Details</h2>
+            <form onSubmit={handleEditSubmit} className="flex-col gap-4">
+              <div className="flex-col gap-1">
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Title</label>
+                <input type="text" required value={editingTest.title} onChange={e => setEditingTest({...editingTest, title: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
+              </div>
+              <div className="flex-col gap-1">
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Subject</label>
+                <input type="text" required value={editingTest.subject || ''} onChange={e => setEditingTest({...editingTest, subject: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
+              </div>
+              <div className="flex-col gap-1">
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Time Limit (Minutes)</label>
+                <input type="number" required min="1" value={editingTest.timeLimit} onChange={e => setEditingTest({...editingTest, timeLimit: parseInt(e.target.value) || 0})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
+              </div>
+              <div className="flex-row gap-4" style={{ marginTop: '12px' }}>
+                <button type="button" onClick={() => setEditingTest(null)} className="btn" style={{ flex: 1, background: 'var(--glass-bg)' }}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
