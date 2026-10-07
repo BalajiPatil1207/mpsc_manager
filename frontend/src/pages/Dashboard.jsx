@@ -103,20 +103,24 @@ const Dashboard = ({ user }) => {
       };
     });
 
+    const now = new Date();
     localStorage.setItem('task_indexes', JSON.stringify(newIndexes));
     setDailyTasks(resetTasks);
     localStorage.setItem('user_daily_tasks', JSON.stringify(resetTasks));
-    localStorage.setItem('last_task_date', new Date().toLocaleDateString());
+    localStorage.setItem('last_task_date', now.toLocaleDateString('en-GB'));
+    localStorage.setItem('last_task_time', now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase());
     toast.success("Advanced to the next study session! 🚀");
   };
 
   useEffect(() => {
-    const today = new Date().toLocaleDateString();
+    const now = new Date();
+    const today = now.toLocaleDateString('en-GB');
     const lastDate = localStorage.getItem('last_task_date');
     if (lastDate !== today && lastDate) {
       advanceToNextDay();
     } else if (!lastDate) {
       localStorage.setItem('last_task_date', today);
+      localStorage.setItem('last_task_time', now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase());
     }
     
     requestNotificationPermission();
@@ -249,7 +253,12 @@ const Dashboard = ({ user }) => {
           {/* Today's Tasks */}
           <div className="glass-panel" style={{ padding: '24px' }}>
             <div className="flex-row justify-between" style={{ marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
-              <h2 style={{ fontSize: '1.25rem' }}>📋 Today's Tasks</h2>
+              <div className="flex-col gap-1">
+                <h2 style={{ fontSize: '1.25rem', margin: 0 }}>📋 Today's Tasks</h2>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  new tasks fetched: {localStorage.getItem('last_task_date') || new Date().toLocaleDateString('en-GB')} at {localStorage.getItem('last_task_time') || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase()}
+                </span>
+              </div>
               <div className="flex-row gap-2">
                 <button onClick={advanceToNextDay} className="btn" style={{ padding: '6px 12px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-primary)', border: '1px solid rgba(99, 102, 241, 0.2)', outline: 'none', fontSize: '0.75rem' }}>Wrap Up Day 🚀</button>
                 <button onClick={() => setShowAllTasks(!showAllTasks)} className="btn" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}>{showAllTasks ? 'View Less' : 'View All'}</button>
