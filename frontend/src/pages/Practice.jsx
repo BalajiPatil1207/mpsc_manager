@@ -153,7 +153,22 @@ const Practice = () => {
                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                        {test.subject} • {test.questions?.length || 0} Qs • {new Date(test.createdAt).toLocaleDateString()}
                      </p>
-                     <button title="Take Test" className="btn btn-primary" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '6px 12px', fontSize: '0.75rem' }}>Start</button>
+                     <div className="flex-row gap-2">
+                       <button title="Delete Test" className="btn" onClick={async () => {
+                          if(window.confirm('Delete this generated test permanently?')) {
+                            try {
+                              const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${test.id}`);
+                              if(res.data.success) {
+                                toast.success('Test deleted successfully');
+                                setHistory(history.filter(h => h.id !== test.id));
+                              }
+                            } catch(err) {
+                              toast.error('Failed to delete test');
+                            }
+                          }
+                       }} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>Delete</button>
+                       <button title="Take Test" className="btn btn-primary" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '6px 12px', fontSize: '0.75rem' }}>Start</button>
+                     </div>
                    </div>
                  </div>
                ))}

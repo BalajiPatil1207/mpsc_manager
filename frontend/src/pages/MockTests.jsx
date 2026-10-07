@@ -100,7 +100,22 @@ const MockTests = () => {
                           {test.questions?.length || 0} Questions • Mega Test Engine
                         </span>
                       </div>
-                      <button title="Take Test" className="btn btn-primary" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiPlay /> Start</button>
+                      <div className="flex-row gap-2">
+                        <button title="Delete Test" className="btn" onClick={async () => {
+                          if(window.confirm('Delete this generated test permanently?')) {
+                            try {
+                              const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${test.id}`);
+                              if(res.data.success) {
+                                toast.success('Test deleted successfully');
+                                setHistory(history.filter(h => h.id !== test.id));
+                              }
+                            } catch(err) {
+                              toast.error('Failed to delete test');
+                            }
+                          }
+                        }} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>Delete</button>
+                        <button title="Take Test" className="btn btn-primary" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiPlay /> Start</button>
+                      </div>
                     </div>
                   ))}
                 </div>
