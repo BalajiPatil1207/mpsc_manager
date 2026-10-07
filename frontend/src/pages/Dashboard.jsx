@@ -83,7 +83,7 @@ const Dashboard = ({ user }) => {
     }
   };
 
-  const advanceToNextDay = () => {
+  const advanceToNextDay = async () => {
     const savedTasks = JSON.parse(localStorage.getItem('user_daily_tasks') || '[]');
     const oldIndexes = getTopicIndexes();
     let newIndexes = { ...oldIndexes };
@@ -116,6 +116,14 @@ const Dashboard = ({ user }) => {
     localStorage.setItem('last_task_date', getLogicalDateString());
     localStorage.setItem('last_task_time', now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase());
     toast.success("Advanced to the next study session! 🚀");
+    
+    // Generate daily 6 AM Mega Test automatically!
+    try {
+      await axios.post('https://mpsc-manager.onrender.com/api/custom-tests/mega-test');
+      toast.success("Daily 100-Q Mega Test has been auto-generated!");
+    } catch(err) {
+      console.error(err);
+    }
   };
 
   useEffect(() => {
@@ -329,13 +337,13 @@ const Dashboard = ({ user }) => {
               </div>
             </div>
 
-            <div className="glass-card p-4" style={{ padding: '16px', borderLeft: '4px solid var(--danger)' }}>
+            <div className="glass-card p-4" onClick={() => window.location.href='/mistake-book'} style={{ padding: '16px', borderLeft: '4px solid var(--danger)', cursor: 'pointer', transition: 'all 0.3s' }}>
               <div className="flex-row justify-between">
                 <div className="flex-col gap-1">
                   <span style={{ fontWeight: 600 }}>❌ Mistakes to Review</span>
                   <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>From recent mocks</span>
                 </div>
-                <span style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold' }}>0</span>
+                <span style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold', fontSize: '0.875rem', display: 'flex', alignItems: 'center' }}>Go ➔</span>
               </div>
             </div>
           </div>
