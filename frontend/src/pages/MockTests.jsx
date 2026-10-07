@@ -11,6 +11,7 @@ const MockTests = () => {
   const [history, setHistory] = useState([]);
   const [filterDate, setFilterDate] = useState('');
   const [editingTest, setEditingTest] = useState(null);
+  const [deletingTest, setDeletingTest] = useState(null);
   const navigate = useNavigate();
 
   const handleEditSubmit = async (e) => {
@@ -141,19 +142,7 @@ const MockTests = () => {
                           <span className="desktop-text">Edit</span>
                           <FiEdit className="mobile-icon" size={16} />
                         </button>
-                        <button title="Delete Test" className="btn task-action-btn" onClick={async () => {
-                          if(window.confirm('Delete this generated test permanently?')) {
-                            try {
-                              const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${test.id}`);
-                              if(res.data.success) {
-                                toast.success('Test deleted successfully');
-                                setHistory(history.filter(h => h.id !== test.id));
-                              }
-                            } catch(err) {
-                              toast.error('Failed to delete test');
-                            }
-                          }
-                        }} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>
+                        <button title="Delete Test" className="btn task-action-btn" onClick={() => setDeletingTest(test)} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>
                           <span className="desktop-text">Delete</span>
                           <FiTrash2 className="mobile-icon" size={16} />
                         </button>
@@ -195,6 +184,37 @@ const MockTests = () => {
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save Changes</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingTest && (
+        <div className="modal-overlay" onClick={() => setDeletingTest(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-primary)', border: '1px solid var(--danger)', textAlign: 'left', minWidth: '300px' }}>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '16px', color: 'var(--danger)' }}>⚠️ Delete Test?</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Are you sure you want to permanently delete "{deletingTest.title}"? This cannot be undone.</p>
+            <div className="flex-row gap-4">
+              <button type="button" onClick={() => setDeletingTest(null)} className="btn" style={{ flex: 1, background: 'var(--glass-bg)' }}>Cancel</button>
+              <button 
+                type="button" 
+                onClick={async () => {
+                   try {
+                     const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${deletingTest.id}`);
+                     if(res.data.success) {
+                       toast.success('Test deleted successfully');
+                       setHistory(history.filter(h => h.id !== deletingTest.id));
+                       setDeletingTest(null);
+                     }
+                   } catch(err) {
+                     toast.error('Failed to delete test');
+                   }
+                }} 
+                className="btn btn-primary" style={{ flex: 1, background: 'linear-gradient(135deg, var(--danger), #b91c1c)', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}
+              >
+                Yes, Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
