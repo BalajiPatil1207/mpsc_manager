@@ -23,6 +23,12 @@ const Dashboard = ({ user }) => {
     return JSON.parse(localStorage.getItem('task_indexes') || '{}');
   };
 
+  const getLogicalDateString = () => {
+    const d = new Date();
+    d.setHours(d.getHours() - 6); // Shift day boundary to 6:00 AM
+    return d.toLocaleDateString('en-GB');
+  };
+
   const getTopicForTask = (taskId, indexOverride) => {
     const arr = topicsMap[taskId];
     if (!arr) return "";
@@ -107,19 +113,19 @@ const Dashboard = ({ user }) => {
     localStorage.setItem('task_indexes', JSON.stringify(newIndexes));
     setDailyTasks(resetTasks);
     localStorage.setItem('user_daily_tasks', JSON.stringify(resetTasks));
-    localStorage.setItem('last_task_date', now.toLocaleDateString('en-GB'));
+    localStorage.setItem('last_task_date', getLogicalDateString());
     localStorage.setItem('last_task_time', now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase());
     toast.success("Advanced to the next study session! 🚀");
   };
 
   useEffect(() => {
     const now = new Date();
-    const today = now.toLocaleDateString('en-GB');
+    const logicalToday = getLogicalDateString();
     const lastDate = localStorage.getItem('last_task_date');
-    if (lastDate !== today && lastDate) {
+    if (lastDate !== logicalToday && lastDate) {
       advanceToNextDay();
     } else if (!lastDate) {
-      localStorage.setItem('last_task_date', today);
+      localStorage.setItem('last_task_date', logicalToday);
       localStorage.setItem('last_task_time', now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase());
     }
     
