@@ -266,7 +266,7 @@ const Dashboard = ({ user }) => {
             </div>
             
             <div className="flex-col gap-4">
-              {(showAllTasks ? dailyTasks : dailyTasks.slice(0, 3)).map(task => (
+              {(showAllTasks ? [...dailyTasks].sort((a, b) => a.completed === b.completed ? 0 : a.completed ? 1 : -1) : [...dailyTasks].sort((a, b) => a.completed === b.completed ? 0 : a.completed ? 1 : -1).slice(0, 3)).map(task => (
                 <div key={task.id} className="task-item" style={{ background: task.completed ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', borderRadius: '12px', borderBottom: '1px solid var(--border-color)', opacity: task.completed ? 0.7 : 1, transition: 'all 0.3s ease', padding: '18px 16px', marginBottom: '8px' }}>
                   <div className="flex-row gap-4" style={{ alignItems: 'center' }}>
                     {task.completed ? <FiCheckCircle size={24} color="var(--success)" /> : <FiClock size={24} color="var(--accent-primary)" />}
