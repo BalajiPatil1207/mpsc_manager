@@ -125,9 +125,9 @@ const Practice = () => {
         <div className="dashboard-grid">
           <div className="glass-panel" style={{ padding: '24px' }}>
              <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Today's Assigned PYQs</h2>
-             <div className="flex-col gap-4">
+             <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollPadding: '0' }}>
                {pyqs.map(p => (
-                 <div key={p.id} className="glass-card" style={{ padding: '16px', borderLeft: `4px solid ${p.completed ? 'var(--success)' : 'var(--accent-primary)'}`, transition: 'all 0.3s ease' }}>
+                 <div key={p.id} className="glass-card" style={{ minWidth: '280px', flex: '0 0 auto', scrollSnapAlign: 'start', padding: '16px', borderLeft: `4px solid ${p.completed ? 'var(--success)' : 'var(--accent-primary)'}`, transition: 'all 0.3s ease' }}>
                     <div className="flex-row justify-between" style={{ alignItems: 'center' }}>
                       <div className="flex-col gap-1">
                         <h3 style={{ fontSize: '1.125rem', color: p.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: p.completed ? 'line-through' : 'none' }}>{p.title}</h3>
@@ -138,9 +138,9 @@ const Practice = () => {
                           <FiCheckCircle size={24} color="var(--success)" />
                         </button>
                       ) : (
-                        <div className="flex-row gap-2">
-                          <button onClick={() => startTest(p.title, p.title.includes('History') ? 'History' : 'Geography')} className="btn btn-primary" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', padding: '6px 12px' }}>Start</button>
-                          <button onClick={() => togglePyq(p.id)} className="btn" style={{ padding: '6px 12px', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>Done</button>
+                        <div className="flex-col gap-2">
+                          <button onClick={() => startTest(p.title, p.title.includes('History') ? 'History' : 'Geography')} className="btn btn-primary" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', padding: '6px 12px', fontSize: '0.75rem' }}>Start</button>
+                          <button onClick={() => togglePyq(p.id)} className="btn" style={{ padding: '6px 12px', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.75rem' }}>Done</button>
                         </div>
                       )}
                     </div>
@@ -151,7 +151,7 @@ const Practice = () => {
           
           <div className="glass-panel" style={{ padding: '24px' }}>
             <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Topic Wise Mastery</h2>
-            <div className="flex-col gap-4">
+            <div className="flex-col gap-0" style={{ maxHeight: '180px', overflowY: 'auto', paddingRight: '8px' }}>
               {['Polity', 'Economics', 'Science', 'Current Affairs', 'History', 'Geography'].map((subject) => {
                  const xp = parseFloat(localStorage.getItem(`xp_${subject}`)) || 0;
                  return (
