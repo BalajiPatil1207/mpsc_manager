@@ -127,26 +127,50 @@ exports.submitTest = async (req, res, next) => {
       }
     });
 
-    if (wrongQuestions.length > 0) {
-      const mistakeDocs = await db.collection('customTests')
+    if (wrongQuestions.length > 0 && !test.isMistakeMock) {
+      // Check if a mistake mock already exists for this original test
+      const existingMistakeDocs = await db.collection('customTests')
+        .where('parentTestId', '==', testId)
         .where('createdBy', '==', userId || 'anonymous')
         .where('isMistakeMock', '==', true)
         .get();
-      
-      const count = mistakeDocs.size + 1;
-      
-      const newTest = {
-        title: `Mistake Mock Test - ${count}`,
-        subject: `Revision of ${test.title}`,
-        timeLimit: Math.max(wrongQuestions.length, 5),
-        questions: wrongQuestions,
-        createdBy: userId || 'anonymous',
-        createdAt: new Date().toISOString(),
-        isMistakeMock: true
-      };
-
-      await db.collection('customTests').add(newTest);
-      return res.json({ success: true, message: `Created Mistake Mock Test-${count} for next day revision!`, scoreEarned, subject: test.subject });
+        
+      if (!existingMistakeDocs.empty) {
+         // Append to existing
+         const existingDoc = existingMistakeDocs.docs[0];
+         const existingData = existingDoc.data();
+         
+         // Merge questions and deduplicate by question text
+         const mergedQuestions = [...existingData.questions];
+         wrongQuestions.forEach(wq => {
+            if (!mergedQuestions.find(q => q.question === wq.question)) {
+               mergedQuestions.push(wq);
+            }
+         });
+         
+         await db.collection('customTests').doc(existingDoc.id).update({
+            questions: mergedQuestions,
+            timeLimit: Math.max(mergedQuestions.length, 5),
+            updatedAt: new Date().toISOString()
+         });
+         
+         return res.json({ success: true, message: `Updated Mistake Mock with ${wrongQuestions.length} new mistakes!`, scoreEarned, subject: test.subject });
+      } else {
+        const newTest = {
+          title: `Mistakes: ${test.title}`,
+          subject: `${test.subject || 'General'}`, // For subject sorting in Analytics
+          timeLimit: Math.max(wrongQuestions.length, 5),
+          questions: wrongQuestions,
+          createdBy: userId || 'anonymous',
+          createdAt: new Date().toISOString(),
+          isMistakeMock: true,
+          parentTestId: testId
+        };
+        await db.collection('customTests').add(newTest);
+        return res.json({ success: true, message: `Generated Mistake Mock for revision!`, scoreEarned, subject: test.subject });
+      }
+    } else if (wrongQuestions.length > 0 && test.isMistakeMock) {
+        return res.json({ success: true, message: `Try these mistakes again next time!`, scoreEarned, subject: test.subject });
     }
 
     res.json({ success: true, message: "Perfect! No mistakes!", scoreEarned, subject: test.subject });
