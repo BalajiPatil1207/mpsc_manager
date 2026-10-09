@@ -372,7 +372,9 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
                 </span>
               </div>
               <div className="flex-row gap-2">
-                <button onClick={() => setIsEditingTasks(!isEditingTasks)} className="btn" style={{ padding: '6px 12px', background: isEditingTasks ? 'var(--warning)' : 'rgba(255,255,255,0.05)', color: isEditingTasks ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}>{isEditingTasks ? 'Done Editing' : 'Edit Tasks'}</button>
+                <button onClick={() => setIsEditingTasks(!isEditingTasks)} className="btn" style={{ padding: '8px', background: isEditingTasks ? 'var(--warning)' : 'rgba(255,255,255,0.05)', color: isEditingTasks ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={isEditingTasks ? "Done Editing" : "Edit Tasks"}>
+                  {isEditingTasks ? <FiCheck size={16} /> : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>}
+                </button>
                 {!isEditingTasks && <button onClick={advanceToNextDay} className="btn" style={{ padding: '6px 12px', background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-glow)', outline: 'none', fontSize: '0.75rem' }}>Wrap Up Day 🚀</button>}
                 <button onClick={() => setShowAllTasks(!showAllTasks)} className="btn" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}>{showAllTasks ? 'View Less' : 'View All'}</button>
               </div>
