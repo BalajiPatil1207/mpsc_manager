@@ -70,6 +70,10 @@ cron.schedule('0 9 * * *', async () => {
   }
 });
 
+// Initialize advanced incomplete task reminder crons
+const { startCronJobs } = require('./src/controllers/notificationController');
+startCronJobs();
+
 // Global Error Handler
 app.use(errorHandler);
 
