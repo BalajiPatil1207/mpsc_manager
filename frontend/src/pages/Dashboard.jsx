@@ -206,9 +206,12 @@ const Dashboard = ({ user }) => {
           <span style={{ color: 'var(--accent-primary)', fontWeight: 700, fontSize: '0.875rem', letterSpacing: '2px' }}>
             MPSC 2027 • DYNAMIC PREP
           </span>
-          <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>
-            Good Morning, <span style={{ color: 'var(--accent-primary)', WebkitTextFillColor: 'var(--accent-primary)', textShadow: '0 0 20px var(--accent-glow)' }}>{user?.displayName ? user.displayName.split(' ')[0] : 'Student'}</span> 👋
-          </h1>
+          <div className="flex-row gap-2 align-center">
+            <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>
+              Good Morning, <span style={{ color: 'var(--accent-primary)', WebkitTextFillColor: 'var(--accent-primary)', textShadow: '0 0 20px var(--accent-glow)' }}>{user?.displayName ? user.displayName.split(' ')[0] : 'Student'}</span>
+            </h1>
+            <span style={{ fontSize: '2rem' }}>👋</span>
+          </div>
           <p style={{ color: 'var(--text-secondary)' }}>Welcome to your personalized Study OS</p>
         </div>
         
