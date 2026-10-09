@@ -6,6 +6,7 @@ import { auth } from './firebase';
 import { Toaster } from 'react-hot-toast';
 import { FiMenu } from 'react-icons/fi';
 import Sidebar from './components/Sidebar';
+import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
 import StudyPlanner from './pages/StudyPlanner';
 import Practice from './pages/Practice';
@@ -97,6 +98,7 @@ function App() {
                   <Route path="/reels" element={<NoteReels />} />
                 </Routes>
               </main>
+              <BottomNav />
             </div>
             ) : <Navigate to="/login" />
           } 
