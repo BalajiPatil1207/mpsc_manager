@@ -87,25 +87,25 @@ const TestMaker = () => {
           <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}><FiCode className="inline mr-2" /> Create Custom Test</h2>
           
           <div className="flex-col gap-4">
-            <input type="text" placeholder="Test Title" className="glass-card" style={{ padding: '12px', outline: 'none' }} value={testTitle} onChange={(e) => setTestTitle(e.target.value)} />
+            <input type="text" placeholder="Test Title" className="glass-card" style={{ padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={testTitle} onChange={(e) => setTestTitle(e.target.value)} />
             <div className="flex-row gap-4">
-              <select className="glass-card" value={testSubject} onChange={(e) => setTestSubject(e.target.value)} style={{ flex: 1, padding: '12px', outline: 'none' }}>
+              <select className="glass-card" value={testSubject} onChange={(e) => setTestSubject(e.target.value)} style={{ flex: 1, padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }}>
                  <option style={{color:'#000'}} value="GK/GS">GK / GS</option>
                  <option style={{color:'#000'}} value="Maths">Maths</option>
                  <option style={{color:'#000'}} value="Reasoning">Reasoning</option>
                  <option style={{color:'#000'}} value="Marathi">Marathi</option>
                  <option style={{color:'#000'}} value="Mixed">Mixed</option>
               </select>
-              <input type="number" placeholder="Mins" className="glass-card" style={{ width: '80px', padding: '12px', outline: 'none' }} value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} />
+              <input type="number" placeholder="Mins" className="glass-card" style={{ width: '80px', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} />
             </div>
-            <textarea className="glass-card" style={{ width: '100%', height: '220px', fontFamily: 'monospace', padding: '16px', outline: 'none', resize: 'none' }} value={testJsonInput} onChange={(e) => setTestJsonInput(e.target.value)} />
+            <textarea className="glass-card" style={{ width: '100%', height: '220px', fontFamily: 'monospace', padding: '16px', outline: 'none', resize: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)' }} value={testJsonInput} onChange={(e) => setTestJsonInput(e.target.value)} />
 
             <button onClick={handleCreateTest} className="btn btn-primary"><FiPlay className="inline mr-2" /> Generate Test</button>
             
             {testLink && (
                <div className="glass-card flex-row align-center justify-between" style={{ padding: '12px', border: '1px dashed var(--accent-primary)', width: '100%', background: 'var(--accent-glow)' }}>
-                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{testLink}</span>
-                 <button onClick={() => copyLink(testLink)} className="btn"><FiCopy size={20} /></button>
+                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>{testLink}</span>
+                 <button onClick={() => copyLink(testLink)} className="btn"><FiCopy size={20} color="var(--text-primary)" /></button>
                </div>
             )}
           </div>
@@ -116,22 +116,22 @@ const TestMaker = () => {
           <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}><FiFilm className="inline mr-2" /> Create Study Reel</h2>
           
           <div className="flex-col gap-4">
-            <input type="text" placeholder="Reel Title" className="glass-card" style={{ padding: '12px', outline: 'none' }} value={reelTitle} onChange={(e) => setReelTitle(e.target.value)} />
-            <select className="glass-card" value={reelSubject} onChange={(e) => setReelSubject(e.target.value)} style={{ padding: '12px', outline: 'none' }}>
+            <input type="text" placeholder="Reel Title" className="glass-card" style={{ padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={reelTitle} onChange={(e) => setReelTitle(e.target.value)} />
+            <select className="glass-card" value={reelSubject} onChange={(e) => setReelSubject(e.target.value)} style={{ padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }}>
                  <option style={{color:'#000'}} value="GK/GS">GK / GS</option>
                  <option style={{color:'#000'}} value="Maths">Maths</option>
                  <option style={{color:'#000'}} value="Reasoning">Reasoning</option>
                  <option style={{color:'#000'}} value="Marathi">Marathi</option>
                  <option style={{color:'#000'}} value="Mixed">Mixed</option>
             </select>
-            <textarea className="glass-card" style={{ width: '100%', height: '220px', fontFamily: 'monospace', padding: '16px', outline: 'none', resize: 'none' }} value={reelJsonInput} onChange={(e) => setReelJsonInput(e.target.value)} />
+            <textarea className="glass-card" style={{ width: '100%', height: '220px', fontFamily: 'monospace', padding: '16px', outline: 'none', resize: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)' }} value={reelJsonInput} onChange={(e) => setReelJsonInput(e.target.value)} />
 
             <button onClick={handleCreateReel} className="btn btn-primary" style={{ background: 'var(--accent-secondary)' }}><FiPlay className="inline mr-2" /> Generate Study Reel</button>
             
             {reelLink && (
                <div className="glass-card flex-row align-center justify-between" style={{ padding: '12px', border: '1px dashed var(--accent-secondary)', width: '100%', background: 'rgba(255,107,107,0.1)' }}>
-                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{reelLink}</span>
-                 <button onClick={() => copyLink(reelLink)} className="btn"><FiCopy size={20} /></button>
+                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>{reelLink}</span>
+                 <button onClick={() => copyLink(reelLink)} className="btn"><FiCopy size={20} color="var(--text-primary)" /></button>
                </div>
             )}
           </div>
