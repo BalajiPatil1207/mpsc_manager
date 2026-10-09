@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { FiBookmark, FiTarget } from 'react-icons/fi';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { auth } from '../firebase';
@@ -11,6 +12,7 @@ const TakeTest = () => {
   
   // State: { questionIndex: chosenOptionIndex }
   const [answers, setAnswers] = useState({});
+  const [reviews, setReviews] = useState({}); // { questionIndex: boolean }
   const [timeLeft, setTimeLeft] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
@@ -45,6 +47,11 @@ const TakeTest = () => {
   const handleSelect = (qIndex, oIndex) => {
     if(submitted) return;
     setAnswers({ ...answers, [qIndex]: oIndex });
+  };
+
+  const toggleReview = (qIndex) => {
+    if(submitted) return;
+    setReviews(prev => ({ ...prev, [qIndex]: !prev[qIndex] }));
   };
 
   const handleSubmit = async () => {
@@ -119,9 +126,42 @@ const TakeTest = () => {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           {submitted && !showAnswers && (
-            <div className="glass-card" style={{ padding: '40px', textAlign: 'center', animation: 'fadeIn 0.5s ease-out' }}>
-              <h1 style={{ fontSize: '3rem', margin: '0 0 16px 0', color: 'var(--accent-primary)' }}>{score} <span style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>/ {test.questions.length}</span></h1>
-              <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Test submitted successfully. +1 for correct, -0.25 for incorrect.</p>
+            <div className="glass-card flex-col align-center" style={{ padding: '40px 24px', textAlign: 'center', animation: 'fadeIn 0.5s ease-out' }}>
+              <div style={{ padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', marginBottom: '16px' }}>
+                <FiTarget size={48} color="var(--accent-primary)" />
+              </div>
+              <h1 style={{ fontSize: '4rem', margin: '0 0 8px 0', color: 'var(--text-primary)' }}>
+                {score} <span style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>/ {test.questions.length}</span>
+              </h1>
+              
+              {/* Negative Marking Impact Analysis */}
+              {(() => {
+                let lost = 0;
+                let wrongCount = 0;
+                test.questions.forEach((q, idx) => {
+                  if (answers[idx] !== undefined && answers[idx] !== q.correctOption) {
+                    lost += 0.25;
+                    wrongCount += 1;
+                  }
+                });
+                return lost > 0 ? (
+                  <div style={{ marginTop: '16px', marginBottom: '24px', padding: '16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px dashed var(--danger)', borderRadius: '12px' }}>
+                    <p style={{ margin: 0, color: 'var(--danger)', fontWeight: 600 }}>⚠️ Negative Marking Impact</p>
+                    <p style={{ margin: '8px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                      तुम्ही {wrongCount} चुकीचे उत्तर दिले, ज्यामुळे तुमचे <strong>{lost} मार्क्स</strong> वजा झाले. 
+                      जर तुम्ही हे प्रश्न सोडवले नसते, तर तुमचा स्कोर <strong>{score + lost}</strong> असता!
+                    </p>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: '16px', marginBottom: '24px', padding: '16px', background: 'rgba(34, 197, 94, 0.1)', border: '1px dashed var(--success)', borderRadius: '12px' }}>
+                    <p style={{ margin: 0, color: 'var(--success)', fontWeight: 600 }}>🎉 Perfect Accuracy!</p>
+                    <p style={{ margin: '8px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                      एकही चुकीचं उत्तर नाही! Negative Marking मुळे तुमचे ० मार्क्स वजा झाले!
+                    </p>
+                  </div>
+                );
+              })()}
+
               <button onClick={() => setShowAnswers(true)} className="btn btn-primary" style={{ padding: '12px 24px', fontSize: '1.1rem' }}>View Answers</button>
             </div>
           )}
@@ -182,6 +222,23 @@ const TakeTest = () => {
                   );
                 })}
               </div>
+
+              {!submitted && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                  <button 
+                    onClick={() => toggleReview(qIndex)}
+                    style={{ 
+                      padding: '8px 16px', background: reviews[qIndex] ? 'rgba(245, 158, 11, 0.2)' : 'var(--glass-bg)', 
+                      color: reviews[qIndex] ? 'var(--warning)' : 'var(--text-secondary)',
+                      border: reviews[qIndex] ? '1px solid var(--warning)' : '1px solid var(--border-color)', 
+                      borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '8px',
+                      fontWeight: 600, outline: 'none'
+                    }}
+                  >
+                    <FiBookmark /> {reviews[qIndex] ? 'Marked for Review' : 'Mark for Review'}
+                  </button>
+                </div>
+              )}
             </div>
           )
         })}
@@ -204,6 +261,10 @@ const TakeTest = () => {
                   } else if (isAttempted) {
                     bgState = 'rgba(239, 68, 68, 0.2)'; colorState = '#ef4444'; borderState = 'transparent';
                   }
+                } else if (reviews[idx]) {
+                  bgState = isAttempted ? 'linear-gradient(135deg, var(--accent-primary), var(--warning))' : 'rgba(245, 158, 11, 0.2)'; 
+                  colorState = isAttempted ? '#fff' : 'var(--warning)'; 
+                  borderState = isAttempted ? 'transparent' : 'var(--warning)';
                 } else if (isAttempted) {
                   bgState = 'var(--accent-primary)'; colorState = '#fff'; borderState = 'transparent';
                 }
@@ -238,6 +299,8 @@ const TakeTest = () => {
               <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '16px', height: '16px', background: 'var(--accent-primary)', borderRadius: '4px' }}></div> Answered</div>
                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '16px', height: '16px', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '4px' }}></div> Not Answered</div>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '16px', height: '16px', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid var(--warning)', borderRadius: '4px' }}></div> Marked (Unanswered)</div>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '16px', height: '16px', background: 'linear-gradient(135deg, var(--accent-primary), var(--warning))', borderRadius: '4px' }}></div> Marked (Answered)</div>
               </div>
             )}
             {submitted && (
