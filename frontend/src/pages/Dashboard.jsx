@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { FiClock, FiCheckCircle, FiPlay, FiAlertTriangle, FiBell, FiMoon, FiSun, FiCheck, FiRotateCcw, FiDownload } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiPlay, FiAlertTriangle, FiBell, FiMoon, FiSun, FiCheck, FiRotateCcw, FiDownload, FiPlus } from 'react-icons/fi';
 import { requestNotificationPermission, sendPushNotification } from '../utils/notify';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import ConfirmModal from '../components/ConfirmModal';
 
 const AnimatedNumber = ({ value }) => {
   const [display, setDisplay] = useState(0);
@@ -34,6 +35,10 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const navigate = useNavigate();
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [isEditingTasks, setIsEditingTasks] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const [isAddingTask, setIsAddingTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDuration, setNewTaskDuration] = useState('30 min');
   const currentReasoningSet = parseInt(localStorage.getItem('reasoningSetNumber')) || 1;
 
   const handleInstallClick = () => {
@@ -139,10 +144,33 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   };
 
   const handleDeleteTask = (taskId) => {
-    const updated = dailyTasks.filter(t => t.id !== taskId);
+    setTaskToDelete(taskId);
+  };
+
+  const confirmDeleteTask = () => {
+    if (!taskToDelete) return;
+    const updated = dailyTasks.filter(t => t.id !== taskToDelete);
     setDailyTasks(updated);
     import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', updated));
     toast.success('Task removed from list!', { style: { borderRadius: '12px', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }});
+    setTaskToDelete(null);
+  };
+
+  const handleAddTask = () => {
+    if (!newTaskTitle.trim()) return toast.error("Please enter a task title!");
+    const newTask = {
+      id: `custom_${Date.now()}`,
+      title: newTaskTitle,
+      duration: newTaskDuration,
+      completed: false
+    };
+    const updated = [...dailyTasks, newTask];
+    setDailyTasks(updated);
+    import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', updated));
+    toast.success('Custom task added!');
+    setIsAddingTask(false);
+    setNewTaskTitle('');
+    setNewTaskDuration('30 min');
   };
 
   const advanceToNextDay = async () => {
@@ -413,9 +441,33 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
                   </div>
                 </div>
               ))}
-              {dailyTasks.length === 0 && (
+              {isEditingTasks && (
+                <div style={{ marginTop: '8px', padding: '16px', background: 'rgba(255,255,255,0.02)', border: '1px dashed var(--accent-secondary)', borderRadius: '12px' }}>
+                  {isAddingTask ? (
+                    <div className="flex-col gap-2">
+                       <input type="text" placeholder="Custom Study Task Title" className="glass-card" value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} style={{ padding: '12px', width: '100%', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} />
+                       <div className="flex-row gap-2">
+                         <select className="glass-card" value={newTaskDuration} onChange={e => setNewTaskDuration(e.target.value)} style={{ padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }}>
+                           <option value="15 min">15 min</option>
+                           <option value="30 min">30 min</option>
+                           <option value="45 min">45 min</option>
+                           <option value="1 hr">1 hr</option>
+                           <option value="2 hr">2 hr</option>
+                         </select>
+                         <button onClick={handleAddTask} className="btn btn-primary" style={{ flex: 1, background: 'var(--accent-secondary)' }}>Add</button>
+                         <button onClick={() => setIsAddingTask(false)} className="btn" style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>Cancel</button>
+                       </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setIsAddingTask(true)} className="btn" style={{ width: '100%', background: 'transparent', border: 'none', color: 'var(--accent-secondary)', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                       <FiPlus size={20} /> Add Custom Task
+                    </button>
+                  )}
+                </div>
+              )}
+              {dailyTasks.length === 0 && !isEditingTasks && (
                 <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                   No tasks assigned! You can wrap up or wait for next day.
+                   No tasks assigned! Turn on Edit mode to add some.
                 </div>
               )}
             </div>
@@ -490,6 +542,15 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
         </div>
       </div>
       
+      <ConfirmModal 
+        isOpen={!!taskToDelete}
+        title="Delete Task?"
+        message="Are you sure you want to remove this task from your daily study goals?"
+        confirmText="Remove"
+        isDanger={true}
+        onConfirm={confirmDeleteTask}
+        onCancel={() => setTaskToDelete(null)}
+      />
     </div>
   );
 };
