@@ -97,7 +97,7 @@ const Sidebar = ({ user, isOpen, closeSidebar }) => {
         ))}
       </nav>
 
-      <div className="glass-card" style={{ padding: '16px', background: 'rgba(99, 102, 241, 0.1)', borderColor: 'rgba(99, 102, 241, 0.2)' }}>
+      <div className="glass-card" style={{ padding: '16px', background: 'var(--accent-glow)', borderColor: 'var(--border-color)' }}>
         <div className="flex-col gap-2">
           <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>🤖 AI Study Coach</span>
           {loadingAdvice ? (

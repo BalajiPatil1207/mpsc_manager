@@ -154,7 +154,7 @@ const TakeTest = () => {
                        colorStyle = '#ef4444';
                      }
                   } else if (answers[qIndex] === oIndex) {
-                     bgStyle = 'rgba(99, 102, 241, 0.2)'; // Selected state
+                     bgStyle = 'var(--accent-glow)'; // Selected state
                   }
 
                   return (

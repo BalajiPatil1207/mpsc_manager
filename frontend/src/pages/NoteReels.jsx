@@ -121,7 +121,7 @@ const NoteReels = () => {
             </button>
             
             {reelLink && (
-               <div className="glass-card flex-row align-center justify-between" style={{ padding: '12px', border: '1px dashed var(--accent-primary)', width: '100%', background: 'rgba(99, 102, 241, 0.1)', marginTop: '8px' }}>
+               <div className="glass-card flex-row align-center justify-between" style={{ padding: '12px', border: '1px dashed var(--accent-primary)', width: '100%', background: 'var(--accent-glow)', marginTop: '8px' }}>
                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>{reelLink}</span>
                  <button onClick={() => copyLink(reelLink)} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor:'pointer' }}><FiCopy size={20} /></button>
                </div>
@@ -138,7 +138,7 @@ const NoteReels = () => {
                <div key={reel.id} className="glass-card" style={{ padding: '16px', borderLeft: '4px solid var(--accent-secondary)' }}>
                  <div className="flex-row justify-between align-center" style={{ marginBottom: '8px' }}>
                    <h3 style={{ fontSize: '1.125rem', margin: 0 }}>{reel.title}</h3>
-                   <span className="badge pending" style={{ background: 'rgba(99, 102, 241, 0.2)', color: 'var(--accent-primary)' }}>
+                   <span className="badge pending" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)' }}>
                      {reel.cards?.length || 0} Cards
                    </span>
                  </div>

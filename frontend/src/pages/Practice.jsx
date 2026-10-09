@@ -187,7 +187,7 @@ const Practice = () => {
                    <div className="flex-col gap-2">
                      <div className="flex-row gap-2 align-center">
                        <h3 style={{ fontSize: '1.125rem', margin: 0, textDecoration: isSolved ? 'line-through' : 'none', color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)' }}>{test.title}</h3>
-                       <span className="badge pending" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'rgba(99, 102, 241, 0.2)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
+                       <span className="badge pending" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'var(--accent-glow)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
                      </div>
                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                        {test.subject} • {test.questions?.length || 0} Qs • {new Date(test.createdAt).toLocaleDateString()} {isSolved && <span style={{color:'var(--success)', fontWeight:'bold'}}> • Solved ✅</span>}

@@ -274,7 +274,7 @@ const Dashboard = ({ user }) => {
                 </span>
               </div>
               <div className="flex-row gap-2">
-                <button onClick={advanceToNextDay} className="btn" style={{ padding: '6px 12px', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-primary)', border: '1px solid rgba(99, 102, 241, 0.2)', outline: 'none', fontSize: '0.75rem' }}>Wrap Up Day 🚀</button>
+                <button onClick={advanceToNextDay} className="btn" style={{ padding: '6px 12px', background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-glow)', outline: 'none', fontSize: '0.75rem' }}>Wrap Up Day 🚀</button>
                 <button onClick={() => setShowAllTasks(!showAllTasks)} className="btn" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}>{showAllTasks ? 'View Less' : 'View All'}</button>
               </div>
             </div>

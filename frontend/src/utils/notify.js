@@ -19,8 +19,8 @@ export const sendPushNotification = (title, body) => {
       borderRadius: '12px',
       background: '#1f1f23',
       color: '#f8fafc',
-      border: '1px solid rgba(99, 102, 241, 0.4)',
-      boxShadow: '0 4px 20px rgba(99, 102, 241, 0.2)',
+      border: '1px solid var(--accent-glow)',
+      boxShadow: '0 4px 20px var(--accent-glow)',
     },
   });
 

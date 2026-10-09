@@ -101,7 +101,7 @@ const TestMaker = () => {
             </button>
             
             {testLink && (
-               <div className="glass-card flex-row align-center justify-between" style={{ padding: '12px', border: '1px dashed var(--accent-primary)', width: '100%', background: 'rgba(99, 102, 241, 0.1)', marginTop: '8px' }}>
+               <div className="glass-card flex-row align-center justify-between" style={{ padding: '12px', border: '1px dashed var(--accent-primary)', width: '100%', background: 'var(--accent-glow)', marginTop: '8px' }}>
                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '300px' }}>{testLink}</span>
                  <button onClick={() => copyLink(testLink)} style={{ background: 'transparent', border: 'none', color: 'white' }}><FiCopy size={20} /></button>
                </div>
