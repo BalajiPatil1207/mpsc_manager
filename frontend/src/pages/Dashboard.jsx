@@ -211,8 +211,14 @@ const Dashboard = ({ user }) => {
   const currentWeeklyTotal = pastWeeklyTasks + completedTasks.length;
   const weeklySyllabusPercent = Math.min(100, Math.round((currentWeeklyTotal / 56) * 100)); // 8 tasks * 7 days = 56
 
+  const calculateDaysLeft = () => {
+    const target = new Date('2027-04-04T00:00:00');
+    const diff = target - new Date();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
   return (
-    <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
+    <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.6s ease-out' }}>
       
       {/* Header Section */}
       <div className="dashboard-header flex-row justify-between" style={{ alignItems: 'flex-start' }}>
@@ -229,8 +235,17 @@ const Dashboard = ({ user }) => {
           <p style={{ color: 'var(--text-secondary)' }}>Welcome to your personalized Study OS</p>
         </div>
         
-        <div className="dashboard-header-actions flex-row gap-4" style={{ height: 'fit-content' }}>
-          <div className="glass-card flex-row gap-4" style={{ padding: '12px 24px' }}>
+        <div className="dashboard-header-actions flex-row gap-4" style={{ height: 'fit-content', flexWrap: 'wrap' }}>
+          {/* Days Left Card */}
+          <div className="glass-card flex-row gap-4" style={{ padding: '12px 24px', animation: 'slideUp 0.8s ease-out' }}>
+            <div className="flex-col" style={{ alignItems: 'flex-end' }}>
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>MPSC 2027 In</span>
+              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--danger)' }}><AnimatedNumber value={calculateDaysLeft()} /> <span style={{fontSize:'1rem'}}>Days</span></span>
+            </div>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>⏳</div>
+          </div>
+          
+          <div className="glass-card flex-row gap-4" style={{ padding: '12px 24px', animation: 'slideUp 0.9s ease-out' }}>
             <div className="flex-col" style={{ alignItems: 'flex-end' }}>
               <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Total XP Earned</span>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-secondary)' }}><AnimatedNumber value={parseFloat(localStorage.getItem('xp_total')) || 0} /></span>
@@ -315,15 +330,15 @@ const Dashboard = ({ user }) => {
             </div>
           </div>
 
-          {/* Daily Practice */}
+          {/* Analytics Shortcut */}
           <div className="glass-panel" style={{ padding: '24px', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--accent-glow)', opacity: '0.1', zIndex: 0 }}></div>
-            <div className="flex-row justify-between" style={{ alignItems: 'center', position: 'relative', zIndex: 1 }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'var(--info)', opacity: '0.05', zIndex: 0 }}></div>
+            <div className="flex-row justify-between" style={{ alignItems: 'center', position: 'relative', zIndex: 1, flexWrap: 'wrap', gap: '16px' }}>
               <div className="flex-col gap-2">
-                <h2 style={{ fontSize: '1.25rem' }}>🧠 Daily Practice Engine</h2>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>AI-generated tests await in the vault</p>
+                <h2 style={{ fontSize: '1.25rem' }}>📊 Performance Analytics</h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Track your strengths & weak subjects</p>
               </div>
-              <button className="btn btn-primary" onClick={() => navigate('/test-maker')}>Go to Vault</button>
+              <button className="btn btn-primary" style={{ background: 'var(--info)', borderColor: 'var(--info)' }} onClick={() => navigate('/analytics')}>View Report</button>
             </div>
           </div>
           
