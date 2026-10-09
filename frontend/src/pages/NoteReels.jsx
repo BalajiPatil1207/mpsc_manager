@@ -87,16 +87,16 @@ const NoteReels = () => {
       </div>
       <p style={{ color: 'var(--text-secondary)' }}>Create highly engaging, shareable flashcard reels for quick revision.</p>
       
-      <div className="dashboard-grid" style={{ gridTemplateColumns: '1fr' }}>
+      <div className="dashboard-grid" style={{ gridTemplateColumns: '1fr', maxWidth: '100vw' }}>
         
         {/* Reel Library */}
-        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '100%', overflowX: 'hidden' }}>
            <div className="flex-row justify-between align-center">
              <h2 style={{ fontSize: '1.25rem' }}>📚 Your Reels</h2>
              <button className="btn" onClick={() => navigate('/test-maker')} style={{ padding: '6px 12px', fontSize: '0.875rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>+ Create New Reel</button>
            </div>
            
-           <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '16px' }}>
+           <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '16px', width: '100%' }}>
              {history.length === 0 ? (
                <div style={{ textAlign: 'center', padding: '40px', background: 'var(--glass-bg)', borderRadius: '12px', flex: '1' }}>
                  <p style={{ color: 'var(--text-muted)' }}>No reels found.</p>

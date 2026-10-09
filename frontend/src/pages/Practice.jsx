@@ -123,9 +123,9 @@ const Practice = () => {
         </div>
       ) : (
         <div className="dashboard-grid">
-          <div className="glass-panel" style={{ padding: '24px' }}>
+          <div className="glass-panel" style={{ padding: '24px', maxWidth: '100%', overflowX: 'hidden' }}>
              <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Today's Assigned PYQs</h2>
-             <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollPadding: '0' }}>
+             <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollPadding: '0', width: '100%' }}>
                {pyqs.map(p => (
                  <div key={p.id} className="glass-card" style={{ minWidth: '280px', flex: '0 0 auto', scrollSnapAlign: 'start', padding: '16px', borderLeft: `4px solid ${p.completed ? 'var(--success)' : 'var(--accent-primary)'}`, transition: 'all 0.3s ease' }}>
                     <div className="flex-row justify-between" style={{ alignItems: 'center' }}>
@@ -178,36 +178,36 @@ const Practice = () => {
                </select>
              </div>
              
-             <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '16px' }}>
+             <div className="flex-col gap-4">
                {filteredHistory.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No auto-generated tests found.</p> : null}
                {filteredHistory.map(test => {
                  const isSolved = test.attemptedBy?.includes(currentUser);
                  return (
-                 <div key={test.id} className="glass-card flex-col justify-between" style={{ minWidth: '320px', flex: '0 0 auto', scrollSnapAlign: 'start', padding: '16px', borderTop: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', gap: '16px' }}>
+                 <div key={test.id} className="glass-card" style={{ padding: '16px', borderLeft: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                    <div className="flex-col gap-2">
-                     <div className="flex-row gap-2 align-center justify-between">
-                       <h3 style={{ fontSize: '1.125rem', margin: 0, textDecoration: isSolved ? 'line-through' : 'none', color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={test.title}>{test.title}</h3>
-                       <span className="badge pending" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'var(--accent-glow)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)', flexShrink: 0 }}>{test.timeLimit} Mins</span>
+                     <div className="flex-row gap-2 align-center">
+                       <h3 style={{ fontSize: '1.125rem', margin: 0, textDecoration: isSolved ? 'line-through' : 'none', color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)' }}>{test.title}</h3>
+                       <span className="badge pending" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'var(--accent-glow)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
                      </div>
                      <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                       {test.subject} • {test.questions?.length || 0} Qs • {new Date(test.createdAt).toLocaleDateString()} {isSolved && <span style={{color:'var(--success)', fontWeight:'bold'}}><br/>Solved ✅</span>}
+                       {test.subject} • {test.questions?.length || 0} Qs • {new Date(test.createdAt).toLocaleDateString()} {isSolved && <span style={{color:'var(--success)', fontWeight:'bold'}}> • Solved ✅</span>}
                      </p>
                    </div>
-                   <div className="flex-row gap-2" style={{ flexWrap: 'wrap' }}>
-                     <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test.id)} style={{ padding: '8px', flex: 1, fontSize: '0.75rem', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                       <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'4px'}}><FiShare2 /> Share</span>
+                   <div className="flex-row gap-2">
+                     <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test.id)} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                       <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiShare2 /> Share</span>
                        <FiShare2 className="mobile-icon" size={16} />
                      </button>
-                     <button title="Edit Test" className="btn task-action-btn" onClick={() => setEditingTest(test)} style={{ padding: '8px', flex: 1, fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                     <button title="Edit Test" className="btn task-action-btn" onClick={() => setEditingTest(test)} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>
                        <span className="desktop-text">Edit</span>
                        <FiEdit className="mobile-icon" size={16} />
                      </button>
-                     <button title="Delete Test" className="btn task-action-btn" onClick={() => setDeletingTest(test)} style={{ padding: '8px', flex: 1, fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                     <button title="Delete Test" className="btn task-action-btn" onClick={() => setDeletingTest(test)} style={{ padding: '6px 12px', fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>
                        <span className="desktop-text">Delete</span>
                        <FiTrash2 className="mobile-icon" size={16} />
                      </button>
-                     <button title="Take Test" className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '8px', flex: 1.5, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                       <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'4px'}}><FiPlayCircle /> Start</span>
+                     <button title="Take Test" className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                       <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiPlayCircle /> Start</span>
                        <FiPlayCircle className="mobile-icon" size={16} />
                      </button>
                    </div>
