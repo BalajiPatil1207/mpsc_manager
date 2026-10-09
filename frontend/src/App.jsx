@@ -98,7 +98,7 @@ function App() {
             <div className="app-container">
               <Sidebar user={user} isOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
               <main className="main-content">
-                <div className="top-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div className="top-header">
                    {!sidebarOpen && (
                      <button onClick={() => setSidebarOpen(true)} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', color: 'var(--text-primary)' }}>
                        <FiMenu size={24} />
