@@ -80,27 +80,31 @@ const TakeTest = () => {
           toast.success(res.data.message, { duration: 5000, icon: '🔥' });
         }
         
-        // Add Points!
-        if (res.data.scoreEarned > 0) {
-           const sub = res.data.subject || 'General';
-           const oldPoints = parseFloat(localStorage.getItem(`xp_${sub}`)) || 0;
-           localStorage.setItem(`xp_${sub}`, (oldPoints + res.data.scoreEarned).toFixed(2));
-           
-           const totalOld = parseFloat(localStorage.getItem('xp_total')) || 0;
-           localStorage.setItem('xp_total', (totalOld + res.data.scoreEarned).toFixed(2));
-           
-           import('../utils/sound').then(({ playSound }) => playSound.playXpGain());
-           toast.success(`🎉 Earned +${res.data.scoreEarned} XP for ${sub}!`);
-        }
-
         // Update Practice Accuracy
         const testPercent = test.questions.length > 0 ? Math.max(0, (currentScore / test.questions.length) * 100) : 0;
         const oldAccuracy = parseFloat(localStorage.getItem('practice_accuracy')) || 0;
         const testsTaken = parseInt(localStorage.getItem('tests_taken')) || 0;
         const newAccuracy = testsTaken === 0 ? testPercent : ((oldAccuracy * testsTaken) + testPercent) / (testsTaken + 1);
         
-        localStorage.setItem('practice_accuracy', newAccuracy.toFixed(1));
-        localStorage.setItem('tests_taken', testsTaken + 1);
+        let batchUpdates = {
+          practice_accuracy: newAccuracy.toFixed(1),
+          tests_taken: testsTaken + 1
+        };
+
+        // Add Points!
+        if (res.data.scoreEarned > 0) {
+           const sub = res.data.subject || 'General';
+           const oldPoints = parseFloat(localStorage.getItem(`xp_${sub}`)) || 0;
+           batchUpdates[`xp_${sub}`] = (oldPoints + res.data.scoreEarned).toFixed(2);
+           
+           const totalOld = parseFloat(localStorage.getItem('xp_total')) || 0;
+           batchUpdates['xp_total'] = (totalOld + res.data.scoreEarned).toFixed(2);
+           
+           import('../utils/sound').then(({ playSound }) => playSound.playXpGain());
+           toast.success(`🎉 Earned +${res.data.scoreEarned} XP for ${sub}!`);
+        }
+        
+        import('../utils/dbStore').then(({ saveMultipleToDB }) => saveMultipleToDB(batchUpdates));
       }
     } catch(err) {
       console.error(err);

@@ -108,13 +108,17 @@ function App() {
       }
     };
 
-    const unsub = onAuthStateChanged(auth, (usr) => {
-      setUser(usr);
-      setLoading(false);
-      
+    const unsub = onAuthStateChanged(auth, async (usr) => {
       if(usr) {
+        // Fetch source of truth from DB immediately
+        const { loadProgressFromDB } = await import('./utils/dbStore');
+        const loaded = await loadProgressFromDB(usr.uid);
+        setUser(usr); // Set user after loading DB cache!
         registerPush(usr.uid);
+      } else {
+        setUser(null);
       }
+      setLoading(false);
     });
 
     return () => {

@@ -104,7 +104,8 @@ const Dashboard = ({ user }) => {
       return t;
     });
     setDailyTasks(updated);
-    localStorage.setItem('user_daily_tasks', JSON.stringify(updated));
+    import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', updated));
+    
     if (!isUndo) {
       import('../utils/sound').then(({ playSound }) => playSound.playSuccess());
       toast.success('Task marked as completed! 🎉');
@@ -145,14 +146,20 @@ const Dashboard = ({ user }) => {
         completed: false
       };
     });
-    localStorage.setItem('revision_queue', JSON.stringify(existingQueue));
-
     const now = new Date();
-    localStorage.setItem('task_indexes', JSON.stringify(newIndexes));
+    
+    import('../utils/dbStore').then(({ saveMultipleToDB }) => {
+      saveMultipleToDB({
+         weekly_completed: pastWeekly,
+         revision_queue: existingQueue,
+         task_indexes: newIndexes,
+         user_daily_tasks: resetTasks,
+         last_task_date: getLogicalDateString(),
+         last_task_time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase()
+      });
+    });
+    
     setDailyTasks(resetTasks);
-    localStorage.setItem('user_daily_tasks', JSON.stringify(resetTasks));
-    localStorage.setItem('last_task_date', getLogicalDateString());
-    localStorage.setItem('last_task_time', now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase());
     toast.success("Advanced to the next study session! 🚀");
     
     // Generate daily 6 AM Mega Test automatically!
