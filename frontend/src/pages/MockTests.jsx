@@ -9,7 +9,7 @@ const MockTests = () => {
   const [hasPlan, setHasPlan] = useState(false);
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState([]);
-  const [filterDate, setFilterDate] = useState('');
+  const [filterSubject, setFilterSubject] = useState('');
   const [editingTest, setEditingTest] = useState(null);
   const [deletingTest, setDeletingTest] = useState(null);
   const navigate = useNavigate();
@@ -79,7 +79,7 @@ const MockTests = () => {
 
   const currentUser = auth.currentUser?.uid || 'anonymous';
   const filteredHistory = history.filter(h => {
-    return filterDate ? h.createdAt.includes(filterDate) : true;
+    return filterSubject ? (h.subject || '').toLowerCase().includes(filterSubject.toLowerCase()) : true;
   }).sort((a, b) => {
     const aSolved = a.attemptedBy?.includes(currentUser) ? 1 : 0;
     const bSolved = b.attemptedBy?.includes(currentUser) ? 1 : 0;
@@ -118,8 +118,20 @@ const MockTests = () => {
              <div className="glass-panel" style={{ padding: '24px', marginTop: '24px' }}>
                 <div className="flex-row justify-between align-center" style={{ marginBottom: '16px' }}>
                   <h2 style={{ fontSize: '1.25rem', margin: 0 }}>🏆 Auto-Generated Mocks</h2>
-                  <input type="date" className="glass-card" style={{ padding: '6px 12px', color: 'var(--text-primary)', background: 'rgba(255,255,255,0.05)', fontSize: '0.875rem', colorScheme: 'dark' }} 
-                         value={filterDate} onChange={(e)=>setFilterDate(e.target.value)} />
+                  <select className="glass-card" value={filterSubject} onChange={(e)=>setFilterSubject(e.target.value)} style={{ padding: '6px 12px', fontSize: '0.875rem', outline: 'none', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                    <option value="">All Subjects</option>
+                    <option value="Current Affairs">Current Affairs</option>
+                    <option value="Economics">Economics</option>
+                    <option value="Geography">Geography</option>
+                    <option value="History">History</option>
+                    <option value="Polity">Polity</option>
+                    <option value="Science">Science (विज्ञान)</option>
+                    <option value="GK">GK / GS</option>
+                    <option value="Math">Maths (गणित)</option>
+                    <option value="Reasoning">Reasoning (बुद्धिमत्ता)</option>
+                    <option value="Marathi">Marathi</option>
+                    <option value="Mixed">Mixed</option>
+                  </select>
                 </div>
                 
                 <div className="flex-col gap-4">

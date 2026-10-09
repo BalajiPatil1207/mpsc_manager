@@ -171,10 +171,18 @@ const Practice = () => {
              <div className="flex-row justify-between align-center" style={{ marginBottom: '16px' }}>
                <h2 style={{ fontSize: '1.25rem', margin: 0 }}>🔍 Auto-Generated Daily Tests</h2>
                <select className="glass-card" value={filterSubject} onChange={(e)=>setFilterSubject(e.target.value)} style={{ padding: '6px 12px', fontSize: '0.875rem', outline: 'none', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                 <option value="" style={{ color: '#000' }}>All Subjects</option>
-                 <option value="GK" style={{ color: '#000' }}>GK / GS</option>
-                 <option value="Math" style={{ color: '#000' }}>Maths</option>
-                 <option value="Reasoning" style={{ color: '#000' }}>Reasoning</option>
+                 <option value="">All Subjects</option>
+                 <option value="Current Affairs">Current Affairs</option>
+                 <option value="Economics">Economics</option>
+                 <option value="Geography">Geography</option>
+                 <option value="History">History</option>
+                 <option value="Polity">Polity</option>
+                 <option value="Science">Science (विज्ञान)</option>
+                 <option value="GK">GK / GS</option>
+                 <option value="Math">Maths (गणित)</option>
+                 <option value="Reasoning">Reasoning (बुद्धिमत्ता)</option>
+                 <option value="Marathi">Marathi</option>
+                 <option value="Mixed">Mixed</option>
                </select>
              </div>
              
