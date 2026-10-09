@@ -122,11 +122,20 @@ const Dashboard = ({ user }) => {
     pastWeekly += completedCount;
     localStorage.setItem('weekly_completed', pastWeekly);
 
+    // Add completed tasks to Revision Queue
+    const existingQueue = JSON.parse(localStorage.getItem('revision_queue') || '[]');
+    const nowTime = new Date().getTime();
+
     // Create next set of tasks
     const resetTasks = savedTasks.map(t => {
       // Only increment index if the task was completed!
       if (t.completed) {
         newIndexes[t.id] = (newIndexes[t.id] || 0) + 1;
+        existingQueue.push({
+           topicId: t.id,
+           title: t.title,
+           dueAt: nowTime + (7 * 24 * 60 * 60 * 1000) // due in 7 days
+        });
       }
       return {
         id: t.id,
@@ -135,6 +144,7 @@ const Dashboard = ({ user }) => {
         completed: false
       };
     });
+    localStorage.setItem('revision_queue', JSON.stringify(existingQueue));
 
     const now = new Date();
     localStorage.setItem('task_indexes', JSON.stringify(newIndexes));
@@ -210,6 +220,15 @@ const Dashboard = ({ user }) => {
   const pastWeeklyTasks = parseInt(localStorage.getItem('weekly_completed')) || 0;
   const currentWeeklyTotal = pastWeeklyTasks + completedTasks.length;
   const weeklySyllabusPercent = Math.min(100, Math.round((currentWeeklyTotal / 56) * 100)); // 8 tasks * 7 days = 56
+
+  const [dueRevisionCount, setDueRevisionCount] = useState(0);
+
+  useEffect(() => {
+    const existingQueue = JSON.parse(localStorage.getItem('revision_queue') || '[]');
+    const nowTime = new Date().getTime();
+    const dues = existingQueue.filter(item => item.dueAt <= nowTime);
+    setDueRevisionCount(dues.length);
+  }, [dailyTasks]);
 
   const calculateDaysLeft = () => {
     const target = new Date('2027-04-04T00:00:00');
@@ -350,13 +369,13 @@ const Dashboard = ({ user }) => {
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h3 style={{ fontSize: '1.125rem' }}>Action Items</h3>
             
-            <div className="glass-card p-4" style={{ padding: '16px', borderLeft: '4px solid var(--warning)' }}>
+            <div className="glass-card p-4" onClick={() => navigate('/practice')} title="Go to Practice Engine to revise" style={{ padding: '16px', borderLeft: dueRevisionCount > 0 ? '4px solid var(--warning)' : '4px solid var(--success)', cursor: 'pointer', transition: 'all 0.3s' }}>
               <div className="flex-row justify-between">
                 <div className="flex-col gap-1">
                   <span style={{ fontWeight: 600 }}>🔄 Revision Due</span>
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>0 Topics waiting</span>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{dueRevisionCount} Topics waiting</span>
                 </div>
-                <span style={{ background: 'rgba(245, 158, 11, 0.1)', color: 'var(--warning)', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold' }}>0</span>
+                <span style={{ background: dueRevisionCount > 0 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(34, 197, 94, 0.1)', color: dueRevisionCount > 0 ? 'var(--warning)' : 'var(--success)', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold' }}>{dueRevisionCount}</span>
               </div>
             </div>
 
