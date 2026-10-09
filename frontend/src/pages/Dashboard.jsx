@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiClock, FiCheckCircle, FiPlay, FiAlertTriangle, FiBell, FiMoon, FiSun, FiCheck, FiRotateCcw } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiPlay, FiAlertTriangle, FiBell, FiMoon, FiSun, FiCheck, FiRotateCcw, FiDownload } from 'react-icons/fi';
 import { requestNotificationPermission, sendPushNotification } from '../utils/notify';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -30,10 +30,29 @@ const AnimatedNumber = ({ value }) => {
   return <>{display}</>;
 };
 
-const Dashboard = ({ user }) => {
+const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const navigate = useNavigate();
   const [showAllTasks, setShowAllTasks] = useState(false);
   const currentReasoningSet = parseInt(localStorage.getItem('reasoningSetNumber')) || 1;
+
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        if (setDeferredPrompt) setDeferredPrompt(null);
+      });
+    } else {
+      toast("To install, tap 'Share' or 'Menu' then 'Add to Home Screen' in your browser! 📱", {
+         icon: '📲',
+         style: { borderRadius: '12px', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }
+      });
+    }
+  };
 
   const topicsMap = {
     reasoning: ["Number Series", "Alphabet Series", "Coding-Decoding", "Analogy", "Blood Relations", "Direction Test"],
@@ -250,11 +269,16 @@ const Dashboard = ({ user }) => {
     <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.6s ease-out' }}>
       
       {/* Header Section */}
-      <div className="dashboard-header flex-row justify-between" style={{ alignItems: 'flex-start' }}>
+      <div className="dashboard-header flex-row justify-between" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div className="flex-col gap-2">
-          <span style={{ color: 'var(--accent-primary)', fontWeight: 700, fontSize: '0.875rem', letterSpacing: '2px' }}>
-            MPSC 2027 • DYNAMIC PREP
-          </span>
+          <div className="flex-row align-center justify-between" style={{ width: '100%' }}>
+            <span style={{ color: 'var(--accent-primary)', fontWeight: 700, fontSize: '0.875rem', letterSpacing: '2px' }}>
+              MPSC 2027 • DYNAMIC PREP
+            </span>
+            <button onClick={handleInstallClick} className="btn mobile-only-btn" style={{ background: 'var(--accent-glow)', border: '1px solid var(--accent-primary)', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Install App">
+              <FiDownload size={16} color="var(--accent-primary)" />
+            </button>
+          </div>
           <div className="flex-row gap-2 align-center">
             <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>
               Good Morning, <span style={{ color: 'var(--accent-primary)', WebkitTextFillColor: 'var(--accent-primary)', textShadow: '0 0 20px var(--accent-glow)' }}>{user?.displayName ? user.displayName.split(' ')[0] : 'Student'}</span>

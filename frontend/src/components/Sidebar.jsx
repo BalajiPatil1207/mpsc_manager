@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FiHome, FiCalendar, FiBookOpen, FiActivity, FiTarget, FiAward, FiSettings, FiLoader, FiLogOut, FiMenu } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiBookOpen, FiActivity, FiTarget, FiAward, FiSettings, FiLoader, FiLogOut, FiMenu, FiCloud } from 'react-icons/fi';
 import axios from 'axios';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
@@ -125,6 +125,11 @@ const Sidebar = ({ user, isOpen, closeSidebar }) => {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
+          {onSync && (
+            <button onClick={onSync} style={{ background: 'transparent', border: 'none', color: 'var(--info)', cursor: 'pointer', outline: 'none' }} title="Sync to Cloud">
+              <FiCloud size={20} className={isSyncing ? 'spin-animation' : ''} />
+            </button>
+          )}
           <button onClick={() => setShowLogoutModal(true)} style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', outline: 'none' }} title="Logout">
             <FiLogOut size={20} />
           </button>

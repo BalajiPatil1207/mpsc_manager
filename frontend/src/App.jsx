@@ -174,7 +174,7 @@ function App() {
           element={
             user ? (
             <div className="app-container">
-              <Sidebar user={user} isOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
+              <Sidebar user={user} isOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} onSync={handleCloudSync} isSyncing={isSyncing} />
               <main className="main-content">
                 <div className="top-header">
                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -186,12 +186,6 @@ function App() {
                      <span className="mobile-only-title" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--text-primary)' }}>MahaPrep OS</span>
                    </div>
                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={handleInstallClick} className="btn" style={{ background: 'var(--accent-glow)', border: '1px solid var(--accent-primary)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Install App">
-                        <FiDownload size={18} color="var(--accent-primary)" />
-                      </button>
-                      <button onClick={handleCloudSync} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Sync to Cloud">
-                        <FiCloud size={18} color="var(--info)" className={isSyncing ? 'spin-animation' : ''} />
-                      </button>
                       <button onClick={toggleTheme} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Toggle Theme">
                         {theme === 'dark' ? <FiSun size={18} color="var(--text-secondary)" /> : <FiMoon size={18} color="var(--text-secondary)" />}
                       </button>
@@ -201,7 +195,7 @@ function App() {
                    </div>
                 </div>
                 <Routes>
-                  <Route path="/" element={<Dashboard user={user} />} />
+                  <Route path="/" element={<Dashboard user={user} deferredPrompt={deferredPrompt} setDeferredPrompt={setDeferredPrompt} />} />
                   <Route path="/planner" element={<StudyPlanner user={user} />} />
                   <Route path="/practice" element={<Practice />} />
                   <Route path="/mock" element={<MockTests />} />
