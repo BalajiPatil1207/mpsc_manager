@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiBookmark, FiTarget, FiArrowLeft, FiArrowRight } from 'react-icons/fi';
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { auth } from '../firebase';
@@ -18,6 +20,7 @@ const TakeTest = () => {
   const [score, setScore] = useState(0);
   const [showAnswers, setShowAnswers] = useState(false);
   const navigate = useNavigate();
+  const { width, height } = useWindowSize();
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -132,11 +135,31 @@ const TakeTest = () => {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
           {submitted && !showAnswers && (
-            <div className="glass-card flex-col align-center" style={{ padding: '40px 24px', textAlign: 'center', animation: 'fadeIn 0.5s ease-out' }}>
-              <div style={{ padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', marginBottom: '16px' }}>
-                <FiTarget size={48} color="var(--accent-primary)" />
-              </div>
-              <h1 style={{ fontSize: '4rem', margin: '0 0 8px 0', color: 'var(--text-primary)' }}>
+            <div className="glass-card flex-col align-center" style={{ padding: '40px 24px', textAlign: 'center', animation: 'fadeIn 0.5s ease-out', position: 'relative' }}>
+              {(() => {
+                const percent = test.questions.length > 0 ? (score / test.questions.length) * 100 : 0;
+                let config = {};
+                if (percent >= 80) {
+                     config = { color: 'var(--success)', icon: '🏆', msg: 'Excellent! Outstanding Performance! 🔥', sub: 'You smashed it like a pro. Keep it up!', showConfetti: true };
+                } else if (percent >= 40) {
+                     config = { color: 'var(--warning)', icon: '👍', msg: 'Good Effort! Keep Practicing! 💡', sub: 'You are on the right track, review your mistakes.', showConfetti: false };
+                } else {
+                     config = { color: 'var(--danger)', icon: '🥺', msg: 'Need Improvement! Better luck next time! 📚', sub: 'Don\'t worry, analyze your weak points and study hard.', showConfetti: false };
+                }
+                
+                return (
+                   <>
+                     {config.showConfetti && <Confetti width={width} height={height} recycle={false} numberOfPieces={600} gravity={0.15} />}
+                     <div style={{ padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', marginBottom: '16px', fontSize: '4rem' }}>
+                       {config.icon}
+                     </div>
+                     <h2 style={{ color: config.color, marginBottom: '8px', fontSize: '1.75rem' }}>{config.msg}</h2>
+                     <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>{config.sub}</p>
+                   </>
+                );
+              })()}
+              
+              <h1 style={{ fontSize: '5rem', margin: '0 0 8px 0', color: 'var(--text-primary)' }}>
                 {score} <span style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>/ {test.questions.length}</span>
               </h1>
               

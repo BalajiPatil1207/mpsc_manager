@@ -130,7 +130,7 @@ const Sidebar = ({ user, isOpen, closeSidebar }) => {
           </button>
         </div>
       </div>
-      
+      </aside>
       <ConfirmModal 
         isOpen={showLogoutModal}
         title="Ready to leave?"
@@ -145,8 +145,6 @@ const Sidebar = ({ user, isOpen, closeSidebar }) => {
         }}
         onCancel={() => setShowLogoutModal(false)}
       />
-
-      </aside>
     </>
   );
 };
