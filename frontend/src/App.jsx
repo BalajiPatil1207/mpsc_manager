@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { db, auth } from './firebase';
 import { Toaster, toast } from 'react-hot-toast';
-import { FiMenu, FiSun, FiMoon, FiBell } from 'react-icons/fi';
+import { FiMenu, FiSun, FiMoon, FiBell, FiCloud } from 'react-icons/fi';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
@@ -25,6 +26,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [theme, setTheme] = useState('dark');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     setTheme(document.body.getAttribute('data-theme') || 'dark');
@@ -34,6 +36,31 @@ function App() {
     const newTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(newTheme);
     document.body.setAttribute('data-theme', newTheme);
+  };
+
+  const handleCloudSync = async () => {
+    if (!user) return;
+    setIsSyncing(true);
+    const toastId = toast.loading('Syncing data to cloud... ☁️');
+    try {
+      const userRef = doc(db, 'user_progress', user.uid);
+      const backupData = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('xp_') || key.includes('accuracy') || key.includes('task') || key.includes('queue'))) {
+           backupData[key] = localStorage.getItem(key);
+        }
+      }
+      backupData.lastSynced = new Date().toISOString();
+      await setDoc(userRef, backupData, { merge: true });
+      toast.success('Backup Successful! Data is safe in Cloud.', { id: toastId });
+      import('./utils/sound').then(({ playSound }) => playSound.playXpGain());
+    } catch(err) {
+      console.error("Sync error:", err);
+      toast.error('Cloud sync failed!', { id: toastId });
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handleNotificationClick = () => {
@@ -128,6 +155,9 @@ function App() {
                      <span className="mobile-only-title" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--text-primary)' }}>MahaPrep OS</span>
                    </div>
                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={handleCloudSync} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Sync to Cloud">
+                        <FiCloud size={18} color="var(--info)" className={isSyncing ? 'spin-animation' : ''} />
+                      </button>
                       <button onClick={toggleTheme} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Toggle Theme">
                         {theme === 'dark' ? <FiSun size={18} color="var(--text-secondary)" /> : <FiMoon size={18} color="var(--text-secondary)" />}
                       </button>

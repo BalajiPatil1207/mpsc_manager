@@ -106,6 +106,7 @@ const Dashboard = ({ user }) => {
     setDailyTasks(updated);
     localStorage.setItem('user_daily_tasks', JSON.stringify(updated));
     if (!isUndo) {
+      import('../utils/sound').then(({ playSound }) => playSound.playSuccess());
       toast.success('Task marked as completed! 🎉');
     }
   };

@@ -89,6 +89,7 @@ const TakeTest = () => {
            const totalOld = parseFloat(localStorage.getItem('xp_total')) || 0;
            localStorage.setItem('xp_total', (totalOld + res.data.scoreEarned).toFixed(2));
            
+           import('../utils/sound').then(({ playSound }) => playSound.playXpGain());
            toast.success(`🎉 Earned +${res.data.scoreEarned} XP for ${sub}!`);
         }
 
