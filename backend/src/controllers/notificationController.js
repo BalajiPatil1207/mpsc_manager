@@ -32,8 +32,17 @@ exports.startCronJobs = () => {
               const pending = user_daily_tasks.filter(t => !t.completed).length;
               if (pending > 0) {
                  const payload = JSON.stringify({
-                    title: "Pending Study Tasks ⚠️",
-                    body: `You still have ${pending} tasks incomplete today. Keep studying, don't break the streak!`,
+                    title: "🚨 Study Alert: Tasks Pending!",
+                    body: `You have ${pending} tasks incomplete for today. Open MahaPrep OS to catch up now! Consistency is key! 🎯`,
+                    icon: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+                    badge: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+                    image: 'https://images.unsplash.com/photo-1506506200949-df4edab4c3ed?auto=format&fit=crop&w=800&q=80',
+                    vibrate: [200, 100, 200, 100, 200, 100, 200],
+                    data: {
+                      dateOfArrival: Date.now(),
+                      primaryKey: '2'
+                    },
+                    url: 'https://mpsc-manager.vercel.app/'
                  });
                  // Send web push via Vapid
                  webpush.sendNotification(subscription, payload).catch(e => console.error("Push Error", e));
