@@ -25,11 +25,13 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState('light');
   const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
-    setTheme(document.body.getAttribute('data-theme') || 'dark');
+    const initialTheme = document.body.getAttribute('data-theme') || 'light';
+    setTheme(initialTheme);
+    document.body.setAttribute('data-theme', initialTheme);
   }, []);
 
   const toggleTheme = () => {
