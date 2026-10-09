@@ -230,6 +230,8 @@ const Dashboard = ({ user }) => {
     setDueRevisionCount(dues.length);
   }, [dailyTasks]);
 
+  const practiceAccuracy = parseFloat(localStorage.getItem('practice_accuracy')) || (currentWeeklyTotal > 0 ? 85 : 0);
+
   const calculateDaysLeft = () => {
     const target = new Date('2027-04-04T00:00:00');
     const diff = target - new Date();
@@ -406,10 +408,10 @@ const Dashboard = ({ user }) => {
               <div>
                 <div className="flex-row justify-between" style={{ marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Practice Accuracy</span>
-                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{currentWeeklyTotal > 0 ? '85%' : '0%'}</span>
+                  <span style={{ fontSize: '0.875rem', fontWeight: 600 }}>{practiceAccuracy > 0 ? `${practiceAccuracy.toFixed(1)}%` : '0%'}</span>
                 </div>
                 <div className="progress-container">
-                  <div className="progress-bar" style={{ width: currentWeeklyTotal > 0 ? '85%' : '0%', background: 'var(--success)' }}></div>
+                  <div className="progress-bar" style={{ width: practiceAccuracy > 0 ? `${practiceAccuracy}%` : '0%', background: 'var(--success)' }}></div>
                 </div>
               </div>
             </div>

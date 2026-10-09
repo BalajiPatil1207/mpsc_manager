@@ -91,6 +91,15 @@ const TakeTest = () => {
            
            toast.success(`🎉 Earned +${res.data.scoreEarned} XP for ${sub}!`);
         }
+
+        // Update Practice Accuracy
+        const testPercent = test.questions.length > 0 ? Math.max(0, (currentScore / test.questions.length) * 100) : 0;
+        const oldAccuracy = parseFloat(localStorage.getItem('practice_accuracy')) || 0;
+        const testsTaken = parseInt(localStorage.getItem('tests_taken')) || 0;
+        const newAccuracy = testsTaken === 0 ? testPercent : ((oldAccuracy * testsTaken) + testPercent) / (testsTaken + 1);
+        
+        localStorage.setItem('practice_accuracy', newAccuracy.toFixed(1));
+        localStorage.setItem('tests_taken', testsTaken + 1);
       }
     } catch(err) {
       console.error(err);
