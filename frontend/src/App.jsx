@@ -154,10 +154,14 @@ function App() {
   }, []);
 
   if(loading) return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '24px', background: 'var(--bg-primary)' }}>
-      <div className="loader-spin" style={{ width: '48px', height: '48px', border: '5px solid var(--border-color)', borderTopColor: 'var(--accent-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-      <div className="skeleton-line" style={{ width: '200px', height: '24px', background: 'var(--border-color)', borderRadius: '12px' }}></div>
-      <div className="skeleton-line" style={{ width: '150px', height: '16px', background: 'var(--border-color)', borderRadius: '12px' }}></div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '32px', background: 'var(--bg-primary)' }}>
+      <div className="premium-loader">
+         <div className="ring"></div>
+         <div className="ring"></div>
+         <div className="ring"></div>
+         <span className="premium-loader-text">OS</span>
+      </div>
+      <p style={{ color: 'var(--text-secondary)', letterSpacing: '3px', textTransform: 'uppercase', animation: 'pulse 1.5s infinite', fontSize: '0.875rem', fontWeight: 600 }}>Loading AI Engine</p>
     </div>
   );
 
