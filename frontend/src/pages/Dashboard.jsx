@@ -215,7 +215,18 @@ const Dashboard = ({ user }) => {
           <p style={{ color: 'var(--text-secondary)' }}>Welcome to your personalized Study OS</p>
         </div>
         
-        <div className="dashboard-header-actions flex-row gap-4">
+        <div className="dashboard-header-actions flex-row gap-4" style={{ height: 'fit-content' }}>
+          <button onClick={() => {
+            Notification.requestPermission().then(perm => {
+              if (perm === 'granted') {
+                new Notification("Test Notification 🔔", { body: "Hey! This is a test notification. Daily reminders will arrive at 9 AM." });
+              } else {
+                alert("Please enable notification permissions in your browser settings!");
+              }
+            });
+          }} className="btn glass-card" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', padding: '12px 16px' }}>
+            🔔 Test Notification
+          </button>
           
           <button onClick={toggleTheme} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '42px', height: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Toggle Theme">
             {theme === 'dark' ? <FiSun size={20} color="var(--text-secondary)" /> : <FiMoon size={20} color="var(--text-secondary)" />}

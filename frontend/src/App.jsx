@@ -33,9 +33,21 @@ function App() {
           let subscription = await swReg.pushManager.getSubscription();
           
           if (!subscription) {
+            const permission = await Notification.requestPermission();
+            if (permission !== 'granted') {
+              console.warn("Notifications permission denied by user.");
+              return;
+            }
+
             subscription = await swReg.pushManager.subscribe({
               userVisibleOnly: true,
-              applicationServerKey: 'BB9DI_XDO0ojtAPSffKN0pZ3F-WdnHmBaeibAbuHbe-0voUkJzatYvXA5awPLzSv8GyZQjYK6P9ZolQ3fahL5Mc' // from VAPID
+              applicationServerKey: 'BB9DI_XDO0ojtAPSffKN0pZ3F-WdnHmBaeibAbuHbe-0voUkJzatYvXA5awPLzSv8GyZQjYK6P9ZolQ3fahL5Mc' 
+            });
+
+            // Send standard local welcome notification directly so user knows it works!
+            new Notification("MahaPrep OS Active! 🚀", {
+              body: "Notifications are successfully enabled. You will get daily reminders!",
+              icon: "https://cdn-icons-png.flaticon.com/512/3242/3242257.png"
             });
           }
           
