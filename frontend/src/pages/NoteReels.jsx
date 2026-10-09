@@ -118,16 +118,16 @@ const NoteReels = () => {
                    </p>
                  </div>
                  
-                 <div className="flex-row gap-2" style={{ flexWrap: 'wrap' }}>
-                     <button title="Delete Reel" onClick={() => setDeleteTarget(reel.id)} className="btn task-action-btn" style={{ flex: 1, padding: '8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                 <div className="flex-row gap-2">
+                     <button title="Delete Reel" onClick={() => setDeleteTarget(reel.id)} className="btn task-action-btn" style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                        <span className="desktop-text">Delete</span>
                        <FiTrash2 className="mobile-icon" size={16} />
                      </button>
-                     <button title="Copy Link" onClick={() => copyLink(`${window.location.origin}/reel/${reel.id}`)} className="btn task-action-btn" style={{ flex: 1, padding: '8px', background: 'var(--glass-bg)', color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                     <button title="Copy Link" onClick={() => copyLink(`${window.location.origin}/reel/${reel.id}`)} className="btn task-action-btn" style={{ padding: '8px 16px', background: 'var(--glass-bg)', color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                        <span className="desktop-text">Share</span>
                        <FiCopy className="mobile-icon" size={16} />
                      </button>
-                     <button className="btn btn-primary task-action-btn" onClick={() => navigate(`/reel/${reel.id}`)} style={{ flex: 1.5, padding: '8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-secondary)' }}>
+                     <button className="btn btn-primary task-action-btn" onClick={() => navigate(`/reel/${reel.id}`)} style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-secondary)' }}>
                        <span className="desktop-text">Watch Now</span>
                        <FiPlay className="mobile-icon" size={16} />
                      </button>
