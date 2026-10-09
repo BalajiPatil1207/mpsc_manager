@@ -111,8 +111,14 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   ];
 
   const [dailyTasks, setDailyTasks] = useState(() => {
-    const saved = localStorage.getItem('user_daily_tasks');
-    return saved ? JSON.parse(saved) : initialDailyTasks;
+    try {
+      const saved = localStorage.getItem('user_daily_tasks');
+      if (saved && saved !== 'undefined' && saved !== 'null') {
+         const parsed = JSON.parse(saved);
+         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch(e) { }
+    return initialDailyTasks;
   });
 
   const toggleTask = (taskId, isUndo = false) => {
@@ -132,7 +138,15 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   };
 
   const advanceToNextDay = async () => {
-    const savedTasks = JSON.parse(localStorage.getItem('user_daily_tasks') || '[]');
+    let savedTasks = [];
+    try {
+       savedTasks = JSON.parse(localStorage.getItem('user_daily_tasks') || '[]');
+    } catch(e) {}
+    
+    // If empty or corrupted, fallback to initial tasks!
+    if (!Array.isArray(savedTasks) || savedTasks.length === 0) {
+       savedTasks = initialDailyTasks;
+    }
     const oldIndexes = getTopicIndexes();
     let newIndexes = { ...oldIndexes };
     
