@@ -5,7 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { Toaster, toast } from 'react-hot-toast';
-import { FiMenu, FiSun, FiMoon, FiBell, FiCloud } from 'react-icons/fi';
+import { FiMenu, FiSun, FiMoon, FiBell, FiCloud, FiDownload } from 'react-icons/fi';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
@@ -27,8 +27,14 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const [theme, setTheme] = useState('light');
   const [isSyncing, setIsSyncing] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+    
     const initialTheme = document.body.getAttribute('data-theme') || 'light';
     setTheme(initialTheme);
     document.body.setAttribute('data-theme', initialTheme);
@@ -62,6 +68,25 @@ function App() {
       toast.error('Cloud sync failed!', { id: toastId });
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        setDeferredPrompt(null);
+      });
+    } else {
+      toast("To install, tap 'Share' or 'Menu' then 'Add to Home Screen' in your browser! 📱", {
+         icon: '📲',
+         style: { borderRadius: '12px', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }
+      });
     }
   };
 
@@ -161,6 +186,9 @@ function App() {
                      <span className="mobile-only-title" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--text-primary)' }}>MahaPrep OS</span>
                    </div>
                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={handleInstallClick} className="btn" style={{ background: 'var(--accent-glow)', border: '1px solid var(--accent-primary)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Install App">
+                        <FiDownload size={18} color="var(--accent-primary)" />
+                      </button>
                       <button onClick={handleCloudSync} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Sync to Cloud">
                         <FiCloud size={18} color="var(--info)" className={isSyncing ? 'spin-animation' : ''} />
                       </button>
