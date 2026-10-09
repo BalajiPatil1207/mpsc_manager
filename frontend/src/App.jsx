@@ -23,7 +23,7 @@ import Register from './pages/Register';
 function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
 
   useEffect(() => {
     const registerPush = async (uid) => {
@@ -63,7 +63,13 @@ function App() {
     };
   }, []);
 
-  if(loading) return <div style={{color:'white', padding: '40px', textAlign: 'center'}}>Loading App...</div>;
+  if(loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '24px', background: 'var(--bg-primary)' }}>
+      <div className="loader-spin" style={{ width: '48px', height: '48px', border: '5px solid var(--border-color)', borderTopColor: 'var(--accent-primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+      <div className="skeleton-line" style={{ width: '200px', height: '24px', background: 'var(--border-color)', borderRadius: '12px' }}></div>
+      <div className="skeleton-line" style={{ width: '150px', height: '16px', background: 'var(--border-color)', borderRadius: '12px' }}></div>
+    </div>
+  );
 
   return (
     <BrowserRouter>
@@ -80,11 +86,13 @@ function App() {
             <div className="app-container">
               <Sidebar user={user} isOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
               <main className="main-content">
-                <div className="mobile-header" style={{ display: 'none', marginBottom: '24px' }}>
-                   <button onClick={() => setSidebarOpen(true)} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', color: 'var(--text-primary)' }}>
-                     <FiMenu size={24} />
-                   </button>
-                   <span style={{ fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--text-primary)' }}>MahaPrep OS</span>
+                <div className="top-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                   {!sidebarOpen && (
+                     <button onClick={() => setSidebarOpen(true)} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', color: 'var(--text-primary)' }}>
+                       <FiMenu size={24} />
+                     </button>
+                   )}
+                   <span className="mobile-only-title" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--text-primary)' }}>MahaPrep OS</span>
                    <div style={{ width: '40px' }}></div>
                 </div>
                 <Routes>

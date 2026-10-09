@@ -63,20 +63,25 @@ const Sidebar = ({ user, isOpen, closeSidebar }) => {
     <>
       <div className={`sidebar-overlay ${isOpen ? 'open' : ''}`} onClick={closeSidebar}></div>
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
-        <div className="flex-row gap-4" style={{ padding: '0 8px' }}>
-        <div style={{
-          background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
-          padding: '8px',
-          borderRadius: '12px',
-          color: 'white'
-        }}>
-          <FiTarget size={24} />
+        <div className="flex-row justify-between align-center" style={{ padding: '0 8px', width: '100%' }}>
+          <div className="flex-row gap-4 align-center">
+            <div style={{
+              background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+              padding: '8px',
+              borderRadius: '12px',
+              color: 'white'
+            }}>
+              <FiTarget size={24} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', margin: 0 }}>Study OS</h2>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Pro Environment</span>
+            </div>
+          </div>
+          <button onClick={closeSidebar} className="btn" style={{ background: 'transparent', border: 'none', padding: '8px', color: 'var(--text-secondary)' }} title="Close Sidebar">
+             <FiMenu size={24} />
+          </button>
         </div>
-        <div>
-          <h2 style={{ fontSize: '1.25rem' }}>Study OS</h2>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Pro Environment</span>
-        </div>
-      </div>
 
       <nav className="flex-col gap-2" style={{ marginTop: '24px', flex: 1 }}>
         {navItems.map((item) => (
