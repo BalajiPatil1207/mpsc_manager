@@ -3,8 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
-import { Toaster } from 'react-hot-toast';
-import { FiMenu } from 'react-icons/fi';
+import { Toaster, toast } from 'react-hot-toast';
+import { FiMenu, FiSun, FiMoon, FiBell } from 'react-icons/fi';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
 import Dashboard from './pages/Dashboard';
@@ -24,6 +24,30 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+  const [theme, setTheme] = useState('dark');
+
+  useEffect(() => {
+    setTheme(document.body.getAttribute('data-theme') || 'dark');
+  }, []);
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    document.body.setAttribute('data-theme', newTheme);
+  };
+
+  const handleNotificationClick = () => {
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') {
+        toast("You're all caught up! No active alerts.", {
+          icon: '🔔',
+          style: { borderRadius: '12px', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }
+        });
+      } else {
+        alert("Please enable notification permissions in your browser settings!");
+      }
+    });
+  };
 
   useEffect(() => {
     const registerPush = async (uid) => {
@@ -34,17 +58,13 @@ function App() {
           
           if (!subscription) {
             const permission = await Notification.requestPermission();
-            if (permission !== 'granted') {
-              console.warn("Notifications permission denied by user.");
-              return;
-            }
+            if (permission !== 'granted') return;
 
             subscription = await swReg.pushManager.subscribe({
               userVisibleOnly: true,
               applicationServerKey: 'BB9DI_XDO0ojtAPSffKN0pZ3F-WdnHmBaeibAbuHbe-0voUkJzatYvXA5awPLzSv8GyZQjYK6P9ZolQ3fahL5Mc' 
             });
 
-            // Send standard local welcome notification directly so user knows it works!
             new Notification("MahaPrep OS Active! 🚀", {
               body: "Notifications are successfully enabled. You will get daily reminders!",
               icon: "https://cdn-icons-png.flaticon.com/512/3242/3242257.png"
@@ -99,13 +119,22 @@ function App() {
               <Sidebar user={user} isOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
               <main className="main-content">
                 <div className="top-header">
-                   {!sidebarOpen && (
-                     <button onClick={() => setSidebarOpen(true)} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', color: 'var(--text-primary)' }}>
-                       <FiMenu size={24} />
-                     </button>
-                   )}
-                   <span className="mobile-only-title" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--text-primary)' }}>MahaPrep OS</span>
-                   <div style={{ width: '40px' }}></div>
+                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                     {!sidebarOpen && (
+                       <button onClick={() => setSidebarOpen(true)} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', color: 'var(--text-primary)' }}>
+                         <FiMenu size={24} />
+                       </button>
+                     )}
+                     <span className="mobile-only-title" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--text-primary)' }}>MahaPrep OS</span>
+                   </div>
+                   <div style={{ display: 'flex', gap: '8px' }}>
+                      <button onClick={toggleTheme} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Toggle Theme">
+                        {theme === 'dark' ? <FiSun size={18} color="var(--text-secondary)" /> : <FiMoon size={18} color="var(--text-secondary)" />}
+                      </button>
+                      <button onClick={handleNotificationClick} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '40px', height: '40px', padding: 0 }} title="Notifications">
+                         <FiBell size={18} color="var(--accent-primary)" />
+                      </button>
+                   </div>
                 </div>
                 <Routes>
                   <Route path="/" element={<Dashboard user={user} />} />
