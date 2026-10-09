@@ -21,22 +21,44 @@ const Analytics = () => {
     const prep = Math.min(100, Math.round((currentWeekly / 56) * 100));
     const pyqCount = pyqs.filter(p => p.completed).length;
     const syllabus = Math.min(100, prep + (pyqCount * 2)); 
-    const revision = totalDailyCompleted > 0 ? 85 : 40; 
     
-    const strongTopics = [];
-    if (pyqs.some(p => p.id === 'his_foundation' && p.completed)) strongTopics.push('History Foundation');
-    if (pyqs.some(p => p.id === 'geo_basics' && p.completed)) strongTopics.push('Geography');
-    if (daily.some(t => t.id === 'reasoning' && t.completed)) strongTopics.push('Reasoning');
-    if (daily.some(t => t.id === 'maths' && t.completed)) strongTopics.push('Maths');
+    // Revision Health based on dynamically tracked queue
+    const revisionQueue = JSON.parse(localStorage.getItem('revision_queue') || '[]');
+    const nowTime = new Date().getTime();
+    const dues = revisionQueue.filter(item => item.dueAt <= nowTime);
+    const revision = Math.max(0, 100 - (dues.length * 10)); 
     
-    const defaultWeak = ['Polity Framework', 'Basic Economics', 'Monthly Current Affairs'];
+    const subjectXP = {};
+    for (let i = 0; i < localStorage.length; i++) {
+       const key = localStorage.key(i);
+       if (key && key.startsWith('xp_') && key !== 'xp_total') {
+          const sub = key.replace('xp_', '');
+          subjectXP[sub] = parseFloat(localStorage.getItem(key)) || 0;
+       }
+    }
+    
+    const sortedSubjects = Object.entries(subjectXP).sort((a,b) => b[1] - a[1]);
+    const strongTopics = sortedSubjects.length > 0 ? sortedSubjects.slice(0, 3).map(s => `${s[0]} (${Math.floor(s[1])} XP)`) : [];
+    
+    const allKnownSubs = ['History', 'Geography', 'Polity', 'Economics', 'Science', 'Maths', 'Reasoning', 'Current Affairs'];
+    const weakTopics = [];
+    
+    if (sortedSubjects.length > 3) {
+      weakTopics.push(...sortedSubjects.slice(-3).map(s => `${s[0]} (${Math.floor(s[1])} XP)`));
+    }
+    
+    allKnownSubs.forEach(sub => {
+       if (weakTopics.length < 3 && !subjectXP[sub]) {
+          weakTopics.push(`${sub} (Needs Practice)`);
+       }
+    });
     
     setMetrics({
       prepScore: prep,
       syllabusCovered: syllabus,
       revisionHealth: revision,
       strong: strongTopics.length > 0 ? strongTopics : ['No robust data yet'],
-      weak: defaultWeak
+      weak: weakTopics
     });
   }, []);
 
