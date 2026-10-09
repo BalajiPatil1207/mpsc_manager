@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FiHome, FiCalendar, FiBookOpen, FiActivity, FiTarget, FiAward, FiSettings, FiLoader, FiLogOut } from 'react-icons/fi';
+import { FiHome, FiCalendar, FiBookOpen, FiActivity, FiTarget, FiAward, FiSettings, FiLoader, FiLogOut, FiMenu } from 'react-icons/fi';
 import axios from 'axios';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
