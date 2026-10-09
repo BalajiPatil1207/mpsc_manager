@@ -170,7 +170,17 @@ exports.submitTest = async (req, res, next) => {
         return res.json({ success: true, message: `Generated Mistake Mock for revision!`, scoreEarned, subject: test.subject });
       }
     } else if (wrongQuestions.length > 0 && test.isMistakeMock) {
-        return res.json({ success: true, message: `Try these mistakes again next time!`, scoreEarned, subject: test.subject });
+        // Auto-remove correctly answered questions by only saving the still-wrong ones!
+        await db.collection('customTests').doc(testId).update({
+            questions: wrongQuestions,
+            timeLimit: Math.max(wrongQuestions.length, 5),
+            updatedAt: new Date().toISOString()
+        });
+        return res.json({ success: true, message: `Progress! Only ${wrongQuestions.length} mistakes remain to revise.`, scoreEarned, subject: test.subject });
+    } else if (wrongQuestions.length === 0 && test.isMistakeMock) {
+        // If it was a mistake mock and they got everything right, delete it!
+        await db.collection('customTests').doc(testId).delete();
+        return res.json({ success: true, message: "Perfect Revision! Mistake Mock deleted automatically.", scoreEarned, subject: test.subject });
     }
 
     res.json({ success: true, message: "Perfect! No mistakes!", scoreEarned, subject: test.subject });
