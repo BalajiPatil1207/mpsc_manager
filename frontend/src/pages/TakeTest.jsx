@@ -192,7 +192,7 @@ const TakeTest = () => {
               })()}
 
               <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button onClick={() => navigate('/mock')} className="btn" style={{ padding: '12px 24px', fontSize: '1.1rem', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                <button onClick={() => navigate('/practice')} className="btn" style={{ padding: '12px 24px', fontSize: '1.1rem', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
                    Take Another Test <FiArrowRight />
                 </button>
                 <button onClick={() => setShowAnswers(true)} className="btn btn-primary" style={{ padding: '12px 24px', fontSize: '1.1rem' }}>

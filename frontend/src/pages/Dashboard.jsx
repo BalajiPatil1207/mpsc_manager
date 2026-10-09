@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { FiClock, FiCheckCircle, FiPlay, FiAlertTriangle, FiBell, FiMoon, FiSun, FiCheck, FiRotateCcw } from 'react-icons/fi';
 import { requestNotificationPermission, sendPushNotification } from '../utils/notify';
 import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const Dashboard = ({ user }) => {
+  const navigate = useNavigate();
   const [showAllTasks, setShowAllTasks] = useState(false);
   const currentReasoningSet = parseInt(localStorage.getItem('reasoningSetNumber')) || 1;
 
@@ -296,7 +298,7 @@ const Dashboard = ({ user }) => {
                 <h2 style={{ fontSize: '1.25rem' }}>🧠 Daily Practice Engine</h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>AI-generated tests await in the vault</p>
               </div>
-              <button className="btn btn-primary" onClick={() => window.location.href='/test-maker'}>Go to Vault</button>
+              <button className="btn btn-primary" onClick={() => navigate('/test-maker')}>Go to Vault</button>
             </div>
           </div>
           
@@ -318,7 +320,7 @@ const Dashboard = ({ user }) => {
               </div>
             </div>
 
-            <div className="glass-card p-4" onClick={() => window.location.href='/mistake-book'} style={{ padding: '16px', borderLeft: '4px solid var(--danger)', cursor: 'pointer', transition: 'all 0.3s' }}>
+            <div className="glass-card p-4" onClick={() => navigate('/mistakes')} style={{ padding: '16px', borderLeft: '4px solid var(--danger)', cursor: 'pointer', transition: 'all 0.3s' }}>
               <div className="flex-row justify-between">
                 <div className="flex-col gap-1">
                   <span style={{ fontWeight: 600 }}>❌ Mistakes to Review</span>
