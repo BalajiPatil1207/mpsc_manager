@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { FiBookmark, FiTarget } from 'react-icons/fi';
+import { useParams, useNavigate } from 'react-router-dom';
+import { FiBookmark, FiTarget, FiArrowLeft, FiArrowRight } from 'react-icons/fi';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { auth } from '../firebase';
@@ -10,13 +10,14 @@ const TakeTest = () => {
   const [test, setTest] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // State: { questionIndex: chosenOptionIndex }
+  // State
   const [answers, setAnswers] = useState({});
   const [reviews, setReviews] = useState({}); // { questionIndex: boolean }
   const [timeLeft, setTimeLeft] = useState(0);
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [showAnswers, setShowAnswers] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -107,7 +108,12 @@ const TakeTest = () => {
       
       {/* Header Sticky */}
       <div style={{ position: 'sticky', top: 0, background: 'var(--bg-secondary)', backdropFilter: 'blur(10px)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 50, marginBottom: '24px' }}>
-        <h2 style={{ margin: 0, fontSize: '1.25rem' }}>{test.title}</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+           <button onClick={() => navigate(-1)} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Go Back">
+              <FiArrowLeft size={24} />
+           </button>
+           <h2 style={{ margin: 0, fontSize: '1.25rem' }}>{test.title}</h2>
+        </div>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
           {!submitted && (
              <h2 style={{ margin: 0, color: timeLeft < 60 ? 'var(--warning)' : 'var(--accent-primary)' }}>
@@ -162,7 +168,14 @@ const TakeTest = () => {
                 );
               })()}
 
-              <button onClick={() => setShowAnswers(true)} className="btn btn-primary" style={{ padding: '12px 24px', fontSize: '1.1rem' }}>View Answers</button>
+              <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button onClick={() => navigate('/mock')} className="btn" style={{ padding: '12px 24px', fontSize: '1.1rem', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                   Take Another Test <FiArrowRight />
+                </button>
+                <button onClick={() => setShowAnswers(true)} className="btn btn-primary" style={{ padding: '12px 24px', fontSize: '1.1rem' }}>
+                   View Answers
+                </button>
+              </div>
             </div>
           )}
 
