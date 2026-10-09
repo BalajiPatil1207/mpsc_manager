@@ -6,25 +6,28 @@ const BottomNav = () => {
   const location = useLocation();
 
   const navItems = [
-    { name: 'CREATE Test', path: '/test-maker', icon: <FiPlusCircle size={22} /> },
+    { name: 'CREATE', path: '/test-maker', icon: <FiPlusCircle size={22} /> },
     { name: 'Practice', path: '/practice', icon: <FiBookOpen size={22} /> },
-    { name: 'HOME', path: '/', icon: <FiHome size={28} />, isCenter: true },
+    { name: 'HOME', path: '/', icon: <FiHome size={22} /> },
     { name: 'Reels', path: '/reels', icon: <FiFilm size={22} /> },
     { name: 'Mocks', path: '/mock', icon: <FiTarget size={22} /> },
   ];
 
   return (
     <div className="bottom-nav">
-      {navItems.map((item) => (
-        <Link
-          key={item.name}
-          to={item.path}
-          className={`bottom-nav-item ${location.pathname === item.path ? 'active' : ''} ${item.isCenter ? 'center-nav-item' : ''}`}
-        >
-          <div className="bottom-nav-icon">{item.icon}</div>
-          <span className="bottom-nav-label" style={{ display: item.isCenter ? 'none' : 'block' }}>{item.name}</span>
-        </Link>
-      ))}
+      {navItems.map((item) => {
+        const isActive = location.pathname === item.path;
+        return (
+          <Link
+            key={item.name}
+            to={item.path}
+            className={`bottom-nav-item ${isActive ? 'floating-active-item' : ''}`}
+          >
+            <div className="bottom-nav-icon">{isActive ? React.cloneElement(item.icon, { size: 28 }) : item.icon}</div>
+            <span className="bottom-nav-label" style={{ display: isActive ? 'none' : 'block' }}>{item.name}</span>
+          </Link>
+        );
+      })}
     </div>
   );
 };
