@@ -1,17 +1,41 @@
 const { db } = require('../config/firebase');
 
+const webpush = require('web-push');
+
 exports.createTest = async (req, res, next) => {
   try {
-    const { title, subject, timeLimit, questions, createdBy } = req.body;
+    const { title, subject, timeLimit, questions, createdBy, creatorName } = req.body;
     const newTest = { 
       title: title || 'Custom Mock Test', 
       subject: subject || 'General',
       timeLimit: parseInt(timeLimit) || 15, 
-      questions, // array containing { question, options, correctOption, subject(optional) }
+      questions, 
       createdBy: createdBy || 'anonymous', 
+      creatorName: creatorName || 'A Student',
       createdAt: new Date().toISOString() 
     };
     const docRef = await db.collection('customTests').add(newTest);
+    
+    // Broadcast notification to ALL other users!
+    try {
+       const uName = creatorName || 'A student';
+       const subs = await db.collection('pushSubscriptions').get();
+       subs.forEach((docSnap) => {
+          if (docSnap.id !== createdBy) {
+             const { subscription } = docSnap.data();
+             const payload = JSON.stringify({
+                title: "📚 New Practice Test Available!",
+                body: `${uName} just created a new test: "${newTest.title}". Compete and solve it now! 🔥`,
+                icon: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+                url: `https://mpsc-manager.vercel.app/test/${docRef.id}`
+             });
+             webpush.sendNotification(subscription, payload).catch(e => console.error("Broadcast Push Failed"));
+          }
+       });
+    } catch(broadcastErr) {
+       console.error("Broadcast error:", broadcastErr);
+    }
+
     res.json({ success: true, testId: docRef.id, message: "Test created successfully!" });
   } catch(err) {
     next(err);

@@ -19,6 +19,7 @@ const TakeTest = () => {
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [showAnswers, setShowAnswers] = useState(false);
+  const [activeQuestion, setActiveQuestion] = useState(0);
   const navigate = useNavigate();
   const { width, height } = useWindowSize();
 
@@ -38,6 +39,40 @@ const TakeTest = () => {
     };
     fetchTest();
   }, [testId]);
+
+  useEffect(() => {
+    if (!test || submitted) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const idx = parseInt(entry.target.id.replace('q-', ''));
+            setActiveQuestion(idx);
+          }
+        });
+      },
+      { root: null, rootMargin: '-30% 0px -60% 0px', threshold: 0 }
+    );
+    
+    test.questions.forEach((_, idx) => {
+      const el = document.getElementById(`q-${idx}`);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [test, submitted]);
+
+  useEffect(() => {
+    if (!submitted) {
+      const paletteItem = document.getElementById(`palette-q-${activeQuestion}`);
+      const paletteContainer = document.getElementById('palette-container');
+      if (paletteItem && paletteContainer) {
+         const itemTop = paletteItem.offsetTop;
+         const containerScrollHalf = paletteContainer.clientHeight / 2;
+         paletteContainer.scrollTo({ top: itemTop - containerScrollHalf + 20, behavior: 'smooth' });
+      }
+    }
+  }, [activeQuestion, submitted]);
 
   useEffect(() => {
     if (timeLeft > 0 && !submitted) {
@@ -298,9 +333,10 @@ const TakeTest = () => {
         {(!submitted || showAnswers) && (
           <div className="glass-panel test-palette-container" style={{ width: '320px', padding: '24px', position: 'sticky', top: '100px', alignSelf: 'flex-start' }}>
             <h3 style={{ fontSize: '1.125rem', marginBottom: '16px' }}>Question Palette</h3>
-            <div className="palette-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
+            <div id="palette-container" className="palette-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
               {test.questions.map((_, idx) => {
                 const isAttempted = answers[idx] !== undefined;
+                const isActive = idx === activeQuestion && !submitted;
                 let bgState = 'var(--glass-bg)';
                 let colorState = 'var(--text-primary)';
                 let borderState = 'var(--border-color)';
@@ -319,8 +355,11 @@ const TakeTest = () => {
                   bgState = 'var(--accent-primary)'; colorState = '#fff'; borderState = 'transparent';
                 }
 
+                if (isActive) borderState = 'var(--accent-secondary)';
+
                 return (
                   <div 
+                    id={`palette-q-${idx}`}
                     key={idx} 
                     onClick={() => {
                       const el = document.getElementById(`q-${idx}`);
@@ -335,7 +374,9 @@ const TakeTest = () => {
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.875rem', cursor: 'pointer',
                       background: bgState,
                       color: colorState,
-                      border: `1px solid ${borderState}`,
+                      border: `2px solid ${borderState}`,
+                      boxShadow: isActive ? '0 0 12px var(--accent-glow)' : 'none',
+                      transform: isActive ? 'scale(1.1)' : 'scale(1)',
                       transition: 'all 0.2s'
                     }}
                   >

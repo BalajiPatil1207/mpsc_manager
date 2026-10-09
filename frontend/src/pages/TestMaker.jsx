@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { FiCode, FiFilm, FiPlay, FiCopy, FiLayers } from 'react-icons/fi';
+import { auth } from '../firebase';
 
 const TestMaker = () => {
   // Test State
@@ -23,8 +24,14 @@ const TestMaker = () => {
       const parsedQuestions = JSON.parse(testJsonInput);
       if(!Array.isArray(parsedQuestions)) return toast.error("JSON must be an array of objects!");
       
+      const usr = auth.currentUser;
       const res = await axios.post('https://mpsc-manager.onrender.com/api/custom-tests', {
-        title: testTitle, subject: testSubject, timeLimit: timeLimit, questions: parsedQuestions
+        title: testTitle, 
+        subject: testSubject, 
+        timeLimit: timeLimit, 
+        questions: parsedQuestions,
+        createdBy: usr?.uid || 'anonymous',
+        creatorName: usr?.displayName ? usr.displayName.split(' ')[0] : 'A Student'
       });
 
       if(res.data.success) {
