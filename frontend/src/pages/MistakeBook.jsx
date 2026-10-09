@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { FiXCircle, FiBook, FiPlayCircle } from 'react-icons/fi';
+import { FiXCircle, FiBook, FiPlayCircle, FiTrash2 } from 'react-icons/fi';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const MistakeBook = () => {
   const [mistakes, setMistakes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingTest, setDeletingTest] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -63,9 +64,14 @@ const MistakeBook = () => {
                       </div>
                       <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{m.subject} • {m.questions?.length} Questions • Created {new Date(m.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <div>
-                      <button className="btn btn-primary" onClick={() => navigate(`/test/${m.id}`)} style={{ background: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                         <FiBook /> Start Revision
+                    <div className="flex-row gap-2">
+                      <button onClick={() => setDeletingTest(m)} className="btn task-action-btn" title="Delete Mistake Test" style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                         <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiTrash2 /> Delete</span>
+                         <FiTrash2 className="mobile-icon" size={16} />
+                      </button>
+                      <button className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${m.id}`)} style={{ background: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                         <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiBook /> Revise</span>
+                         <FiBook className="mobile-icon" size={16} />
                       </button>
                     </div>
                  </div>
@@ -74,6 +80,37 @@ const MistakeBook = () => {
           </div>
         </div>
       </div>
+
+      {deletingTest && (
+        <div className="modal-overlay" onClick={() => setDeletingTest(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-primary)', border: '1px solid var(--danger)', textAlign: 'left', minWidth: '300px' }}>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '16px', color: 'var(--danger)' }}>⚠️ Delete Mistake Book?</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Are you sure you want to permanently delete "{deletingTest.title}"? You will lose this revision data.</p>
+            <div className="flex-row gap-4">
+              <button type="button" onClick={() => setDeletingTest(null)} className="btn" style={{ flex: 1, background: 'var(--glass-bg)' }}>Cancel</button>
+              <button 
+                type="button" 
+                onClick={async () => {
+                   try {
+                     const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${deletingTest.id}`);
+                     if(res.data.success) {
+                       import('react-hot-toast').then(({ toast }) => toast.success('Mistake test deleted successfully'));
+                       setMistakes(mistakes.filter(m => m.id !== deletingTest.id));
+                       setDeletingTest(null);
+                     }
+                   } catch(err) {
+                     import('react-hot-toast').then(({ toast }) => toast.error('Failed to delete test'));
+                   }
+                }} 
+                className="btn btn-primary" style={{ flex: 1, background: 'linear-gradient(135deg, var(--danger), #b91c1c)', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
