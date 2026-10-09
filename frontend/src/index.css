@@ -127,7 +127,7 @@ option {
 
 .main-content {
   flex: 1;
-  padding: 32px;
+  padding: 0 32px 32px 32px;
   overflow-y: auto;
 }
 
@@ -139,7 +139,7 @@ option {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   padding: 16px 32px;
-  margin: -32px -32px 24px -32px;
+  margin: 0 -32px 24px -32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -388,14 +388,14 @@ h1, h2, h3, h4, h5, h6 {
 
   .sidebar { position: fixed; left: -320px; width: 280px; opacity: 1; padding: 24px; border-right-color: var(--border-color); height: 100dvh; padding-bottom: 32px; z-index: 2000; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
   .sidebar.open { left: 0; } 
+  .main-content { padding: 0 20px 90px 20px; } 
   .top-header { 
-    margin: -20px -20px 24px -20px !important;
+    margin: 0 -20px 24px -20px !important;
     padding: 16px 20px !important;
     top: 0 !important;
   } 
   .stat-cards { grid-template-columns: 1fr 1fr; } 
   .dashboard-grid { grid-template-columns: 1fr !important; } 
-  .main-content { padding: 20px; padding-bottom: 90px; } 
   .heading-gradient { font-size: 1.75rem !important; } 
   .date-input-theme { width: 100%; } 
   
