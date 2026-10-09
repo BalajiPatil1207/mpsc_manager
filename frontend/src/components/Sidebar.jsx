@@ -8,7 +8,7 @@ import { toast } from 'react-hot-toast';
 import ConfirmModal from './ConfirmModal';
 import { FiFilm } from 'react-icons/fi';
 
-const Sidebar = ({ user, isOpen, closeSidebar }) => {
+const Sidebar = ({ user, isOpen, closeSidebar, onSync, isSyncing }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [aiAdvice, setAiAdvice] = useState('');
