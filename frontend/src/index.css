@@ -334,9 +334,9 @@ h1, h2, h3, h4, h5, h6 {
 .bottom-nav { display: none; }
 
 @media (max-width: 768px) { 
-  .sidebar-overlay.open { display: block; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99; backdrop-filter: blur(4px); } 
+  .sidebar-overlay.open { display: block; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1999; backdrop-filter: blur(4px); } 
 
-  .sidebar { position: fixed; left: -320px; width: 280px; opacity: 1; padding: 24px; border-right-color: var(--border-color); height: 100dvh; padding-bottom: 32px; z-index: 100; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+  .sidebar { position: fixed; left: -320px; width: 280px; opacity: 1; padding: 24px; border-right-color: var(--border-color); height: 100dvh; padding-bottom: 32px; z-index: 2000; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
   .sidebar.open { left: 0; } 
   .top-header { display: flex !important; justify-content: space-between; align-items: center; } 
   .stat-cards { grid-template-columns: 1fr 1fr; } 
