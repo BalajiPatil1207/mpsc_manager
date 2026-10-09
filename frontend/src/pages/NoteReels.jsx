@@ -90,46 +90,47 @@ const NoteReels = () => {
       <div className="dashboard-grid" style={{ gridTemplateColumns: '1fr' }}>
         
         {/* Reel Library */}
-        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '650px' }}>
+        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
            <div className="flex-row justify-between align-center">
              <h2 style={{ fontSize: '1.25rem' }}>📚 Your Reels</h2>
              <button className="btn" onClick={() => navigate('/test-maker')} style={{ padding: '6px 12px', fontSize: '0.875rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>+ Create New Reel</button>
            </div>
            
-           <div className="flex-col gap-4">
+           <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '16px' }}>
              {history.length === 0 ? (
-               <div style={{ textAlign: 'center', padding: '40px', background: 'var(--glass-bg)', borderRadius: '12px' }}>
+               <div style={{ textAlign: 'center', padding: '40px', background: 'var(--glass-bg)', borderRadius: '12px', flex: '1' }}>
                  <p style={{ color: 'var(--text-muted)' }}>No reels found.</p>
                  <button onClick={() => navigate('/test-maker')} className="btn btn-primary" style={{ marginTop: '16px' }}>Go to Creator Studio</button>
                </div>
              ) : null}
              
              {history.map(reel => (
-               <div key={reel.id} className="glass-card" style={{ padding: '16px', borderLeft: '4px solid var(--accent-secondary)' }}>
-                 <div className="flex-row justify-between align-center" style={{ marginBottom: '8px' }}>
-                   <h3 style={{ fontSize: '1.125rem', margin: 0 }}>{reel.title}</h3>
-                   <span className="badge pending" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)' }}>
-                     {reel.cards?.length || 0} Cards
-                   </span>
-                 </div>
-                 <div className="flex-row justify-between align-center" style={{ flexWrap: 'wrap', gap: '12px' }}>
+               <div key={reel.id} className="glass-card flex-col justify-between" style={{ minWidth: '300px', flex: '0 0 auto', scrollSnapAlign: 'start', padding: '16px', borderTop: '4px solid var(--accent-secondary)' }}>
+                 <div className="flex-col gap-2" style={{ marginBottom: '16px' }}>
+                   <div className="flex-row justify-between align-center">
+                     <h3 style={{ fontSize: '1.125rem', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={reel.title}>{reel.title}</h3>
+                     <span className="badge pending" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', flexShrink: 0 }}>
+                       {reel.cards?.length || 0} Cards
+                     </span>
+                   </div>
                    <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                      {reel.subject} • {new Date(reel.createdAt).toLocaleDateString()}
                    </p>
-                   <div className="flex-row gap-2">
-                     <button title="Delete Reel" onClick={() => setDeleteTarget(reel.id)} className="btn task-action-btn" style={{ padding: '6px 12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
+                 </div>
+                 
+                 <div className="flex-row gap-2" style={{ flexWrap: 'wrap' }}>
+                     <button title="Delete Reel" onClick={() => setDeleteTarget(reel.id)} className="btn task-action-btn" style={{ flex: 1, padding: '8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                        <span className="desktop-text">Delete</span>
                        <FiTrash2 className="mobile-icon" size={16} />
                      </button>
-                     <button title="Copy Link" onClick={() => copyLink(`${window.location.origin}/reel/${reel.id}`)} className="btn task-action-btn" style={{ padding: '6px 12px', background: 'var(--glass-bg)', color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
+                     <button title="Copy Link" onClick={() => copyLink(`${window.location.origin}/reel/${reel.id}`)} className="btn task-action-btn" style={{ flex: 1, padding: '8px', background: 'var(--glass-bg)', color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                        <span className="desktop-text">Share</span>
                        <FiCopy className="mobile-icon" size={16} />
                      </button>
-                     <button className="btn btn-primary task-action-btn" onClick={() => navigate(`/reel/${reel.id}`)} style={{ padding: '6px 12px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', background: 'var(--accent-secondary)' }}>
+                     <button className="btn btn-primary task-action-btn" onClick={() => navigate(`/reel/${reel.id}`)} style={{ flex: 1.5, padding: '8px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-secondary)' }}>
                        <span className="desktop-text">Watch Now</span>
                        <FiPlay className="mobile-icon" size={16} />
                      </button>
-                   </div>
                  </div>
                </div>
              ))}
