@@ -254,18 +254,18 @@ const Dashboard = ({ user }) => {
           <p style={{ color: 'var(--text-secondary)' }}>Welcome to your personalized Study OS</p>
         </div>
         
-        <div className="dashboard-header-actions flex-row gap-4" style={{ height: 'fit-content', flexWrap: 'wrap' }}>
+        <div className="dashboard-header-actions flex-col gap-4" style={{ height: 'fit-content' }}>
           {/* Days Left Card */}
-          <div className="glass-card flex-row gap-4" style={{ padding: '12px 24px', animation: 'slideUp 0.8s ease-out' }}>
-            <div className="flex-col" style={{ alignItems: 'flex-end' }}>
+          <div className="glass-card flex-row justify-between align-center" style={{ padding: '12px 24px', animation: 'slideUp 0.8s ease-out', width: '100%', gap: '16px' }}>
+            <div className="flex-col" style={{ alignItems: 'flex-start' }}>
               <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>MPSC 2027 In</span>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--danger)' }}><AnimatedNumber value={calculateDaysLeft()} /> <span style={{fontSize:'1rem'}}>Days</span></span>
             </div>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>⏳</div>
           </div>
           
-          <div className="glass-card flex-row gap-4" style={{ padding: '12px 24px', animation: 'slideUp 0.9s ease-out' }}>
-            <div className="flex-col" style={{ alignItems: 'flex-end' }}>
+          <div className="glass-card flex-row justify-between align-center" style={{ padding: '12px 24px', animation: 'slideUp 0.9s ease-out', width: '100%', gap: '16px' }}>
+            <div className="flex-col" style={{ alignItems: 'flex-start' }}>
               <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Total XP Earned</span>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-secondary)' }}><AnimatedNumber value={parseFloat(localStorage.getItem('xp_total')) || 0} /></span>
             </div>
