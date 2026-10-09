@@ -33,6 +33,7 @@ const AnimatedNumber = ({ value }) => {
 const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const navigate = useNavigate();
   const [showAllTasks, setShowAllTasks] = useState(false);
+  const [isEditingTasks, setIsEditingTasks] = useState(false);
   const currentReasoningSet = parseInt(localStorage.getItem('reasoningSetNumber')) || 1;
 
   const handleInstallClick = () => {
@@ -135,6 +136,13 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
       import('../utils/sound').then(({ playSound }) => playSound.playSuccess());
       toast.success('Task marked as completed! 🎉');
     }
+  };
+
+  const handleDeleteTask = (taskId) => {
+    const updated = dailyTasks.filter(t => t.id !== taskId);
+    setDailyTasks(updated);
+    import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', updated));
+    toast.success('Task removed from list!', { style: { borderRadius: '12px', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }});
   };
 
   const advanceToNextDay = async () => {
@@ -364,7 +372,8 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
                 </span>
               </div>
               <div className="flex-row gap-2">
-                <button onClick={advanceToNextDay} className="btn" style={{ padding: '6px 12px', background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-glow)', outline: 'none', fontSize: '0.75rem' }}>Wrap Up Day 🚀</button>
+                <button onClick={() => setIsEditingTasks(!isEditingTasks)} className="btn" style={{ padding: '6px 12px', background: isEditingTasks ? 'var(--warning)' : 'rgba(255,255,255,0.05)', color: isEditingTasks ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}>{isEditingTasks ? 'Done Editing' : 'Edit Tasks'}</button>
+                {!isEditingTasks && <button onClick={advanceToNextDay} className="btn" style={{ padding: '6px 12px', background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-glow)', outline: 'none', fontSize: '0.75rem' }}>Wrap Up Day 🚀</button>}
                 <button onClick={() => setShowAllTasks(!showAllTasks)} className="btn" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}>{showAllTasks ? 'View Less' : 'View All'}</button>
               </div>
             </div>
@@ -373,27 +382,40 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
               {(showAllTasks ? [...dailyTasks].sort((a, b) => a.completed === b.completed ? 0 : a.completed ? 1 : -1) : [...dailyTasks].sort((a, b) => a.completed === b.completed ? 0 : a.completed ? 1 : -1).slice(0, 3)).map(task => (
                 <div key={task.id} className="task-item" style={{ background: task.completed ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', borderRadius: '12px', borderBottom: '1px solid var(--border-color)', opacity: task.completed ? 0.7 : 1, transition: 'all 0.3s ease', padding: '18px 16px', marginBottom: '8px' }}>
                   <div className="flex-row gap-4" style={{ alignItems: 'center' }}>
-                    {task.completed ? <FiCheckCircle size={24} color="var(--success)" /> : <FiClock size={24} color="var(--accent-primary)" />}
+                    {isEditingTasks ? (
+                       <button onClick={() => handleDeleteTask(task.id)} style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Remove Task">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                       </button>
+                    ) : (
+                       task.completed ? <FiCheckCircle size={24} color="var(--success)" /> : <FiClock size={24} color="var(--accent-primary)" />
+                    )}
                     <div className="flex-col gap-1" style={{ flex: 1 }}>
                       <span style={{ fontWeight: 600, color: task.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title.replace(' (GKGS)', '')}</span>
                       <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                         🕒 {task.duration} {getTopicForTask(task.id) && <span>• <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', letterSpacing: '0.5px' }}>topic: {getTopicForTask(task.id)}</span></span>}
                       </span>
                     </div>
-                    {task.completed ? (
-                      <button onClick={() => toggleTask(task.id, true)} className="btn task-action-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>
-                        <span className="desktop-text">Undo</span>
-                        <FiRotateCcw className="mobile-icon" size={18} />
-                      </button>
-                    ) : (
-                      <button onClick={() => toggleTask(task.id, false)} className="btn btn-primary task-action-btn">
-                        <span className="desktop-text">Complete</span>
-                        <FiCheck className="mobile-icon" size={18} />
-                      </button>
+                    {!isEditingTasks && (
+                      task.completed ? (
+                        <button onClick={() => toggleTask(task.id, true)} className="btn task-action-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>
+                          <span className="desktop-text">Undo</span>
+                          <FiRotateCcw className="mobile-icon" size={18} />
+                        </button>
+                      ) : (
+                        <button onClick={() => toggleTask(task.id, false)} className="btn btn-primary task-action-btn">
+                          <span className="desktop-text">Complete</span>
+                          <FiCheck className="mobile-icon" size={18} />
+                        </button>
+                      )
                     )}
                   </div>
                 </div>
               ))}
+              {dailyTasks.length === 0 && (
+                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+                   No tasks assigned! You can wrap up or wait for next day.
+                </div>
+              )}
             </div>
           </div>
 
