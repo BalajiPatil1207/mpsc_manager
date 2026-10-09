@@ -254,22 +254,22 @@ const Dashboard = ({ user }) => {
           <p style={{ color: 'var(--text-secondary)' }}>Welcome to your personalized Study OS</p>
         </div>
         
-        <div className="dashboard-header-actions flex-col gap-4" style={{ height: 'fit-content' }}>
+        <div className="dashboard-header-actions flex-row gap-4" style={{ height: 'fit-content', flexWrap: 'wrap' }}>
           {/* Days Left Card */}
-          <div className="glass-card flex-row justify-between align-center" style={{ padding: '12px 24px', animation: 'slideUp 0.8s ease-out', width: '100%', gap: '16px' }}>
-            <div className="flex-col" style={{ alignItems: 'flex-start' }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>MPSC 2027 In</span>
+          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.8s ease-out', flex: 1, minWidth: '140px', gap: '8px', textAlign: 'center' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', margin: '0 auto' }}>⏳</div>
+            <div className="flex-col" style={{ alignItems: 'center' }}>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--danger)' }}><AnimatedNumber value={calculateDaysLeft()} /> <span style={{fontSize:'1rem'}}>Days</span></span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>MPSC 2027</span>
             </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>⏳</div>
           </div>
           
-          <div className="glass-card flex-row justify-between align-center" style={{ padding: '12px 24px', animation: 'slideUp 0.9s ease-out', width: '100%', gap: '16px' }}>
-            <div className="flex-col" style={{ alignItems: 'flex-start' }}>
-              <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Total XP Earned</span>
+          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.9s ease-out', flex: 1, minWidth: '140px', gap: '8px', textAlign: 'center' }}>
+            <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '4px solid var(--accent-primary)', borderLeftColor: 'rgba(255,255,255,0.1)', transform: 'rotate(45deg)', margin: '0 auto' }}></div>
+            <div className="flex-col" style={{ alignItems: 'center', marginTop: '4px' }}>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-secondary)' }}><AnimatedNumber value={parseFloat(localStorage.getItem('xp_total')) || 0} /></span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Total XP</span>
             </div>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '4px solid var(--accent-primary)', borderLeftColor: 'rgba(255,255,255,0.1)', transform: 'rotate(45deg)' }}></div>
           </div>
         </div>
       </div>
