@@ -15,6 +15,32 @@ exports.subscribe = async (req, res) => {
   res.status(201).json({ success: true });
 };
 
+exports.testPush = async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
+
+  try {
+    const docSnap = await db.collection('pushSubscriptions').doc(userId).get();
+    if (!docSnap.exists) return res.status(404).json({ error: 'No subscription found' });
+    
+    const { subscription } = docSnap.data();
+    const payload = JSON.stringify({
+      title: "🧪 Test Notification Successful!",
+      body: "If you see this, your live Web Push configuration is 100% working! 🚀",
+      icon: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+      badge: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+      vibrate: [200, 100, 200, 100, 200, 100, 200],
+      url: 'https://mpsc-manager.vercel.app/'
+    });
+
+    await webpush.sendNotification(subscription, payload);
+    res.json({ success: true, message: "Test push sent successfully!" });
+  } catch(err) {
+    console.error("Test Push Error", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.startCronJobs = () => {
   const cron = require('node-cron');
   

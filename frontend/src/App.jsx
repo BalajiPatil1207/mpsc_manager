@@ -91,12 +91,17 @@ function App() {
   };
 
   const handleNotificationClick = () => {
-    Notification.requestPermission().then(perm => {
+    Notification.requestPermission().then(async (perm) => {
       if (perm === 'granted') {
-        toast("You're all caught up! No active alerts.", {
-          icon: '🔔',
+        const toastId = toast.loading("Sending Test Push via Vercel+Render... 🚀", {
           style: { borderRadius: '12px', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }
         });
+        try {
+          await axios.post('https://mpsc-manager.onrender.com/api/notifications/test', { userId: user.uid });
+          toast.success("✅ Test Push Delivered!", { id: toastId });
+        } catch(err) {
+          toast.error("❌ Test Push Failed! (Check if backend deployed)", { id: toastId });
+        }
       } else {
         alert("Please enable notification permissions in your browser settings!");
       }
