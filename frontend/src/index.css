@@ -71,6 +71,17 @@ body {
   border-radius: var(--panel-radius);
 }
 
+/* Forms & Inputs */
+input, textarea, select {
+  font-family: inherit;
+  color: var(--text-primary);
+}
+
+option {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
 .glass-card {
   background: var(--glass-bg);
   border: 1px solid var(--border-color);

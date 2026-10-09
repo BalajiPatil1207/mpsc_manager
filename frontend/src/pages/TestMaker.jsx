@@ -90,11 +90,17 @@ const TestMaker = () => {
             <input type="text" placeholder="Test Title" className="glass-card" style={{ padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={testTitle} onChange={(e) => setTestTitle(e.target.value)} />
             <div className="flex-row gap-4">
               <select className="glass-card" value={testSubject} onChange={(e) => setTestSubject(e.target.value)} style={{ flex: 1, padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }}>
-                 <option style={{color:'#000'}} value="GK/GS">GK / GS</option>
-                 <option style={{color:'#000'}} value="Maths">Maths</option>
-                 <option style={{color:'#000'}} value="Reasoning">Reasoning</option>
-                 <option style={{color:'#000'}} value="Marathi">Marathi</option>
-                 <option style={{color:'#000'}} value="Mixed">Mixed</option>
+                 <option value="Current Affairs">Current Affairs</option>
+                 <option value="Economics">Economics</option>
+                 <option value="Geography">Geography</option>
+                 <option value="History">History</option>
+                 <option value="Polity">Polity</option>
+                 <option value="Science">Science (विज्ञान)</option>
+                 <option value="GK/GS">GK / GS</option>
+                 <option value="Maths">Maths (गणित)</option>
+                 <option value="Reasoning">Reasoning (बुद्धिमत्ता)</option>
+                 <option value="Marathi">Marathi</option>
+                 <option value="Mixed">Mixed</option>
               </select>
               <input type="number" placeholder="Mins" className="glass-card" style={{ width: '80px', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} />
             </div>
@@ -118,11 +124,17 @@ const TestMaker = () => {
           <div className="flex-col gap-4">
             <input type="text" placeholder="Reel Title" className="glass-card" style={{ padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={reelTitle} onChange={(e) => setReelTitle(e.target.value)} />
             <select className="glass-card" value={reelSubject} onChange={(e) => setReelSubject(e.target.value)} style={{ padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }}>
-                 <option style={{color:'#000'}} value="GK/GS">GK / GS</option>
-                 <option style={{color:'#000'}} value="Maths">Maths</option>
-                 <option style={{color:'#000'}} value="Reasoning">Reasoning</option>
-                 <option style={{color:'#000'}} value="Marathi">Marathi</option>
-                 <option style={{color:'#000'}} value="Mixed">Mixed</option>
+                 <option value="Current Affairs">Current Affairs</option>
+                 <option value="Economics">Economics</option>
+                 <option value="Geography">Geography</option>
+                 <option value="History">History</option>
+                 <option value="Polity">Polity</option>
+                 <option value="Science">Science (विज्ञान)</option>
+                 <option value="GK/GS">GK / GS</option>
+                 <option value="Maths">Maths (गणित)</option>
+                 <option value="Reasoning">Reasoning (बुद्धिमत्ता)</option>
+                 <option value="Marathi">Marathi</option>
+                 <option value="Mixed">Mixed</option>
             </select>
             <textarea className="glass-card" style={{ width: '100%', height: '220px', fontFamily: 'monospace', padding: '16px', outline: 'none', resize: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)' }} value={reelJsonInput} onChange={(e) => setReelJsonInput(e.target.value)} />
 
