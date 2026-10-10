@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FiClock, FiCheckCircle, FiPlay, FiAlertTriangle, FiBell, FiMoon, FiSun, FiCheck, FiRotateCcw, FiDownload, FiPlus } from 'react-icons/fi';
 import { requestNotificationPermission, sendPushNotification } from '../utils/notify';
 import { toast } from 'react-hot-toast';
@@ -40,6 +40,18 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDuration, setNewTaskDuration] = useState('30 min');
   const currentReasoningSet = parseInt(localStorage.getItem('reasoningSetNumber')) || 1;
+  const dragItem = useRef(null);
+  const dragOverItem = useRef(null);
+
+  const handleSort = () => {
+    let _tasks = [...dailyTasks];
+    const draggedItemContent = _tasks.splice(dragItem.current, 1)[0];
+    _tasks.splice(dragOverItem.current, 0, draggedItemContent);
+    dragItem.current = null;
+    dragOverItem.current = null;
+    setDailyTasks(_tasks);
+    import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', _tasks));
+  };
 
   const handleInstallClick = () => {
     if (deferredPrompt) {
@@ -409,9 +421,23 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
             </div>
             
             <div className="flex-col gap-4">
-              {(showAllTasks ? [...dailyTasks].sort((a, b) => a.completed === b.completed ? 0 : a.completed ? 1 : -1) : [...dailyTasks].sort((a, b) => a.completed === b.completed ? 0 : a.completed ? 1 : -1).slice(0, 3)).map(task => (
-                <div key={task.id} className="task-item" style={{ background: task.completed ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', borderRadius: '12px', borderBottom: '1px solid var(--border-color)', opacity: task.completed ? 0.7 : 1, transition: 'all 0.3s ease', padding: '18px 16px', marginBottom: '8px' }}>
+              {(showAllTasks ? dailyTasks : dailyTasks.slice(0, 3)).map((task, idx) => (
+                <div 
+                  key={task.id} 
+                  className="task-item" 
+                  draggable={isEditingTasks}
+                  onDragStart={(e) => { if(isEditingTasks) dragItem.current = idx; }}
+                  onDragEnter={(e) => { if(isEditingTasks) dragOverItem.current = idx; }}
+                  onDragEnd={isEditingTasks ? handleSort : undefined}
+                  onDragOver={(e) => e.preventDefault()}
+                  style={{ background: task.completed ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', borderRadius: '12px', borderBottom: '1px solid var(--border-color)', opacity: task.completed ? 0.7 : 1, transition: 'all 0.3s ease', padding: '18px 16px', marginBottom: '8px', cursor: isEditingTasks ? 'grab' : 'default' }}
+                >
                   <div className="flex-row gap-4" style={{ alignItems: 'center' }}>
+                    {isEditingTasks && (
+                       <div style={{ cursor: 'grab', color: 'var(--text-muted)' }}>
+                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                       </div>
+                    )}
                     {isEditingTasks ? (
                        <button onClick={() => handleDeleteTask(task.id)} style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Remove Task">
                           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
