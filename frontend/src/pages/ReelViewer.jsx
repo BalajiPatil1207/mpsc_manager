@@ -52,7 +52,17 @@ const ReelViewer = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, reel]);
 
-  if (loading) return <div style={{ color: 'var(--text-primary)', padding: '40px', textAlign: 'center' }}>Loading Reel...</div>;
+  if (loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', gap: '32px' }}>
+      <div className="premium-loader">
+         <div className="ring"></div>
+         <div className="ring"></div>
+         <div className="ring"></div>
+         <span className="premium-loader-text" style={{ fontSize: '1.25rem', fontFamily: 'serif', fontStyle: 'italic', color: 'var(--accent-primary)' }}>1207</span>
+      </div>
+      <p style={{ color: 'var(--text-secondary)', letterSpacing: '3px', textTransform: 'uppercase', animation: 'pulse 1.5s infinite', fontSize: '0.875rem', fontWeight: 600 }}>Loading Reel Data</p>
+    </div>
+  );
   if (!reel) return <div style={{ color: 'var(--text-primary)', padding: '40px', textAlign: 'center' }}>Reel not found!</div>;
 
   const currentCard = reel.cards[currentIndex];

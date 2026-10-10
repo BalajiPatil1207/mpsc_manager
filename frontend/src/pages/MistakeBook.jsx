@@ -48,7 +48,13 @@ const MistakeBook = () => {
           <h2 style={{ fontSize: '1.25rem', marginBottom: '20px' }}>Recent Mistake Mocks</h2>
           <div className="flex-col gap-4">
             {loading ? (
-               <p style={{ color: 'var(--text-muted)' }}>Loading records...</p>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '24px' }}>
+                <div className="premium-loader" style={{ width: '60px', height: '60px' }}>
+                   <div className="ring"></div><div className="ring"></div><div className="ring"></div>
+                   <span className="premium-loader-text" style={{ fontSize: '0.8rem', fontFamily: 'serif', fontStyle: 'italic', color: 'var(--accent-primary)' }}>1207</span>
+                </div>
+                <p style={{ color: 'var(--text-secondary)', letterSpacing: '2px', textTransform: 'uppercase', animation: 'pulse 1.5s infinite', fontSize: '0.75rem', fontWeight: 600 }}>Loading Records</p>
+              </div>
             ) : mistakes.length === 0 ? (
                <div className="glass-card" style={{ padding: '40px', textAlign: 'center' }}>
                  <FiXCircle size={48} color="rgba(255,255,255,0.1)" style={{ marginBottom: '16px' }} />
