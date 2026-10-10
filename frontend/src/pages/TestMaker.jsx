@@ -48,10 +48,14 @@ const TestMaker = () => {
       const cleanedJson = reelJsonInput.replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "'");
       const parsedCards = JSON.parse(cleanedJson);
       if(!Array.isArray(parsedCards)) return toast.error("JSON must be an array of objects!");
-      
       const tId = toast.loading("Creating Study Reel...");
+      const usr = auth.currentUser;
       const res = await axios.post('https://mpsc-manager.onrender.com/api/reels', {
-        title: reelTitle, subject: reelSubject, cards: parsedCards
+        title: reelTitle, 
+        subject: reelSubject, 
+        cards: parsedCards,
+        createdBy: usr?.uid || 'anonymous',
+        creatorName: usr?.displayName ? usr.displayName.split(' ')[0] : 'A Student'
       });
 
       if(res.data.success) {
