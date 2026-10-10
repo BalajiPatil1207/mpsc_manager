@@ -12,6 +12,7 @@ const NoteReels = () => {
   const [reelLink, setReelLink] = useState('');
   const [history, setHistory] = useState([]);
   const [filterSubject, setFilterSubject] = useState('');
+  const [filterTopic, setFilterTopic] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const navigate = useNavigate();
 
@@ -103,7 +104,36 @@ const NoteReels = () => {
 
   const activeSubjectData = filterSubject ? SUBJECTS.find(s => s.id === filterSubject) : null;
 
-  if (filterSubject && activeSubjectData) {
+  if (filterSubject && activeSubjectData && !filterTopic) {
+    const reelsForSubject = filteredHistory.filter(h => {
+      const subj = (h.subject || '').toLowerCase();
+      const activeId = activeSubjectData.id.toLowerCase();
+      if (activeId === 'history') return subj.includes('history') || subj.includes('gk');
+      return subj.includes(activeId);
+    });
+    
+    if (reelsForSubject.length === 0) {
+      return (
+        <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.3s' }}>
+          <div className="flex-row gap-4 align-center" style={{ marginBottom: '8px' }}>
+            <button className="btn" onClick={() => setFilterSubject('')} style={{ background: 'var(--glass-bg)', padding: '8px 16px', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>←</span> Back to All Subjects
+            </button>
+          </div>
+          <div className="glass-panel" style={{ textAlign: 'center', padding: '40px' }}>
+            <p style={{ color: 'var(--text-muted)' }}>No reels available for {activeSubjectData.label}.</p>
+          </div>
+        </div>
+      );
+    }
+
+    const groupedReels = reelsForSubject.reduce((acc, reel) => {
+      const topic = reel.topic ? reel.topic.trim() : 'General Notes';
+      if(!acc[topic]) acc[topic] = [];
+      acc[topic].push(reel);
+      return acc;
+    }, {});
+
     return (
       <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.3s' }}>
         <div className="flex-row gap-4 align-center" style={{ marginBottom: '8px' }}>
@@ -115,76 +145,97 @@ const NoteReels = () => {
         <div className="flex-row justify-between" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>
             <span style={{ marginRight: '12px' }}>{activeSubjectData.icon}</span> 
-            {activeSubjectData.label} Notes & Reels
+            {activeSubjectData.label} Topics
           </h1>
           <button onClick={() => navigate('/test-maker', { state: { defaultSubject: activeSubjectData.id === 'Math' ? 'Maths' : activeSubjectData.id } })} className="btn" style={{ padding: '8px 16px', fontSize: '0.875rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
              + Create Reel
           </button>
         </div>
-        <p style={{ color: 'var(--text-secondary)' }}>All fast-paced flashcard reels for {activeSubjectData.label}.</p>
+        <p style={{ color: 'var(--text-secondary)' }}>Select a topic to view its note reels.</p>
         
-        <div className="flex-col gap-6" style={{ gridColumn: '1 / -1' }}>
-             {(() => {
-               const reelsForSubject = filteredHistory.filter(h => {
-                 const subj = (h.subject || '').toLowerCase();
-                 const activeId = activeSubjectData.id.toLowerCase();
-                 if (activeId === 'history') return subj.includes('history') || subj.includes('gk');
-                 return subj.includes(activeId);
-               });
-               
-               if (reelsForSubject.length === 0) {
-                 return (
-                   <div className="glass-panel" style={{ textAlign: 'center', padding: '40px' }}>
-                     <p style={{ color: 'var(--text-muted)' }}>No reels available for {activeSubjectData.label}.</p>
-                   </div>
-                 );
-               }
+        <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
+          {Object.keys(groupedReels).map(topicName => (
+            <button 
+              key={topicName}
+              onClick={() => setFilterTopic(topicName)}
+              className="glass-card" 
+              style={{ 
+                 width: '100%',
+                 padding: '24px 24px', 
+                 display: 'flex', 
+                 alignItems: 'center', 
+                 justifyContent: 'flex-start',
+                 gap: '16px', 
+                 background: 'var(--glass-bg)',
+                 border: '1px solid var(--border-color)',
+                 borderRadius: '20px',
+                 cursor: 'pointer',
+                 transition: 'all 0.3s ease'
+              }}
+            >
+              <span style={{ fontSize: '2.5rem' }}>📂</span>
+              <span style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'left' }}>{topicName}</span>
+              <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '12px', fontSize: '0.875rem' }}>{groupedReels[topicName].length} Reels</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-               const groupedReels = reelsForSubject.reduce((acc, reel) => {
-                 const topic = reel.topic ? reel.topic.trim() : 'General Notes';
-                 if(!acc[topic]) acc[topic] = [];
-                 acc[topic].push(reel);
-                 return acc;
-               }, {});
+  if (filterSubject && activeSubjectData && filterTopic) {
+    const reelsForTopic = filteredHistory.filter(h => {
+      const subj = (h.subject || '').toLowerCase();
+      const activeId = activeSubjectData.id.toLowerCase();
+      const isSubjMatch = activeId === 'history' ? (subj.includes('history') || subj.includes('gk')) : subj.includes(activeId);
+      const testTopic = h.topic ? h.topic.trim() : 'General Notes';
+      return isSubjMatch && testTopic === filterTopic;
+    });
 
-               return Object.keys(groupedReels).map(topicName => (
-                 <div key={topicName} className="glass-panel" style={{ padding: '24px' }}>
-                   <h3 style={{ fontSize: '1.25rem', marginBottom: '16px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>📂 {topicName}</h3>
-                   <div className="flex-row gap-4" style={{ overflowX: 'auto', paddingBottom: '16px', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
-                     {groupedReels[topicName].map(reel => (
-               <div key={reel.id} className="glass-card" style={{ padding: '16px', minWidth: '280px', maxWidth: '320px', flex: '0 0 auto', scrollSnapAlign: 'start', borderTop: '4px solid var(--accent-secondary)', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--bg-primary)' }}>
-                 <div className="flex-col gap-2">
-                   <div className="flex-row gap-2 align-center justify-between">
-                     <h3 style={{ fontSize: '1.125rem', margin: 0, color: 'var(--text-primary)' }}>{reel.title}</h3>
-                     <span className="badge pending" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)' }}>
-                       {reel.cards?.length || 0} Cards
-                     </span>
-                   </div>
-                   <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                     {reel.subject} • {new Date(reel.createdAt).toLocaleDateString()}
-                   </p>
-                 </div>
-                 <div className="flex-row gap-2" style={{ flexWrap: 'wrap' }}>
-                     <button title="Delete" onClick={() => setDeleteTarget(reel.id)} className="btn task-action-btn" style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
-                       <span className="desktop-text">Delete</span>
-                       <FiTrash2 className="mobile-icon" size={16} />
-                     </button>
-                     <button title="Copy Link" onClick={() => copyLink(`${window.location.origin}/reel/${reel.id}`)} className="btn task-action-btn" style={{ padding: '8px 16px', background: 'var(--glass-bg)', color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
-                       <span className="desktop-text">Share</span>
-                       <FiCopy className="mobile-icon" size={16} />
-                     </button>
-                     <button className="btn btn-primary task-action-btn" onClick={() => navigate(`/reel/${reel.id}`)} style={{ padding: '8px 24px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', background: 'var(--accent-secondary)' }}>
-                       <span className="desktop-text"><FiPlay size={16} /> Watch</span>
-                       <FiPlay className="mobile-icon" size={16} />
-                     </button>
-                 </div>
-               </div>
-             ))}
-                   </div>
-                 </div>
-               ));
-             })()}
-         </div>
+    return (
+      <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.3s' }}>
+        <div className="flex-row gap-4 align-center" style={{ marginBottom: '8px' }}>
+          <button className="btn" onClick={() => setFilterTopic('')} style={{ background: 'var(--glass-bg)', padding: '8px 16px', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>←</span> Back to Topics
+          </button>
+        </div>
+        
+        <div className="flex-row justify-between" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>
+            📂 {filterTopic}
+          </h1>
+          <button onClick={() => navigate('/test-maker', { state: { defaultSubject: activeSubjectData.id === 'Math' ? 'Maths' : activeSubjectData.id } })} className="btn" style={{ padding: '8px 16px', fontSize: '0.875rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
+             + Create Reel
+          </button>
+        </div>
+        
+        <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))' }}>
+          {reelsForTopic.map(reel => (
+            <div key={reel.id} className="glass-card" style={{ padding: '16px', borderTop: '4px solid var(--accent-secondary)', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--bg-primary)' }}>
+              <div className="flex-col gap-2">
+                <div className="flex-row gap-2 align-center justify-between">
+                  <h3 style={{ fontSize: '1.125rem', margin: 0, color: 'var(--text-primary)' }}>{reel.title}</h3>
+                  <span className="badge pending" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', whiteSpace: 'nowrap' }}>
+                    {reel.cards?.length || 0} Cards
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  {reel.subject} • {new Date(reel.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="flex-row gap-2" style={{ flexWrap: 'wrap', marginTop: 'auto' }}>
+                  <button title="Delete" onClick={() => setDeleteTarget(reel.id)} className="btn task-action-btn" style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.875rem', display: 'flex', alignItems: 'center' }}>
+                    <span className="desktop-text">Delete</span>
+                    <FiTrash2 className="mobile-icon" size={16} />
+                  </button>
+                  <button title="Play Reel" className="btn btn-primary task-action-btn" onClick={() => navigate(`/reel/${reel.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span className="desktop-text"><FiPlayCircle /> Study Reel</span>
+                    <FiPlayCircle className="mobile-icon" size={16} />
+                  </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

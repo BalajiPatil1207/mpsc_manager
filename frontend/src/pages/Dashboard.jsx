@@ -132,8 +132,13 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     try {
       const saved = localStorage.getItem('user_daily_tasks');
       if (saved && saved !== 'undefined' && saved !== 'null') {
-         const parsed = JSON.parse(saved);
-         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+         let parsed = JSON.parse(saved);
+         if (Array.isArray(parsed) && parsed.length > 0) {
+           return parsed.sort((a, b) => {
+             if (a.completed === b.completed) return 0;
+             return a.completed ? 1 : -1;
+           });
+         }
       }
     } catch(e) { }
     return initialDailyTasks;
@@ -141,12 +146,19 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const [showTaskVideo, setShowTaskVideo] = useState(false);
 
   const toggleTask = (taskId, isUndo = false) => {
-    const updated = dailyTasks.map(t => {
+    let updated = dailyTasks.map(t => {
       if (t.id === taskId) {
         return { ...t, completed: !isUndo };
       }
       return t;
     });
+
+    // Auto sort: Uncompleted -> Completed
+    updated = updated.sort((a, b) => {
+      if (a.completed === b.completed) return 0;
+      return a.completed ? 1 : -1;
+    });
+
     setDailyTasks(updated);
     import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', updated));
     
@@ -182,7 +194,11 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
       duration: newTaskDuration,
       completed: false
     };
-    const updated = [...dailyTasks, newTask];
+    let updated = [...dailyTasks, newTask];
+    updated = updated.sort((a, b) => {
+      if (a.completed === b.completed) return 0;
+      return a.completed ? 1 : -1;
+    });
     setDailyTasks(updated);
     import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', updated));
     toast.success('Custom task added!');
