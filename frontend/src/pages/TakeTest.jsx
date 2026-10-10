@@ -416,11 +416,11 @@ const TakeTest = () => {
             </div>
             
             {!submitted && (
-              <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '16px', height: '16px', background: 'var(--accent-primary)', borderRadius: '4px' }}></div> Answered</div>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '16px', height: '16px', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '4px' }}></div> Not Answered</div>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '16px', height: '16px', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid var(--warning)', borderRadius: '4px' }}></div> Marked (Unanswered)</div>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '16px', height: '16px', background: 'linear-gradient(135deg, var(--accent-primary), var(--warning))', borderRadius: '4px' }}></div> Marked (Answered)</div>
+              <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: 'var(--accent-primary)', borderRadius: '3px' }}></div> Answered</div>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '3px' }}></div> Not Answered</div>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid var(--warning)', borderRadius: '3px' }}></div> Mrk (Blank)</div>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: 'linear-gradient(135deg, var(--accent-primary), var(--warning))', borderRadius: '3px' }}></div> Mrk (Ans)</div>
               </div>
             )}
             {submitted && (
