@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { FiFilm, FiPlay, FiCopy, FiTrash2 } from 'react-icons/fi';
+import { FiFilm, FiPlay, FiPlayCircle, FiCopy, FiTrash2 } from 'react-icons/fi';
 import ConfirmModal from '../components/ConfirmModal';
 
 const NoteReels = () => {
@@ -84,6 +84,19 @@ const NoteReels = () => {
       fetchHistory();
     }
   };
+
+  const renderModals = () => (
+    <ConfirmModal 
+      isOpen={!!deleteTarget}
+      title="Delete Reel"
+      message="Are you sure you want to permanently delete this reel? This action cannot be undone."
+      confirmText="Delete"
+      cancelText="Cancel"
+      isDanger={true}
+      onConfirm={processDelete}
+      onCancel={() => setDeleteTarget(null)}
+    />
+  );
 
   const filteredHistory = history.filter(h => {
     if (!filterSubject) return true;
@@ -183,6 +196,7 @@ const NoteReels = () => {
             </button>
           ))}
         </div>
+        {renderModals()}
       </div>
     );
   }
@@ -228,10 +242,10 @@ const NoteReels = () => {
                 </p>
               </div>
               <div className="flex-row gap-2" style={{ flexWrap: 'wrap', marginTop: 'auto' }}>
-                  <button title="Delete" onClick={() => setDeleteTarget(reel.id)} className="btn task-action-btn" style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.875rem', display: 'flex', alignItems: 'center' }}>
-                    <span className="desktop-text">Delete</span>
-                    <FiTrash2 className="mobile-icon" size={16} />
-                  </button>
+                  <button title="Delete Reel" className="btn task-action-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeleteTarget(reel.id); }} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.875rem', display: 'flex', alignItems: 'center' }}>
+                  <span className="desktop-text">Delete</span>
+                  <FiTrash2 className="mobile-icon" size={16} />
+                </button>
                   <button title="Play Reel" className="btn btn-primary task-action-btn" onClick={() => navigate(`/reel/${reel.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span className="desktop-text"><FiPlayCircle /> Study Reel</span>
                     <FiPlayCircle className="mobile-icon" size={16} />
@@ -240,6 +254,7 @@ const NoteReels = () => {
             </div>
           ))}
         </div>
+        {renderModals()}
       </div>
     );
   }
@@ -301,16 +316,7 @@ const NoteReels = () => {
         </div>
       </div>
 
-      <ConfirmModal 
-        isOpen={!!deleteTarget}
-        title="Delete Reel"
-        message="Are you sure you want to permanently delete this reel? This action cannot be undone."
-        confirmText="Delete"
-        cancelText="Cancel"
-        isDanger={true}
-        onConfirm={processDelete}
-        onCancel={() => setDeleteTarget(null)}
-      />
+      {renderModals()}
     </div>
   );
 };

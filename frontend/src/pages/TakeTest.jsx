@@ -268,16 +268,16 @@ const TakeTest = () => {
     <div style={{ maxWidth: '1200px', margin: '0 auto', color: 'var(--text-primary)', padding: '20px', paddingBottom: '100px', fontFamily: 'system-ui' }}>
       
       {/* Header Sticky */}
-      <div style={{ position: 'sticky', top: 0, background: 'var(--bg-secondary)', backdropFilter: 'blur(10px)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 100, marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className="test-header-sticky">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
            <button onClick={() => navigate(-1)} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Go Back">
               <FiArrowLeft size={24} />
            </button>
-           <h2 style={{ margin: 0, fontSize: '1.25rem' }}>{test.title}</h2>
+           <h2 className="test-header-title" title={test.title}>{test.title}</h2>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexShrink: 0 }}>
           {!submitted && (
-             <h2 style={{ margin: 0, color: timeLeft < 60 ? 'var(--warning)' : 'var(--accent-primary)' }}>
+             <h2 className="test-header-timer" style={{ margin: 0, color: timeLeft < 60 ? 'var(--warning)' : 'var(--accent-primary)' }}>
                ⏱ {formatTime(timeLeft)}
              </h2>
           )}

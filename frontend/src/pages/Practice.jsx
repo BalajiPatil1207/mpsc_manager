@@ -23,13 +23,14 @@ const Practice = () => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     const updatedTest = { ...editingTest };
+    const targetId = updatedTest._id || updatedTest.id;
     
     // Optimistic UI Update
-    setHistory(history.map(h => h.id === updatedTest.id ? updatedTest : h));
+    setHistory(history.map(h => (h._id || h.id) === targetId ? updatedTest : h));
     setEditingTest(null);
 
     try {
-      const res = await axios.put(`https://mpsc-manager.onrender.com/api/custom-tests/${updatedTest.id}`, {
+      const res = await axios.put(`https://mpsc-manager.onrender.com/api/custom-tests/${targetId}`, {
         title: updatedTest.title,
         subject: updatedTest.subject,
         timeLimit: updatedTest.timeLimit,
@@ -42,7 +43,75 @@ const Practice = () => {
       toast.error("Failed to update test details on server");
     }
   };
-  
+
+  const renderModals = () => (
+    <>
+      {/* Edit Test Modal */}
+      {editingTest && (
+        <div className="modal-overlay" onClick={() => setEditingTest(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', textAlign: 'left', minWidth: '300px' }}>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>✏️ Edit Test Details</h2>
+            <form onSubmit={handleEditSubmit} className="flex-col gap-4">
+              <div className="flex-col gap-1">
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Title</label>
+                <input type="text" required value={editingTest.title} onChange={e => setEditingTest({...editingTest, title: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
+              </div>
+              <div className="flex-col gap-1">
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Subject</label>
+                <input type="text" required value={editingTest.subject || ''} onChange={e => setEditingTest({...editingTest, subject: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
+              </div>
+              <div className="flex-col gap-1">
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Topic</label>
+                <input type="text" placeholder="e.g. Modern History..." value={editingTest.topic || ''} onChange={e => setEditingTest({...editingTest, topic: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
+              </div>
+              <div className="flex-col gap-1">
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Time Limit (Minutes)</label>
+                <input type="number" required min="1" value={editingTest.timeLimit} onChange={e => setEditingTest({...editingTest, timeLimit: parseInt(e.target.value) || 0})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
+              </div>
+              <div className="flex-row gap-4" style={{ marginTop: '12px' }}>
+                <button type="button" onClick={() => setEditingTest(null)} className="btn" style={{ flex: 1, background: 'var(--glass-bg)' }}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingTest && (
+        <div className="modal-overlay" onClick={() => setDeletingTest(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-primary)', border: '1px solid var(--danger)', textAlign: 'left', minWidth: '300px' }}>
+            <h2 style={{ fontSize: '1.25rem', marginBottom: '16px', color: 'var(--danger)' }}>⚠️ Delete Test?</h2>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Are you sure you want to permanently delete "{deletingTest.title}"? This cannot be undone.</p>
+            <div className="flex-row gap-4">
+              <button type="button" onClick={() => setDeletingTest(null)} className="btn" style={{ flex: 1, background: 'var(--glass-bg)' }}>Cancel</button>
+              <button 
+                type="button" 
+                onClick={async () => {
+                   const targetId = deletingTest._id || deletingTest.id;
+                   // Optimistic UI Update
+                   setHistory(history.filter(h => (h._id || h.id) !== targetId));
+                   setDeletingTest(null);
+                   try {
+                     const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${targetId}`);
+                     if(res.data.success) {
+                       toast.success('Test deleted successfully');
+                     }
+                   } catch(err) {
+                     toast.error('Failed to update deletion on server');
+                   }
+                }} 
+                className="btn btn-primary" style={{ flex: 1, background: 'linear-gradient(135deg, var(--danger), #b91c1c)', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+
   const [pyqs, setPyqs] = useState(() => {
     const saved = localStorage.getItem('practice_pyqs');
     return saved ? JSON.parse(saved) : initialPyqs;
@@ -230,6 +299,7 @@ const Practice = () => {
             </button>
           ))}
         </div>
+        {renderModals()}
       </div>
     );
   }
@@ -275,19 +345,19 @@ const Practice = () => {
                 </p>
               </div>
               <div className="flex-row gap-2" style={{ flexWrap: 'wrap', marginTop: 'auto' }}>
-                <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test._id || test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span className="desktop-text"><FiShare2 /> Share</span>
                   <FiShare2 className="mobile-icon" size={16} />
                 </button>
-                <button title="Edit Test" className="btn task-action-btn" onClick={() => setEditingTest(test)} style={{ padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>
+                <button title="Edit Test" className="btn task-action-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingTest(test); }} style={{ padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>
                   <span className="desktop-text">Edit</span>
                   <FiEdit className="mobile-icon" size={16} />
                 </button>
-                <button title="Delete Test" className="btn task-action-btn" onClick={() => setDeletingTest(test)} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>
+                <button title="Delete Test" className="btn task-action-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingTest(test); }} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>
                   <span className="desktop-text">Delete</span>
                   <FiTrash2 className="mobile-icon" size={16} />
                 </button>
-                <button title="Take Test" className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '6px', background: isSolved ? 'var(--glass-bg)' : 'var(--accent-secondary)' }}>
+                <button title="Take Test" className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${test._id || test.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '6px', background: isSolved ? 'var(--glass-bg)' : 'var(--accent-secondary)' }}>
                   <span className="desktop-text"><FiPlayCircle /> {isSolved ? 'Revise' : 'Take Test'}</span>
                   <FiPlayCircle className="mobile-icon" size={16} />
                 </button>
@@ -296,6 +366,7 @@ const Practice = () => {
             );
           })}
         </div>
+        {renderModals()}
       </div>
     );
   }
@@ -405,71 +476,7 @@ const Practice = () => {
 
         </div>
       )}
-
-      {/* Edit Test Modal */}
-      {editingTest && (
-        <div className="modal-overlay" onClick={() => setEditingTest(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', textAlign: 'left', minWidth: '300px' }}>
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>✏️ Edit Test Details</h2>
-            <form onSubmit={handleEditSubmit} className="flex-col gap-4">
-              <div className="flex-col gap-1">
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Title</label>
-                <input type="text" required value={editingTest.title} onChange={e => setEditingTest({...editingTest, title: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
-              </div>
-              <div className="flex-col gap-1">
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Subject</label>
-                <input type="text" required value={editingTest.subject || ''} onChange={e => setEditingTest({...editingTest, subject: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
-              </div>
-              <div className="flex-col gap-1">
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Topic</label>
-                <input type="text" placeholder="e.g. Modern History, Physical Geography..." value={editingTest.topic || ''} onChange={e => setEditingTest({...editingTest, topic: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
-              </div>
-              <div className="flex-col gap-1">
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Time Limit (Minutes)</label>
-                <input type="number" required min="1" value={editingTest.timeLimit} onChange={e => setEditingTest({...editingTest, timeLimit: parseInt(e.target.value) || 0})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
-              </div>
-              <div className="flex-row gap-4" style={{ marginTop: '12px' }}>
-                <button type="button" onClick={() => setEditingTest(null)} className="btn" style={{ flex: 1, background: 'var(--glass-bg)' }}>Cancel</button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save Changes</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {deletingTest && (
-        <div className="modal-overlay" onClick={() => setDeletingTest(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-primary)', border: '1px solid var(--danger)', textAlign: 'left', minWidth: '300px' }}>
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '16px', color: 'var(--danger)' }}>⚠️ Delete Test?</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Are you sure you want to permanently delete "{deletingTest.title}"? This cannot be undone.</p>
-            <div className="flex-row gap-4">
-              <button type="button" onClick={() => setDeletingTest(null)} className="btn" style={{ flex: 1, background: 'var(--glass-bg)' }}>Cancel</button>
-              <button 
-                type="button" 
-                onClick={async () => {
-                   const targetId = deletingTest.id;
-                   // Optimistic UI Update
-                   setHistory(history.filter(h => h.id !== targetId));
-                   setDeletingTest(null);
-                   try {
-                     const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${targetId}`);
-                     if(res.data.success) {
-                       toast.success('Test deleted successfully');
-                     }
-                   } catch(err) {
-                     toast.error('Failed to update deletion on server');
-                   }
-                }} 
-                className="btn btn-primary" style={{ flex: 1, background: 'linear-gradient(135deg, var(--danger), #b91c1c)', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}
-              >
-                Yes, Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {renderModals()}
     </div>
   );
 };
