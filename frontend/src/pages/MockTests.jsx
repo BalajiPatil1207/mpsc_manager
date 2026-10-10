@@ -86,6 +86,86 @@ const MockTests = () => {
     return aSolved - bSolved;
   });
 
+  const SUBJECTS = [
+    { id: 'History', label: 'इतिहास', icon: '📖' },
+    { id: 'Geography', label: 'भूगोल', icon: '🌍' },
+    { id: 'Polity', label: 'राज्यव्यवस्था', icon: '🏛️' },
+    { id: 'Economics', label: 'अर्थव्यवस्था', icon: '📈' },
+    { id: 'Science', label: 'सामान्य विज्ञान', icon: '🧬' },
+    { id: 'Math', label: 'गणित', icon: '🧮' },
+    { id: 'Reasoning', label: 'बुद्धिमत्ता', icon: '🧠' },
+    { id: 'Marathi', label: 'मराठी', icon: '🔠' },
+    { id: 'English', label: 'इंग्रजी', icon: '🅰️' },
+    { id: 'Current Affairs', label: 'चालू घडामोडी', icon: '📰' }
+  ];
+
+  const activeSubjectData = filterSubject ? SUBJECTS.find(s => s.id === filterSubject) : null;
+
+  if (filterSubject && activeSubjectData) {
+    return (
+      <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.3s' }}>
+        <div className="flex-row gap-4 align-center" style={{ marginBottom: '8px' }}>
+          <button className="btn" onClick={() => setFilterSubject('')} style={{ background: 'var(--glass-bg)', padding: '8px 16px', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>←</span> Back to All Subjects
+          </button>
+        </div>
+        
+        <div className="flex-row justify-between" style={{ alignItems: 'center' }}>
+          <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>
+            <span style={{ marginRight: '12px' }}>{activeSubjectData.icon}</span> 
+            {activeSubjectData.label} Mocks
+          </h1>
+        </div>
+        <p style={{ color: 'var(--text-secondary)' }}>All available auto-generated foundation mocks for {activeSubjectData.label}.</p>
+        
+        <div className="glass-panel" style={{ padding: '24px', gridColumn: '1 / -1' }}>
+           <div className="flex-col gap-4">
+             {filteredHistory.filter(h => (h.subject || '').toLowerCase().includes(activeSubjectData.id.toLowerCase())).length === 0 ? (
+               <div style={{ textAlign: 'center', padding: '40px' }}>
+                 <p style={{ color: 'var(--text-muted)' }}>No mocks available for {activeSubjectData.label}.</p>
+               </div>
+             ) : null}
+             
+             {filteredHistory.filter(h => (h.subject || '').toLowerCase().includes(activeSubjectData.id.toLowerCase())).map(test => {
+               const isSolved = test.attemptedBy?.includes(currentUser);
+               return (
+               <div key={test.id} className="glass-card" style={{ padding: '20px', borderLeft: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                 <div className="flex-col gap-2">
+                   <div className="flex-row gap-2 align-center">
+                      <h3 style={{ fontSize: '1.125rem', margin: 0, textDecoration: isSolved ? 'line-through' : 'none', color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)' }}>{test.title}</h3>
+                      <span className="badge" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'var(--accent-glow)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
+                   </div>
+                   <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                     {test.questions?.length || 0} Questions • Mega Test Engine {isSolved && <span style={{color:'var(--success)', fontWeight:'bold'}}> • Solved ✅</span>}
+                   </span>
+                 </div>
+                 <div className="flex-row gap-2">
+                   <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                     <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiShare2 /> Share</span>
+                     <FiShare2 className="mobile-icon" size={16} />
+                   </button>
+                   <button title="Edit Test" className="btn task-action-btn" onClick={() => setEditingTest(test)} style={{ padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>
+                     <span className="desktop-text">Edit</span>
+                     <FiEdit className="mobile-icon" size={16} />
+                   </button>
+                   <button title="Delete Test" className="btn task-action-btn" onClick={() => setDeletingTest(test)} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>
+                     <span className="desktop-text">Delete</span>
+                     <FiTrash2 className="mobile-icon" size={16} />
+                   </button>
+                   <button title="Take Test" className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                     <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'8px'}}><FiPlay /> Start</span>
+                     <FiPlay className="mobile-icon" size={16} />
+                   </button>
+                 </div>
+               </div>
+               );
+             })}
+           </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) return (
     <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
       <div className="skeleton-box" style={{ height: '40px', width: '250px' }}></div>
