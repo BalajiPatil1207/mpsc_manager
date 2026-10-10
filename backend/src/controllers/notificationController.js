@@ -81,17 +81,34 @@ exports.startCronJobs = () => {
     }
   };
 
-  // Schedule for 10 AM, 12 PM, 3 PM (15:00), 6 PM (18:00), and 9 PM (21:00) IST
-  const times = ['0 10 * * *', '0 12 * * *', '0 15 * * *', '0 18 * * *', '0 21 * * *'];
-  
-  times.forEach(t => {
+  // Routine reminders for pending tasks: 9 AM, 10 AM, 12 PM, 3 PM (15:00), 6 PM (18:00), 9 PM (21:00) IST
+  const pendingTimes = ['0 9 * * *', '0 10 * * *', '0 12 * * *', '0 15 * * *', '0 18 * * *', '0 21 * * *'];
+  pendingTimes.forEach(t => {
     cron.schedule(t, () => {
-      console.log(`Running Scheduled Push Reminders at ${t}`);
+      console.log(`Running Pending Reminders at ${t}`);
       checkAndSendReminders();
-    }, {
-      timezone: "Asia/Kolkata"
-    });
+    }, { timezone: "Asia/Kolkata" });
   });
+
+  // Morning Wakeup: 6 AM IST
+  cron.schedule('0 6 * * *', async () => {
+     console.log("Running 6 AM Morning Wake-up Push");
+     try {
+        const subs = await db.collection('pushSubscriptions').get();
+        subs.forEach(docSnap => {
+           const { subscription } = docSnap.data();
+           const payload = JSON.stringify({
+              title: "🌅 Good Morning! Today's Tasks are Ready",
+              body: "Wake up! Your Daily Mega Test and Mistake Book revisions are unlocked. Start studying now! 📚",
+              icon: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+              badge: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+              vibrate: [300, 150, 300, 150, 300],
+              url: 'https://mpsc-manager.vercel.app/'
+           });
+           webpush.sendNotification(subscription, payload).catch(e => {});
+        });
+     } catch(err) { console.error("6 AM Cron Error", err); }
+  }, { timezone: "Asia/Kolkata" });
   
   console.log("Study Notifications Cron Jobs initialized for IST.");
 };
