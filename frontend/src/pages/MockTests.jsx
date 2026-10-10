@@ -143,11 +143,14 @@ const MockTests = () => {
                   {[
                     { id: 'History', label: 'इतिहास', icon: '📖' },
                     { id: 'Geography', label: 'भूगोल', icon: '🌍' },
+                    { id: 'Polity', label: 'राज्यव्यवस्था', icon: '🏛️' },
+                    { id: 'Economics', label: 'अर्थव्यवस्था', icon: '📈' },
+                    { id: 'Science', label: 'सामान्य विज्ञान', icon: '🧬' },
                     { id: 'Math', label: 'गणित', icon: '🧮' },
                     { id: 'Reasoning', label: 'बुद्धिमत्ता', icon: '🧠' },
                     { id: 'Marathi', label: 'मराठी', icon: '🔠' },
-                    { id: 'GK', label: 'सामान्य ज्ञान', icon: '💡' },
-                    { id: 'Current Affairs', label: 'Current Affairs', icon: '📰' }
+                    { id: 'English', label: 'इंग्रजी', icon: '🅰️' },
+                    { id: 'Current Affairs', label: 'चालू घडामोडी', icon: '📰' }
                   ].map(sub => {
                      const testsForThisSubject = filteredHistory.filter(h => (h.subject || '').toLowerCase().includes(sub.id.toLowerCase()));
                      
