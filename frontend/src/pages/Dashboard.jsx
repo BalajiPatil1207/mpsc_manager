@@ -243,12 +243,15 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     setDailyTasks(resetTasks);
     toast.success("Advanced to the next study session! 🚀");
     
-    // Generate daily 6 AM Mega Test automatically!
-    try {
-      await axios.post('https://mpsc-manager.onrender.com/api/custom-tests/mega-generate');
-      toast.success("Daily 100-Q Mega Test has been auto-generated!");
-    } catch(err) {
-      console.error(err);
+    // Generate daily 6 AM Mega Test automatically (Max once a day per user)
+    const megaDate = localStorage.getItem('last_mega_test_date');
+    if (megaDate !== getLogicalDateString()) {
+      try {
+        await axios.post('https://mpsc-manager.onrender.com/api/custom-tests/mega-generate');
+        localStorage.setItem('last_mega_test_date', getLogicalDateString());
+      } catch(err) {
+        console.error("Mega Test error:", err);
+      }
     }
   };
 
