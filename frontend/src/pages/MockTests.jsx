@@ -233,7 +233,7 @@ const MockTests = () => {
              <div className="glass-panel" style={{ padding: '24px', marginTop: '24px' }}>
                 <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>📚 Subject Wise Mocks</h2>
                 
-                <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+                <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
                   {SUBJECTS.map(sub => {
                      const testsForThisSubject = filteredHistory.filter(h => {
                        const subj = (h.subject || '').toLowerCase();

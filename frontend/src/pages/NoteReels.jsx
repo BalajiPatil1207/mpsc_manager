@@ -190,7 +190,7 @@ const NoteReels = () => {
              <button className="btn" onClick={() => navigate('/test-maker')} style={{ padding: '6px 12px', fontSize: '0.875rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>+ Create New Reel</button>
            </div>
            
-           <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+           <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
              {SUBJECTS.map(sub => {
                 const reelsForThisSubject = history.filter(h => {
                   const subj = (h.subject || '').toLowerCase();

@@ -288,7 +288,7 @@ const Practice = () => {
           <div className="glass-panel" style={{ padding: '24px', gridColumn: '1 / -1' }}>
              <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>📚 Subject Wise Practice</h2>
              
-             <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+             <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
                 {SUBJECTS.map(sub => {
                    const testsForThisSubject = history.filter(h => {
                      const subj = (h.subject || '').toLowerCase();
