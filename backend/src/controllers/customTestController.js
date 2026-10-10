@@ -4,10 +4,11 @@ const webpush = require('web-push');
 
 exports.createTest = async (req, res, next) => {
   try {
-    const { title, subject, timeLimit, questions, createdBy, creatorName } = req.body;
+    const { title, subject, topic, timeLimit, questions, createdBy, creatorName } = req.body;
     const newTest = { 
       title: title || 'Custom Mock Test', 
       subject: subject || 'General',
+      topic: topic || '',
       timeLimit: parseInt(timeLimit) || 15, 
       questions, 
       createdBy: createdBy || 'anonymous', 

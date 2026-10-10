@@ -4,7 +4,7 @@ const webpush = require('web-push');
 
 exports.createReel = async (req, res, next) => {
   try {
-    const { title, subject, cards, createdBy, creatorName } = req.body;
+    const { title, subject, topic, cards, createdBy, creatorName } = req.body;
     if (!title || !subject || !cards || !Array.isArray(cards)) {
       return res.status(400).json({ success: false, message: 'Invalid data format' });
     }
@@ -12,6 +12,7 @@ exports.createReel = async (req, res, next) => {
     const reelData = {
       title,
       subject,
+      topic: topic || '',
       cards,
       createdBy: createdBy || 'anonymous',
       creatorName: creatorName || 'A Student',

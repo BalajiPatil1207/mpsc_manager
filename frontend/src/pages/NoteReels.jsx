@@ -123,25 +123,35 @@ const NoteReels = () => {
         </div>
         <p style={{ color: 'var(--text-secondary)' }}>All fast-paced flashcard reels for {activeSubjectData.label}.</p>
         
-        <div className="glass-panel" style={{ padding: '24px', gridColumn: '1 / -1' }}>
-           <div className="flex-col gap-4">
-             {filteredHistory.filter(h => {
-               const subj = (h.subject || '').toLowerCase();
-               const activeId = activeSubjectData.id.toLowerCase();
-               if (activeId === 'history') return subj.includes('history') || subj.includes('gk');
-               return subj.includes(activeId);
-             }).length === 0 ? (
-               <div style={{ textAlign: 'center', padding: '40px' }}>
-                 <p style={{ color: 'var(--text-muted)' }}>No reels available for {activeSubjectData.label}.</p>
-               </div>
-             ) : null}
-             
-             {filteredHistory.filter(h => {
-               const subj = (h.subject || '').toLowerCase();
-               const activeId = activeSubjectData.id.toLowerCase();
-               if (activeId === 'history') return subj.includes('history') || subj.includes('gk');
-               return subj.includes(activeId);
-             }).map(reel => (
+        <div className="flex-col gap-6" style={{ gridColumn: '1 / -1' }}>
+             {(() => {
+               const reelsForSubject = filteredHistory.filter(h => {
+                 const subj = (h.subject || '').toLowerCase();
+                 const activeId = activeSubjectData.id.toLowerCase();
+                 if (activeId === 'history') return subj.includes('history') || subj.includes('gk');
+                 return subj.includes(activeId);
+               });
+               
+               if (reelsForSubject.length === 0) {
+                 return (
+                   <div className="glass-panel" style={{ textAlign: 'center', padding: '40px' }}>
+                     <p style={{ color: 'var(--text-muted)' }}>No reels available for {activeSubjectData.label}.</p>
+                   </div>
+                 );
+               }
+
+               const groupedReels = reelsForSubject.reduce((acc, reel) => {
+                 const topic = reel.topic ? reel.topic.trim() : 'General Notes';
+                 if(!acc[topic]) acc[topic] = [];
+                 acc[topic].push(reel);
+                 return acc;
+               }, {});
+
+               return Object.keys(groupedReels).map(topicName => (
+                 <div key={topicName} className="glass-panel" style={{ padding: '24px' }}>
+                   <h3 style={{ fontSize: '1.25rem', marginBottom: '16px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>📂 {topicName}</h3>
+                   <div className="flex-col gap-4">
+                     {groupedReels[topicName].map(reel => (
                <div key={reel.id} className="glass-card" style={{ padding: '16px', borderLeft: '4px solid var(--accent-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--bg-primary)' }}>
                  <div className="flex-col gap-2">
                    <div className="flex-row gap-2 align-center">
@@ -170,8 +180,11 @@ const NoteReels = () => {
                  </div>
                </div>
              ))}
-           </div>
-        </div>
+                   </div>
+                 </div>
+               ));
+             })()}
+         </div>
       </div>
     );
   }

@@ -16,6 +16,7 @@ const TestMaker = () => {
   // Test State
   const [testJsonInput, setTestJsonInput] = useState(defaultTestJson);
   const [testTitle, setTestTitle] = useState('New Shareable Test');
+  const [testTopic, setTestTopic] = useState('');
   const [testSubject, setTestSubject] = useState(defaultSub);
   const [timeLimit, setTimeLimit] = useState(15);
   const [testLink, setTestLink] = useState('');
@@ -23,6 +24,7 @@ const TestMaker = () => {
   // Reel State
   const [reelJsonInput, setReelJsonInput] = useState(defaultReelJson);
   const [reelTitle, setReelTitle] = useState('Super Quick Notes');
+  const [reelTopic, setReelTopic] = useState('');
   const [reelSubject, setReelSubject] = useState(defaultSub);
   const [reelLink, setReelLink] = useState('');
 
@@ -34,6 +36,7 @@ const TestMaker = () => {
       const usr = auth.currentUser;
       const res = await axios.post('https://mpsc-manager.onrender.com/api/custom-tests', {
         title: testTitle, 
+        topic: testTopic,
         subject: testSubject, 
         timeLimit: timeLimit, 
         questions: parsedQuestions,
@@ -47,6 +50,7 @@ const TestMaker = () => {
         // Reset form to defaults
         setTestJsonInput(defaultTestJson);
         setTestTitle('New Shareable Test');
+        setTestTopic('');
         setTimeLimit(15);
       }
     } catch(err) {
@@ -63,6 +67,7 @@ const TestMaker = () => {
       const usr = auth.currentUser;
       const res = await axios.post('https://mpsc-manager.onrender.com/api/reels', {
         title: reelTitle, 
+        topic: reelTopic,
         subject: reelSubject, 
         cards: parsedCards,
         createdBy: usr?.uid || 'anonymous',
@@ -75,6 +80,7 @@ const TestMaker = () => {
         // Reset form to defaults
         setReelJsonInput(defaultReelJson);
         setReelTitle('Super Quick Notes');
+        setReelTopic('');
       }
     } catch(err) {
       toast.error('Invalid Reel JSON or server error!');
@@ -113,6 +119,7 @@ const TestMaker = () => {
           
           <div className="flex-col gap-4">
             <input type="text" placeholder="Test Title" className="glass-card" style={{ width: '100%', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={testTitle} onChange={(e) => setTestTitle(e.target.value)} />
+            <input type="text" placeholder="Topic (e.g. Modern History)" className="glass-card" style={{ width: '100%', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={testTopic} onChange={(e) => setTestTopic(e.target.value)} />
             <div className="flex-row gap-4" style={{ flexWrap: 'wrap' }}>
               <select className="glass-card" value={testSubject} onChange={(e) => setTestSubject(e.target.value)} style={{ flex: '1 1 180px', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }}>
                  <option value="Current Affairs">Current Affairs</option>
@@ -149,6 +156,7 @@ const TestMaker = () => {
           
           <div className="flex-col gap-4">
             <input type="text" placeholder="Reel Title" className="glass-card" style={{ width: '100%', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={reelTitle} onChange={(e) => setReelTitle(e.target.value)} />
+            <input type="text" placeholder="Topic (e.g. Modern History)" className="glass-card" style={{ width: '100%', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={reelTopic} onChange={(e) => setReelTopic(e.target.value)} />
             <select className="glass-card" value={reelSubject} onChange={(e) => setReelSubject(e.target.value)} style={{ width: '100%', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }}>
                  <option value="Current Affairs">Current Affairs</option>
                  <option value="Economics">Economics</option>
