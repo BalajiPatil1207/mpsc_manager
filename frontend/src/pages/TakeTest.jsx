@@ -20,6 +20,7 @@ const TakeTest = () => {
   const [score, setScore] = useState(0);
   const [showAnswers, setShowAnswers] = useState(false);
   const [activeQuestion, setActiveQuestion] = useState(0);
+  const [showSuccessVideo, setShowSuccessVideo] = useState(false);
   const navigate = useNavigate();
   const { width, height } = useWindowSize();
 
@@ -137,6 +138,7 @@ const TakeTest = () => {
     });
     setScore(currentScore);
     setSubmitted(true);
+    setShowSuccessVideo(true);
 
     try {
       const res = await axios.post(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}/submit`, {
@@ -219,6 +221,22 @@ const TakeTest = () => {
     </div>
   );
   if (!test) return <div style={{color:'var(--text-primary)', padding: '40px', textAlign: 'center'}}>Test not found or invalid link.</div>;
+
+  if (showSuccessVideo) {
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 99999, background: '#000' }}>
+         <video 
+           src="/video/test-success.mp4" 
+           autoPlay 
+           muted 
+           playsInline
+           onEnded={() => setShowSuccessVideo(false)} 
+           style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+         />
+         <button onClick={() => setShowSuccessVideo(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', zIndex: 100000, fontSize: '0.875rem' }}>Skip</button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', color: 'var(--text-primary)', padding: '20px', paddingBottom: '100px', fontFamily: 'system-ui' }}>

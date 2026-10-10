@@ -28,6 +28,7 @@ function App() {
   const [theme, setTheme] = useState('light');
   const [isSyncing, setIsSyncing] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -168,6 +169,22 @@ function App() {
       <p style={{ color: 'var(--text-secondary)', letterSpacing: '3px', textTransform: 'uppercase', animation: 'pulse 1.5s infinite', fontSize: '0.875rem', fontWeight: 600 }}>Loading MahaPrep</p>
     </div>
   );
+
+  if (showIntro) {
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 99999, background: '#000' }}>
+         <video 
+           src="/video/intro.mp4" 
+           autoPlay 
+           muted 
+           playsInline
+           onEnded={() => setShowIntro(false)} 
+           style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+         />
+         <button onClick={() => setShowIntro(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', zIndex: 100000, fontSize: '0.875rem' }}>Skip Intro</button>
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>

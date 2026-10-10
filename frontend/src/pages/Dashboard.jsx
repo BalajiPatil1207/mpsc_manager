@@ -138,6 +138,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     } catch(e) { }
     return initialDailyTasks;
   });
+  const [showTaskVideo, setShowTaskVideo] = useState(false);
 
   const toggleTask = (taskId, isUndo = false) => {
     const updated = dailyTasks.map(t => {
@@ -152,6 +153,11 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     if (!isUndo) {
       import('../utils/sound').then(({ playSound }) => playSound.playSuccess());
       toast.success('Task marked as completed! 🎉');
+
+      // 100% Completion Celebration!
+      if (updated.length > 0 && updated.every(t => t.completed)) {
+        setShowTaskVideo(true);
+      }
     }
   };
 
@@ -333,6 +339,20 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   return (
     <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.6s ease-out' }}>
       
+      {showTaskVideo && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 99999, background: '#000' }}>
+           <video 
+             src="/video/task-complete.mp4" 
+             autoPlay 
+             muted 
+             playsInline
+             onEnded={() => setShowTaskVideo(false)} 
+             style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+           />
+           <button onClick={() => setShowTaskVideo(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', zIndex: 100000, fontSize: '0.875rem' }}>Skip</button>
+        </div>
+      )}
+
       {/* Header Section */}
       <div className="dashboard-header flex-row justify-between" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div className="flex-col gap-2">
