@@ -364,7 +364,7 @@ const TakeTest = () => {
         {/* Right Column: Question Palette */}
         {(!submitted || showAnswers) && (
           <div className="glass-panel test-palette-container">
-            <h3 style={{ fontSize: '1.125rem', marginBottom: '16px' }}>Question Palette</h3>
+            <h3 className="mobile-hide" style={{ fontSize: '1.125rem', marginBottom: '16px' }}>Question Palette</h3>
             <div id="palette-container" className="palette-grid" style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', maxHeight: '400px', overflowY: 'auto', paddingRight: '8px', scrollBehavior: 'smooth' }}>
               {test.questions.map((_, idx) => {
                 const isAttempted = answers[idx] !== undefined;

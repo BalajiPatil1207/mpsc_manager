@@ -493,18 +493,23 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   .test-layout-container { flex-direction: column-reverse !important; width: 100%; } 
+  .mobile-hide { display: none !important; }
+  
   .test-palette-container { 
     position: sticky !important; 
-    top: 90px !important;
+    top: 60px !important;
     z-index: 50;
     width: 100%; 
-    margin-bottom: 16px; 
-    padding: 12px; 
+    margin-bottom: 24px; 
+    padding: 8px 12px 12px 12px !important; 
+    background: var(--bg-secondary) !important;
+    backdrop-filter: blur(10px) !important;
+    border-radius: 0 0 16px 16px !important;
+    border-top: none !important;
     align-self: auto;
   }
   .test-palette-container h3 {
-    font-size: 0.9rem !important;
-    margin-bottom: 12px !important;
+    display: none !important;
   }
   .palette-grid {
     display: flex !important;
