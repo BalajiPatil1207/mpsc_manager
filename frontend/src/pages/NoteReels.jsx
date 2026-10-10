@@ -94,8 +94,12 @@ const NoteReels = () => {
         {/* Reel Library */}
         <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '100%', overflowX: 'hidden' }}>
            
-           <h2 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>📚 Filter by Subject</h2>
-           <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', paddingBottom: '16px' }}>
+           <div className="flex-row justify-between align-center" style={{ marginBottom: '16px' }}>
+             <h2 style={{ fontSize: '1.25rem' }}>📚 Subject Wise Notes</h2>
+             <button className="btn" onClick={() => navigate('/test-maker')} style={{ padding: '6px 12px', fontSize: '0.875rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>+ Create New Reel</button>
+           </div>
+           
+           <div className="flex-col gap-4">
              {[
                 { id: 'History', label: 'इतिहास', icon: '📖' },
                 { id: 'Geography', label: 'भूगोल', icon: '🌍' },
@@ -103,75 +107,73 @@ const NoteReels = () => {
                 { id: 'Reasoning', label: 'बुद्धिमत्ता', icon: '🧠' },
                 { id: 'Marathi', label: 'मराठी', icon: '🔠' },
                 { id: 'GK', label: 'सामान्य ज्ञान', icon: '💡' },
-                { id: 'Current Affairs', label: 'Current Affairs', icon: '📰' },
-                { id: '', label: 'All Subjects', icon: '📋' }
-             ].map(sub => (
-               <button 
-                  key={sub.id} 
-                  onClick={() => setFilterSubject(sub.id)}
-                  className="glass-card" 
-                  style={{ 
-                     flex: '0 0 auto', 
-                     padding: '16px 24px', 
-                     display: 'flex', 
-                     alignItems: 'center', 
-                     gap: '12px', 
-                     background: filterSubject === sub.id ? 'var(--accent-glow)' : 'var(--glass-bg)',
-                     border: filterSubject === sub.id ? '1px solid var(--accent-primary)' : '1px solid transparent',
-                     borderRadius: '16px',
-                     cursor: 'pointer',
-                     transition: 'all 0.3s ease'
-                  }}
-               >
-                  <span style={{ fontSize: '1.5rem' }}>{sub.icon}</span>
-                  <span style={{ fontSize: '1.125rem', fontWeight: 600, color: filterSubject === sub.id ? 'var(--accent-primary)' : 'var(--text-primary)' }}>{sub.label}</span>
-               </button>
-             ))}
-           </div>
-           
-           <div className="flex-row justify-between align-center" style={{ marginTop: '16px' }}>
-             <h2 style={{ fontSize: '1.25rem' }}>📚 Your Reels</h2>
-             <button className="btn" onClick={() => navigate('/test-maker')} style={{ padding: '6px 12px', fontSize: '0.875rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>+ Create New Reel</button>
-           </div>
-           
-           <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '16px', width: '100%' }}>
-             {filteredHistory.length === 0 ? (
-               <div style={{ textAlign: 'center', padding: '40px', background: 'var(--glass-bg)', borderRadius: '12px', flex: '1' }}>
-                 <p style={{ color: 'var(--text-muted)' }}>No reels found.</p>
-                 <button onClick={() => navigate('/test-maker')} className="btn btn-primary" style={{ marginTop: '16px' }}>Go to Creator Studio</button>
-               </div>
-             ) : null}
-             
-             {filteredHistory.map(reel => (
-               <div key={reel.id} className="glass-card flex-col justify-between" style={{ minWidth: '300px', flex: '0 0 auto', scrollSnapAlign: 'start', padding: '16px', borderTop: '4px solid var(--accent-secondary)' }}>
-                 <div className="flex-col gap-2" style={{ marginBottom: '16px' }}>
-                   <div className="flex-row justify-between align-center">
-                     <h3 style={{ fontSize: '1.125rem', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={reel.title}>{reel.title}</h3>
-                     <span className="badge pending" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', flexShrink: 0 }}>
-                       {reel.cards?.length || 0} Cards
-                     </span>
-                   </div>
-                   <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                     {reel.subject} • {new Date(reel.createdAt).toLocaleDateString()}
-                   </p>
-                 </div>
-                 
-                 <div className="flex-row gap-2">
-                     <button title="Delete Reel" onClick={() => setDeleteTarget(reel.id)} className="btn task-action-btn" style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                       <span className="desktop-text">Delete</span>
-                       <FiTrash2 className="mobile-icon" size={16} />
+                { id: 'Current Affairs', label: 'Current Affairs', icon: '📰' }
+             ].map(sub => {
+                const reelsForThisSubject = history.filter(h => (h.subject || '').toLowerCase().includes(sub.id.toLowerCase()));
+                
+                return (
+                  <div key={sub.id} className="flex-col gap-2">
+                     {/* BIG SUBJECT CARD */}
+                     <button 
+                        onClick={() => setFilterSubject(filterSubject === sub.id ? '' : sub.id)}
+                        className="glass-card" 
+                        style={{ 
+                           width: '100%',
+                           padding: '20px 24px', 
+                           display: 'flex', 
+                           alignItems: 'center', 
+                           justifyContent: 'flex-start',
+                           gap: '16px', 
+                           background: filterSubject === sub.id ? 'var(--accent-glow)' : 'var(--glass-bg)',
+                           border: filterSubject === sub.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                           borderRadius: '20px',
+                           cursor: 'pointer',
+                           transition: 'all 0.3s ease'
+                        }}
+                     >
+                        <span style={{ fontSize: '2rem' }}>{sub.icon}</span>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 600, color: filterSubject === sub.id ? 'var(--accent-primary)' : 'var(--text-primary)' }}>{sub.label}</span>
+                        <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '12px', fontSize: '0.875rem' }}>{reelsForThisSubject.length} Reels</span>
                      </button>
-                     <button title="Copy Link" onClick={() => copyLink(`${window.location.origin}/reel/${reel.id}`)} className="btn task-action-btn" style={{ padding: '8px 16px', background: 'var(--glass-bg)', color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                       <span className="desktop-text">Share</span>
-                       <FiCopy className="mobile-icon" size={16} />
-                     </button>
-                     <button className="btn btn-primary task-action-btn" onClick={() => navigate(`/reel/${reel.id}`)} style={{ padding: '8px 16px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-secondary)' }}>
-                       <span className="desktop-text">Watch Now</span>
-                       <FiPlay className="mobile-icon" size={16} />
-                     </button>
-                 </div>
-               </div>
-             ))}
+                     
+                     {/* THE REELS INSIDE THE CARDS */}
+                     {filterSubject === sub.id && (
+                        <div className="flex-col gap-3" style={{ padding: '8px 16px', borderLeft: '2px solid var(--accent-primary)', marginLeft: '12px', marginTop: '4px', marginBottom: '16px', animation: 'fadeIn 0.3s' }}>
+                          {reelsForThisSubject.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No reels available for {sub.label}.</p> : null}
+                          {reelsForThisSubject.map(reel => (
+                            <div key={reel.id} className="glass-card" style={{ padding: '16px', borderLeft: '4px solid var(--accent-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--bg-primary)' }}>
+                              <div className="flex-col gap-2">
+                                <div className="flex-row gap-2 align-center">
+                                  <h3 style={{ fontSize: '1.125rem', margin: 0, color: 'var(--text-primary)' }}>{reel.title}</h3>
+                                  <span className="badge pending" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)' }}>
+                                    {reel.cards?.length || 0} Cards
+                                  </span>
+                                </div>
+                                <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                  {reel.subject} • {new Date(reel.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="flex-row gap-2">
+                                  <button title="Delete" onClick={() => setDeleteTarget(reel.id)} className="btn task-action-btn" style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
+                                    <span className="desktop-text">Delete</span>
+                                    <FiTrash2 className="mobile-icon" size={16} />
+                                  </button>
+                                  <button title="Copy Link" onClick={() => copyLink(`${window.location.origin}/reel/${reel.id}`)} className="btn task-action-btn" style={{ padding: '8px 16px', background: 'var(--glass-bg)', color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
+                                    <span className="desktop-text">Share</span>
+                                    <FiCopy className="mobile-icon" size={16} />
+                                  </button>
+                                  <button className="btn btn-primary task-action-btn" onClick={() => navigate(`/reel/${reel.id}`)} style={{ padding: '8px 24px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', background: 'var(--accent-secondary)' }}>
+                                    <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiPlay size={16} /> Watch</span>
+                                    <FiPlay className="mobile-icon" size={16} />
+                                  </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                     )}
+                  </div>
+                );
+             })}
            </div>
         </div>
       </div>

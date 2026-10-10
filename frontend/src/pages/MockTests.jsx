@@ -137,8 +137,9 @@ const MockTests = () => {
 
            {filteredHistory.length > 0 && (
              <div className="glass-panel" style={{ padding: '24px', marginTop: '24px' }}>
-                <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>📚 Filter by Subject</h2>
-                <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', paddingBottom: '16px' }}>
+                <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>📚 Subject Wise Mocks</h2>
+                
+                <div className="flex-col gap-4">
                   {[
                     { id: 'History', label: 'इतिहास', icon: '📖' },
                     { id: 'Geography', label: 'भूगोल', icon: '🌍' },
@@ -146,70 +147,77 @@ const MockTests = () => {
                     { id: 'Reasoning', label: 'बुद्धिमत्ता', icon: '🧠' },
                     { id: 'Marathi', label: 'मराठी', icon: '🔠' },
                     { id: 'GK', label: 'सामान्य ज्ञान', icon: '💡' },
-                    { id: 'Current Affairs', label: 'Current Affairs', icon: '📰' },
-                    { id: '', label: 'All Subjects', icon: '📋' }
-                  ].map(sub => (
-                    <button 
-                       key={sub.id} 
-                       onClick={() => setFilterSubject(sub.id)}
-                       className="glass-card" 
-                       style={{ 
-                          flex: '0 0 auto', 
-                          padding: '16px 24px', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '12px', 
-                          background: filterSubject === sub.id ? 'var(--accent-glow)' : 'var(--glass-bg)',
-                          border: filterSubject === sub.id ? '1px solid var(--accent-primary)' : '1px solid transparent',
-                          borderRadius: '16px',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease'
-                       }}
-                    >
-                       <span style={{ fontSize: '1.5rem' }}>{sub.icon}</span>
-                       <span style={{ fontSize: '1.125rem', fontWeight: 600, color: filterSubject === sub.id ? 'var(--accent-primary)' : 'var(--text-primary)' }}>{sub.label}</span>
-                    </button>
-                  ))}
-                </div>
-                
-                <div className="flex-row justify-between align-center" style={{ marginBottom: '16px', marginTop: '16px' }}>
-                  <h2 style={{ fontSize: '1.25rem', margin: 0 }}>🏆 Available Mocks</h2>
-                </div>
-                
-                <div className="flex-col gap-4">
-                  {filteredHistory.map(test => {
-                    const isSolved = test.attemptedBy?.includes(currentUser);
-                    return (
-                    <div key={test.id} className="glass-card" style={{ padding: '20px', borderLeft: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                      <div className="flex-col gap-2">
-                        <div className="flex-row gap-2 align-center">
-                           <h3 style={{ fontSize: '1.125rem', margin: 0, textDecoration: isSolved ? 'line-through' : 'none', color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)' }}>{test.title}</h3>
-                           <span className="badge" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'var(--accent-glow)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
-                        </div>
-                        <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                          {test.questions?.length || 0} Questions • Mega Test Engine {isSolved && <span style={{color:'var(--success)', fontWeight:'bold'}}> • Solved ✅</span>}
-                        </span>
-                      </div>
-                      <div className="flex-row gap-2">
-                        <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiShare2 /> Share</span>
-                          <FiShare2 className="mobile-icon" size={16} />
-                        </button>
-                        <button title="Edit Test" className="btn task-action-btn" onClick={() => setEditingTest(test)} style={{ padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>
-                          <span className="desktop-text">Edit</span>
-                          <FiEdit className="mobile-icon" size={16} />
-                        </button>
-                        <button title="Delete Test" className="btn task-action-btn" onClick={() => setDeletingTest(test)} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>
-                          <span className="desktop-text">Delete</span>
-                          <FiTrash2 className="mobile-icon" size={16} />
-                        </button>
-                        <button title="Take Test" className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'8px'}}><FiPlay /> Start</span>
-                          <FiPlay className="mobile-icon" size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    );
+                    { id: 'Current Affairs', label: 'Current Affairs', icon: '📰' }
+                  ].map(sub => {
+                     const testsForThisSubject = filteredHistory.filter(h => (h.subject || '').toLowerCase().includes(sub.id.toLowerCase()));
+                     
+                     return (
+                       <div key={sub.id} className="flex-col gap-2">
+                          {/* BIG SUBJECT CARD */}
+                          <button 
+                             onClick={() => setFilterSubject(filterSubject === sub.id ? '' : sub.id)}
+                             className="glass-card" 
+                             style={{ 
+                                width: '100%',
+                                padding: '20px 24px',
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                justifyContent: 'flex-start',
+                                gap: '16px', 
+                                background: filterSubject === sub.id ? 'var(--accent-glow)' : 'var(--glass-bg)',
+                                border: filterSubject === sub.id ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                                borderRadius: '20px',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease'
+                             }}
+                          >
+                             <span style={{ fontSize: '2rem' }}>{sub.icon}</span>
+                             <span style={{ fontSize: '1.25rem', fontWeight: 600, color: filterSubject === sub.id ? 'var(--accent-primary)' : 'var(--text-primary)' }}>{sub.label}</span>
+                             <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '12px', fontSize: '0.875rem' }}>{testsForThisSubject.length} Mocks</span>
+                          </button>
+                          
+                          {/* THE TESTS INSIDE THE CARDS */}
+                          {filterSubject === sub.id && (
+                             <div className="flex-col gap-3" style={{ padding: '8px 16px', borderLeft: '2px solid var(--accent-primary)', marginLeft: '12px', marginTop: '4px', marginBottom: '16px', animation: 'fadeIn 0.3s' }}>
+                               {testsForThisSubject.length === 0 ? <p style={{ color: 'var(--text-muted)' }}>No mocks available for {sub.label}.</p> : null}
+                               {testsForThisSubject.map(test => {
+                                 const isSolved = test.attemptedBy?.includes(currentUser);
+                                 return (
+                                 <div key={test.id} className="glass-card" style={{ padding: '20px', borderLeft: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                                   <div className="flex-col gap-2">
+                                     <div className="flex-row gap-2 align-center">
+                                        <h3 style={{ fontSize: '1.125rem', margin: 0, textDecoration: isSolved ? 'line-through' : 'none', color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)' }}>{test.title}</h3>
+                                        <span className="badge" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'var(--accent-glow)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
+                                     </div>
+                                     <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                                       {test.questions?.length || 0} Questions • Mega Test Engine {isSolved && <span style={{color:'var(--success)', fontWeight:'bold'}}> • Solved ✅</span>}
+                                     </span>
+                                   </div>
+                                   <div className="flex-row gap-2">
+                                     <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                       <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiShare2 /> Share</span>
+                                       <FiShare2 className="mobile-icon" size={16} />
+                                     </button>
+                                     <button title="Edit Test" className="btn task-action-btn" onClick={() => setEditingTest(test)} style={{ padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>
+                                       <span className="desktop-text">Edit</span>
+                                       <FiEdit className="mobile-icon" size={16} />
+                                     </button>
+                                     <button title="Delete Test" className="btn task-action-btn" onClick={() => setDeletingTest(test)} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>
+                                       <span className="desktop-text">Delete</span>
+                                       <FiTrash2 className="mobile-icon" size={16} />
+                                     </button>
+                                     <button title="Take Test" className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                       <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'8px'}}><FiPlay /> Start</span>
+                                       <FiPlay className="mobile-icon" size={16} />
+                                     </button>
+                                   </div>
+                                 </div>
+                                 );
+                               })}
+                             </div>
+                          )}
+                       </div>
+                     );
                   })}
                 </div>
              </div>
