@@ -68,13 +68,11 @@ const TakeTest = () => {
       const paletteContainer = document.getElementById('palette-container');
       
       if (paletteItem && paletteContainer) {
-          const containerRect = paletteContainer.getBoundingClientRect();
-          const itemRect = paletteItem.getBoundingClientRect();
-          const relativeTop = (itemRect.top - containerRect.top) + paletteContainer.scrollTop;
+          const itemTop = paletteItem.offsetTop;
           const containerScrollHalf = paletteContainer.clientHeight / 2;
           
           paletteContainer.scrollTo({
-              top: relativeTop - containerScrollHalf + (itemRect.height / 2),
+              top: itemTop - containerScrollHalf + 20,
               behavior: 'smooth'
           });
       }
@@ -362,7 +360,7 @@ const TakeTest = () => {
         {(!submitted || showAnswers) && (
           <div className="glass-panel test-palette-container" style={{ width: '320px', padding: '24px', position: 'sticky', top: '100px', alignSelf: 'flex-start' }}>
             <h3 style={{ fontSize: '1.125rem', marginBottom: '16px' }}>Question Palette</h3>
-            <div id="palette-container" className="palette-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
+            <div id="palette-container" className="palette-grid" style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
               {test.questions.map((_, idx) => {
                 const isAttempted = answers[idx] !== undefined;
                 const isActive = idx === activeQuestion && !submitted;
