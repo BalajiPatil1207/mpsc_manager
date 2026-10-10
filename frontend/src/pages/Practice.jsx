@@ -104,7 +104,31 @@ const Practice = () => {
     return aSolved - bSolved;
   });
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
+      <div className="flex-row justify-between" style={{ alignItems: 'center' }}>
+        <div className="skeleton-box" style={{ height: '40px', width: '250px' }}></div>
+      </div>
+      <div className="skeleton-box" style={{ height: '20px', width: '60%' }}></div>
+      
+      <div className="dashboard-grid">
+         <div className="glass-panel" style={{ padding: '24px', gridColumn: '1 / -1' }}>
+            <div className="skeleton-box" style={{ height: '24px', width: '180px', marginBottom: '16px' }}></div>
+            <div className="flex-row gap-4" style={{ overflow: 'hidden' }}>
+               <div className="skeleton-box" style={{ height: '100px', minWidth: '280px' }}></div>
+               <div className="skeleton-box" style={{ height: '100px', minWidth: '280px' }}></div>
+               <div className="skeleton-box" style={{ height: '100px', minWidth: '280px' }}></div>
+            </div>
+         </div>
+         <div className="glass-panel flex-col gap-4" style={{ padding: '24px' }}>
+             <div className="skeleton-box" style={{ height: '24px', width: '150px' }}></div>
+             <div className="skeleton-box" style={{ height: '50px', width: '100%' }}></div>
+             <div className="skeleton-box" style={{ height: '50px', width: '100%' }}></div>
+             <div className="skeleton-box" style={{ height: '50px', width: '100%' }}></div>
+         </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
