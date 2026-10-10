@@ -222,7 +222,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
       }
       return {
         id: t.id,
-        title: getTitleForTask(t.id, newIndexes[t.id] || 0),
+        title: getTitleForTask(t.id, newIndexes[t.id] || 0) || t.title,
         duration: t.duration,
         completed: false
       };

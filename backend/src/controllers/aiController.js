@@ -8,7 +8,7 @@ exports.getCoachAdvice = async (req, res) => {
     if (!apiKey) return res.status(500).json({ success: false, error: "API Key missing" });
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     
     let topicsSnippet = "General Studies";
     if (Array.isArray(weakTopics) && weakTopics.length > 0) {

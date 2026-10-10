@@ -41,25 +41,40 @@ export const saveToDB = async (key, value) => {
   }
 };
 
+// Deep drop of undefined fields to prevent Firebase errors
+const deeplySanitize = (obj) => {
+  if (Array.isArray(obj)) {
+    return obj.map(deeplySanitize).filter(v => v !== undefined);
+  } else if (obj !== null && typeof obj === 'object') {
+    const sanitized = {};
+    for (const key in obj) {
+      const val = deeplySanitize(obj[key]);
+      if (val !== undefined) sanitized[key] = val;
+    }
+    return sanitized;
+  }
+  return obj;
+};
+
 export const saveMultipleToDB = async (updates) => {
-  const sanitized = {};
-  Object.keys(updates).forEach(key => {
-     const value = updates[key];
-     if (value !== undefined) {
-         sanitized[key] = value;
-         if (typeof value === 'object') {
-           localStorage.setItem(key, JSON.stringify(value));
-         } else {
-           localStorage.setItem(key, value);
-         }
+  const sanitizedUpdates = deeplySanitize(updates);
+  
+  const localStorageKeys = {};
+  Object.keys(sanitizedUpdates).forEach(key => {
+     const value = sanitizedUpdates[key];
+     localStorageKeys[key] = value;
+     if (typeof value === 'object') {
+       localStorage.setItem(key, JSON.stringify(value));
+     } else {
+       localStorage.setItem(key, value);
      }
   });
 
   const uid = auth.currentUser?.uid;
-  if (uid && Object.keys(sanitized).length > 0) {
+  if (uid && Object.keys(localStorageKeys).length > 0) {
     try {
        const userRef = doc(db, 'user_progress', uid);
-       await setDoc(userRef, { ...sanitized, lastSynced: new Date().toISOString() }, { merge: true });
+       await setDoc(userRef, { ...sanitizedUpdates, lastSynced: new Date().toISOString() }, { merge: true });
     } catch(err) {
        console.error("Batch DB Sync failed", err);
     }
