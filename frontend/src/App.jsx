@@ -163,9 +163,9 @@ function App() {
          <div className="ring"></div>
          <div className="ring"></div>
          <div className="ring"></div>
-         <span className="premium-loader-text">OS</span>
+         <span className="premium-loader-text" style={{ fontSize: '1.25rem', fontFamily: 'serif', fontStyle: 'italic', color: 'var(--accent-primary)' }}>1207</span>
       </div>
-      <p style={{ color: 'var(--text-secondary)', letterSpacing: '3px', textTransform: 'uppercase', animation: 'pulse 1.5s infinite', fontSize: '0.875rem', fontWeight: 600 }}>Loading AI Engine</p>
+      <p style={{ color: 'var(--text-secondary)', letterSpacing: '3px', textTransform: 'uppercase', animation: 'pulse 1.5s infinite', fontSize: '0.875rem', fontWeight: 600 }}>Loading MahaPrep</p>
     </div>
   );
 
