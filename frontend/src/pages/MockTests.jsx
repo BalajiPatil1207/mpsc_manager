@@ -79,7 +79,11 @@ const MockTests = () => {
 
   const currentUser = auth.currentUser?.uid || 'anonymous';
   const filteredHistory = history.filter(h => {
-    return filterSubject ? (h.subject || '').toLowerCase().includes(filterSubject.toLowerCase()) : true;
+    if (!filterSubject) return true;
+    const subj = (h.subject || '').toLowerCase();
+    const filterId = filterSubject.toLowerCase();
+    if (filterId === 'history') return subj.includes('history') || subj.includes('gk');
+    return subj.includes(filterId);
   }).sort((a, b) => {
     const aSolved = a.attemptedBy?.includes(currentUser) ? 1 : 0;
     const bSolved = b.attemptedBy?.includes(currentUser) ? 1 : 0;

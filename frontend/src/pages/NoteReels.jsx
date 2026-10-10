@@ -80,7 +80,13 @@ const NoteReels = () => {
     }
   };
 
-  const filteredHistory = history.filter(h => filterSubject ? (h.subject || '').toLowerCase().includes(filterSubject.toLowerCase()) : true);
+  const filteredHistory = history.filter(h => {
+    if (!filterSubject) return true;
+    const subj = (h.subject || '').toLowerCase();
+    const filterId = filterSubject.toLowerCase();
+    if (filterId === 'history') return subj.includes('history') || subj.includes('gk');
+    return subj.includes(filterId);
+  });
 
   const SUBJECTS = [
     { id: 'History', label: 'इतिहास', icon: '📖' },
