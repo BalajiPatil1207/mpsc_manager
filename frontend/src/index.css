@@ -452,6 +452,14 @@ h1, h2, h3, h4, h5, h6 {
 .mobile-submit-btn { display: none; }
 .bottom-nav { display: none; }
 
+.test-palette-container { 
+  width: 320px; 
+  padding: 24px; 
+  position: sticky; 
+  top: 100px; 
+  align-self: flex-start; 
+}
+
 @media (max-width: 768px) { 
   .sidebar-overlay.open { display: block; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1999; backdrop-filter: blur(4px); } 
 
@@ -486,10 +494,11 @@ h1, h2, h3, h4, h5, h6 {
 
   .test-layout-container { flex-direction: column-reverse !important; width: 100%; } 
   .test-palette-container { 
-    position: static !important; 
-    width: 100% !important; 
+    position: static; 
+    width: 100%; 
     margin-bottom: 16px; 
-    padding: 12px !important; 
+    padding: 12px; 
+    align-self: auto;
   }
   .test-palette-container h3 {
     font-size: 0.9rem !important;
