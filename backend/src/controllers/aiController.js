@@ -10,9 +10,14 @@ exports.getCoachAdvice = async (req, res) => {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     
+    let topicsSnippet = "General Studies";
+    if (Array.isArray(weakTopics) && weakTopics.length > 0) {
+       topicsSnippet = weakTopics.join(", ");
+    }
+    
     const prompt = `Act as an expert competitive exam coach for MPSC/Talathi. 
     The student recently scored ${mockScore}% in their mock test. 
-    Their current weak topics are: ${weakTopics.join(", ")}. 
+    Their current weak topics are: ${topicsSnippet}. 
     Provide a very short, encouraging 2-sentence advice on what they should focus on studying today. 
     Keep it under 30 words. Give the output strictly in Marathi language.`;
 

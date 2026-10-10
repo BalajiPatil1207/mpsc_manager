@@ -245,7 +245,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     
     // Generate daily 6 AM Mega Test automatically!
     try {
-      await axios.post('https://mpsc-manager.onrender.com/api/custom-tests/mega-test');
+      await axios.post('https://mpsc-manager.onrender.com/api/custom-tests/mega-generate');
       toast.success("Daily 100-Q Mega Test has been auto-generated!");
     } catch(err) {
       console.error(err);

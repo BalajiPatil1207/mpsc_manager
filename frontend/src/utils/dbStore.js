@@ -23,6 +23,7 @@ export const loadProgressFromDB = async (uid) => {
 };
 
 export const saveToDB = async (key, value) => {
+  if (value === undefined) return;
   if (typeof value === 'object') {
     localStorage.setItem(key, JSON.stringify(value));
   } else {
@@ -41,20 +42,24 @@ export const saveToDB = async (key, value) => {
 };
 
 export const saveMultipleToDB = async (updates) => {
+  const sanitized = {};
   Object.keys(updates).forEach(key => {
      const value = updates[key];
-     if (typeof value === 'object') {
-       localStorage.setItem(key, JSON.stringify(value));
-     } else {
-       localStorage.setItem(key, value);
+     if (value !== undefined) {
+         sanitized[key] = value;
+         if (typeof value === 'object') {
+           localStorage.setItem(key, JSON.stringify(value));
+         } else {
+           localStorage.setItem(key, value);
+         }
      }
   });
 
   const uid = auth.currentUser?.uid;
-  if (uid) {
+  if (uid && Object.keys(sanitized).length > 0) {
     try {
        const userRef = doc(db, 'user_progress', uid);
-       await setDoc(userRef, { ...updates, lastSynced: new Date().toISOString() }, { merge: true });
+       await setDoc(userRef, { ...sanitized, lastSynced: new Date().toISOString() }, { merge: true });
     } catch(err) {
        console.error("Batch DB Sync failed", err);
     }
