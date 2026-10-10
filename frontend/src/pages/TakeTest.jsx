@@ -82,6 +82,29 @@ const TakeTest = () => {
     return () => observer.disconnect();
   }, [test, submitted]);
 
+  useEffect(() => {
+    if (!submitted) {
+      const paletteItem = document.getElementById(`palette-q-${activeQuestion}`);
+      const paletteContainer = document.getElementById('palette-container');
+      
+      if (paletteItem && paletteContainer) {
+          // If vertical scrollbar exists
+          if (paletteContainer.scrollHeight > paletteContainer.clientHeight) {
+             const itemTop = paletteItem.offsetTop;
+             const containerScrollHalfY = paletteContainer.clientHeight / 2;
+             paletteContainer.scrollTo({ top: itemTop - containerScrollHalfY + (paletteItem.offsetHeight / 2), behavior: 'smooth' });
+          }
+          
+          // If horizontal scrollbar exists (Mobile layout)
+          if (paletteContainer.scrollWidth > paletteContainer.clientWidth) {
+             const itemLeft = paletteItem.offsetLeft;
+             const containerScrollHalfX = paletteContainer.clientWidth / 2;
+             paletteContainer.scrollTo({ left: itemLeft - containerScrollHalfX + (paletteItem.offsetWidth / 2), behavior: 'smooth' });
+          }
+      }
+    }
+  }, [activeQuestion, submitted]);
+
 
 
   useEffect(() => {
