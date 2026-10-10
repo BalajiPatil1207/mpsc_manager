@@ -65,11 +65,8 @@ const TakeTest = () => {
   useEffect(() => {
     if (!submitted) {
       const paletteItem = document.getElementById(`palette-q-${activeQuestion}`);
-      const paletteContainer = document.getElementById('palette-container');
-      if (paletteItem && paletteContainer) {
-         const itemTop = paletteItem.offsetTop;
-         const containerScrollHalf = paletteContainer.clientHeight / 2;
-         paletteContainer.scrollTo({ top: itemTop - containerScrollHalf + 20, behavior: 'smooth' });
+      if (paletteItem) {
+          paletteItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
   }, [activeQuestion, submitted]);
