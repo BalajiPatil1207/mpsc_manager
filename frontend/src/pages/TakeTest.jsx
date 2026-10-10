@@ -65,8 +65,18 @@ const TakeTest = () => {
   useEffect(() => {
     if (!submitted) {
       const paletteItem = document.getElementById(`palette-q-${activeQuestion}`);
-      if (paletteItem) {
-          paletteItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const paletteContainer = document.getElementById('palette-container');
+      
+      if (paletteItem && paletteContainer) {
+          const containerRect = paletteContainer.getBoundingClientRect();
+          const itemRect = paletteItem.getBoundingClientRect();
+          const relativeTop = (itemRect.top - containerRect.top) + paletteContainer.scrollTop;
+          const containerScrollHalf = paletteContainer.clientHeight / 2;
+          
+          paletteContainer.scrollTo({
+              top: relativeTop - containerScrollHalf + (itemRect.height / 2),
+              behavior: 'smooth'
+          });
       }
     }
   }, [activeQuestion, submitted]);
