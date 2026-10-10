@@ -68,10 +68,15 @@ const TakeTest = () => {
       const paletteContainer = document.getElementById('palette-container');
       
       if (paletteItem && paletteContainer) {
+          // Calculate vertical center
           const itemTop = paletteItem.offsetTop;
-          const containerScrollHalf = paletteContainer.clientHeight / 2;
+          const containerScrollHalfY = paletteContainer.clientHeight / 2;
+          paletteContainer.scrollTop = itemTop - containerScrollHalfY + (paletteItem.offsetHeight / 2);
           
-          paletteContainer.scrollTop = itemTop - containerScrollHalf + 20;
+          // Calculate horizontal center (for mobile layouts that scroll horizontally)
+          const itemLeft = paletteItem.offsetLeft;
+          const containerScrollHalfX = paletteContainer.clientWidth / 2;
+          paletteContainer.scrollLeft = itemLeft - containerScrollHalfX + (paletteItem.offsetWidth / 2);
       }
     }
   }, [activeQuestion, submitted]);
