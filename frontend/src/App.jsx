@@ -215,7 +215,7 @@ function App() {
               </main>
               <BottomNav />
             </div>
-            ) : <Navigate to="/login" />
+            ) : <Navigate to="/register" />
           } 
         />
       </Routes>
