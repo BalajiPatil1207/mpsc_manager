@@ -120,13 +120,23 @@ const MockTests = () => {
         
         <div className="glass-panel" style={{ padding: '24px', gridColumn: '1 / -1' }}>
            <div className="flex-col gap-4">
-             {filteredHistory.filter(h => (h.subject || '').toLowerCase().includes(activeSubjectData.id.toLowerCase())).length === 0 ? (
+             {filteredHistory.filter(h => {
+               const subj = (h.subject || '').toLowerCase();
+               const activeId = activeSubjectData.id.toLowerCase();
+               if (activeId === 'history') return subj.includes('history') || subj.includes('gk');
+               return subj.includes(activeId);
+             }).length === 0 ? (
                <div style={{ textAlign: 'center', padding: '40px' }}>
                  <p style={{ color: 'var(--text-muted)' }}>No mocks available for {activeSubjectData.label}.</p>
                </div>
              ) : null}
              
-             {filteredHistory.filter(h => (h.subject || '').toLowerCase().includes(activeSubjectData.id.toLowerCase())).map(test => {
+             {filteredHistory.filter(h => {
+               const subj = (h.subject || '').toLowerCase();
+               const activeId = activeSubjectData.id.toLowerCase();
+               if (activeId === 'history') return subj.includes('history') || subj.includes('gk');
+               return subj.includes(activeId);
+             }).map(test => {
                const isSolved = test.attemptedBy?.includes(currentUser);
                return (
                <div key={test.id} className="glass-card" style={{ padding: '20px', borderLeft: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
@@ -221,7 +231,12 @@ const MockTests = () => {
                 
                 <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
                   {SUBJECTS.map(sub => {
-                     const testsForThisSubject = filteredHistory.filter(h => (h.subject || '').toLowerCase().includes(sub.id.toLowerCase()));
+                     const testsForThisSubject = filteredHistory.filter(h => {
+                       const subj = (h.subject || '').toLowerCase();
+                       const subId = sub.id.toLowerCase();
+                       if (subId === 'history') return subj.includes('history') || subj.includes('gk');
+                       return subj.includes(subId);
+                     });
                      
                      return (
                        <div key={sub.id} className="flex-col gap-2">
