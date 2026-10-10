@@ -7,14 +7,18 @@ import { auth } from '../firebase';
 
 const TestMaker = () => {
   // Test State
-  const [testJsonInput, setTestJsonInput] = useState('[\n  {\n    "question": "भारताची राजधानी कोणती?",\n    "options": ["मुंबई", "पुणे", "नवी दिल्ली", "नागपूर"],\n    "correctOption": 2\n  }\n]');
+  const defaultTestJson = '[\n  {\n    "question": "भारताची राजधानी कोणती?",\n    "options": ["मुंबई", "पुणे", "नवी दिल्ली", "नागपूर"],\n    "correctOption": 2\n  }\n]';
+  const defaultReelJson = '[\n  {\n    "topic": "Geography",\n    "subtopic": "Physical Geo",\n    "content": "The Earth has 3 main layers: crust, mantle, and core."\n  }\n]';
+
+  // Test State
+  const [testJsonInput, setTestJsonInput] = useState(defaultTestJson);
   const [testTitle, setTestTitle] = useState('New Shareable Test');
   const [testSubject, setTestSubject] = useState('GK/GS');
   const [timeLimit, setTimeLimit] = useState(15);
   const [testLink, setTestLink] = useState('');
 
   // Reel State
-  const [reelJsonInput, setReelJsonInput] = useState('[\n  {\n    "topic": "Geography",\n    "subtopic": "Physical Geo",\n    "content": "The Earth has 3 main layers: crust, mantle, and core."\n  }\n]');
+  const [reelJsonInput, setReelJsonInput] = useState(defaultReelJson);
   const [reelTitle, setReelTitle] = useState('Super Quick Notes');
   const [reelSubject, setReelSubject] = useState('Mixed');
   const [reelLink, setReelLink] = useState('');
@@ -37,6 +41,10 @@ const TestMaker = () => {
       if(res.data.success) {
         setTestLink(`${window.location.origin}/test/${res.data.testId}`);
         toast.success('Shareable Test Created!');
+        // Reset form to defaults
+        setTestJsonInput(defaultTestJson);
+        setTestTitle('New Shareable Test');
+        setTimeLimit(15);
       }
     } catch(err) {
       toast.error('Invalid Test JSON or server error!');
@@ -61,6 +69,9 @@ const TestMaker = () => {
       if(res.data.success) {
         setReelLink(`${window.location.origin}/reel/${res.data.reelId}`);
         toast.success('Study Reel Created!', { id: tId });
+        // Reset form to defaults
+        setReelJsonInput(defaultReelJson);
+        setReelTitle('Super Quick Notes');
       }
     } catch(err) {
       toast.error('Invalid Reel JSON or server error!');
@@ -80,7 +91,7 @@ const TestMaker = () => {
   const copyLink = (link) => { navigator.clipboard.writeText(link); toast.success("Link Copied!"); };
 
   return (
-    <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
+    <div className="flex-col gap-6" style={{ paddingBottom: '40px', maxWidth: '100vw', overflowX: 'hidden' }}>
       <div className="flex-row justify-between align-center flex-wrap gap-4">
         <div>
            <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>Creator Studio</h1>
@@ -91,16 +102,16 @@ const TestMaker = () => {
         </button>
       </div>
       
-      <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))' }}>
+      <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))' }}>
         
         {/* Test Creator */}
-        <div className="glass-panel" style={{ padding: '24px', height: 'fit-content' }}>
+        <div className="glass-panel" style={{ padding: '24px', height: 'fit-content', width: '100%', boxSizing: 'border-box' }}>
           <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}><FiCode className="inline mr-2" /> Create Custom Test</h2>
           
-          <div className="flex-col gap-4">
-            <input type="text" placeholder="Test Title" className="glass-card" style={{ padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={testTitle} onChange={(e) => setTestTitle(e.target.value)} />
-            <div className="flex-row gap-4">
-              <select className="glass-card" value={testSubject} onChange={(e) => setTestSubject(e.target.value)} style={{ flex: 1, padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }}>
+          <div className="flex-col gap-4" style={{ width: '100%' }}>
+            <input type="text" placeholder="Test Title" className="glass-card" style={{ width: '100%', boxSizing: 'border-box', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={testTitle} onChange={(e) => setTestTitle(e.target.value)} />
+            <div className="flex-row gap-4" style={{ width: '100%' }}>
+              <select className="glass-card" value={testSubject} onChange={(e) => setTestSubject(e.target.value)} style={{ flex: 1, padding: '12px', boxSizing: 'border-box', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)', width: '100%' }}>
                  <option value="Current Affairs">Current Affairs</option>
                  <option value="Economics">Economics</option>
                  <option value="Geography">Geography</option>
@@ -113,14 +124,14 @@ const TestMaker = () => {
                  <option value="Marathi">Marathi</option>
                  <option value="Mixed">Mixed</option>
               </select>
-              <input type="number" placeholder="Mins" className="glass-card" style={{ width: '80px', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} />
+              <input type="number" placeholder="Mins" className="glass-card" style={{ width: '80px', boxSizing: 'border-box', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} />
             </div>
-            <textarea className="glass-card" style={{ width: '100%', height: '220px', fontFamily: 'monospace', padding: '16px', outline: 'none', resize: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)' }} value={testJsonInput} onChange={(e) => setTestJsonInput(e.target.value)} />
+            <textarea className="glass-card" style={{ width: '100%', boxSizing: 'border-box', height: '220px', fontFamily: 'monospace', padding: '16px', outline: 'none', resize: 'vertical', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)' }} value={testJsonInput} onChange={(e) => setTestJsonInput(e.target.value)} />
 
-            <button onClick={handleCreateTest} className="btn btn-primary"><FiPlay className="inline mr-2" /> Generate Test</button>
+            <button onClick={handleCreateTest} style={{ width: '100%', boxSizing: 'border-box' }} className="btn btn-primary"><FiPlay className="inline mr-2" /> Generate Test</button>
             
             {testLink && (
-               <div className="glass-card flex-row align-center justify-between" style={{ padding: '12px', border: '1px dashed var(--accent-primary)', width: '100%', background: 'var(--accent-glow)' }}>
+               <div className="glass-card flex-row align-center justify-between" style={{ padding: '12px', border: '1px dashed var(--accent-primary)', width: '100%', boxSizing: 'border-box', background: 'var(--accent-glow)' }}>
                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>{testLink}</span>
                  <button onClick={() => copyLink(testLink)} className="btn"><FiCopy size={20} color="var(--text-primary)" /></button>
                </div>
@@ -129,12 +140,12 @@ const TestMaker = () => {
         </div>
 
         {/* Reel Creator */}
-        <div className="glass-panel" style={{ padding: '24px', height: 'fit-content' }}>
+        <div className="glass-panel" style={{ padding: '24px', height: 'fit-content', width: '100%', boxSizing: 'border-box' }}>
           <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}><FiFilm className="inline mr-2" /> Create Study Reel</h2>
           
-          <div className="flex-col gap-4">
-            <input type="text" placeholder="Reel Title" className="glass-card" style={{ padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={reelTitle} onChange={(e) => setReelTitle(e.target.value)} />
-            <select className="glass-card" value={reelSubject} onChange={(e) => setReelSubject(e.target.value)} style={{ padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }}>
+          <div className="flex-col gap-4" style={{ width: '100%' }}>
+            <input type="text" placeholder="Reel Title" className="glass-card" style={{ width: '100%', boxSizing: 'border-box', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={reelTitle} onChange={(e) => setReelTitle(e.target.value)} />
+            <select className="glass-card" value={reelSubject} onChange={(e) => setReelSubject(e.target.value)} style={{ width: '100%', boxSizing: 'border-box', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }}>
                  <option value="Current Affairs">Current Affairs</option>
                  <option value="Economics">Economics</option>
                  <option value="Geography">Geography</option>
@@ -147,12 +158,12 @@ const TestMaker = () => {
                  <option value="Marathi">Marathi</option>
                  <option value="Mixed">Mixed</option>
             </select>
-            <textarea className="glass-card" style={{ width: '100%', height: '220px', fontFamily: 'monospace', padding: '16px', outline: 'none', resize: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)' }} value={reelJsonInput} onChange={(e) => setReelJsonInput(e.target.value)} />
+            <textarea className="glass-card" style={{ width: '100%', boxSizing: 'border-box', height: '220px', fontFamily: 'monospace', padding: '16px', outline: 'none', resize: 'vertical', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)' }} value={reelJsonInput} onChange={(e) => setReelJsonInput(e.target.value)} />
 
-            <button onClick={handleCreateReel} className="btn btn-primary" style={{ background: 'var(--accent-secondary)' }}><FiPlay className="inline mr-2" /> Generate Study Reel</button>
+            <button onClick={handleCreateReel} style={{ width: '100%', boxSizing: 'border-box', background: 'var(--accent-secondary)' }} className="btn btn-primary"><FiPlay className="inline mr-2" /> Generate Study Reel</button>
             
             {reelLink && (
-               <div className="glass-card flex-row align-center justify-between" style={{ padding: '12px', border: '1px dashed var(--accent-secondary)', width: '100%', background: 'rgba(255,107,107,0.1)' }}>
+               <div className="glass-card flex-row align-center justify-between" style={{ padding: '12px', border: '1px dashed var(--accent-secondary)', width: '100%', boxSizing: 'border-box', background: 'rgba(255,107,107,0.1)' }}>
                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>{reelLink}</span>
                  <button onClick={() => copyLink(reelLink)} className="btn"><FiCopy size={20} color="var(--text-primary)" /></button>
                </div>
