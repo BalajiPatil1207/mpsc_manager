@@ -52,6 +52,18 @@ const ReelViewer = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentIndex, reel]);
 
+  useEffect(() => {
+    if (!reel || currentIndex >= reel.cards.length - 1) return;
+    
+    // Auto advance every 15 seconds
+    const timer = setTimeout(() => {
+      setDirection(1);
+      setCurrentIndex(prev => prev + 1);
+    }, 15000);
+    
+    return () => clearTimeout(timer);
+  }, [currentIndex, reel]);
+
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100dvh', gap: '32px' }}>
       <div className="premium-loader">
@@ -73,6 +85,19 @@ const ReelViewer = () => {
       {/* Background Decor */}
       <div style={{ position: 'absolute', top: '-10%', right: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, var(--accent-glow), transparent 70%)', zIndex: 0, opacity: 0.5 }}></div>
       <div style={{ position: 'absolute', bottom: '-10%', left: '-10%', width: '50vw', height: '50vw', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.3), transparent 70%)', zIndex: 0, opacity: 0.5 }}></div>
+
+      {/* Auto-Advance Progress Bar */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'rgba(255,255,255,0.05)', zIndex: 100 }}>
+        {reel && currentIndex < reel.cards.length - 1 && (
+          <motion.div 
+            key={currentIndex}
+            initial={{ width: '0%' }}
+            animate={{ width: '100%' }}
+            transition={{ duration: 15, ease: 'linear' }}
+            style={{ height: '100%', background: 'var(--accent-primary)', boxShadow: '0 0 10px var(--accent-glow)' }}
+          />
+        )}
+      </div>
 
       {/* Close and Share */}
       <div style={{ position: 'absolute', top: '24px', left: '24px', zIndex: 20 }}>
