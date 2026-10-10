@@ -31,21 +31,33 @@ const TakeTest = () => {
         if(res.data.success) {
           const fetchedTest = res.data.data;
           
-          // Shuffle options for anti-cheat
+          // Shuffle questions and options for anti-cheat
           if (fetchedTest.questions && Array.isArray(fetchedTest.questions)) {
-             fetchedTest.questions.forEach(q => {
+             
+             // Map questions with their originalIndex
+             const questionsWithIdx = fetchedTest.questions.map((q, qIndex) => ({ q, originalQIndex: qIndex }));
+             // Shuffle questions
+             questionsWithIdx.sort(() => Math.random() - 0.5);
+             
+             fetchedTest.questions = questionsWithIdx.map(item => {
+               const q = item.q;
+               q.originalQIndex = item.originalQIndex;
+               
                if (q.options && q.options.length > 0) {
                  const optionsWithIdx = q.options.map((opt, i) => ({ opt, originalIndex: i }));
-                 // Shuffle
+                 // Shuffle Options
                  optionsWithIdx.sort(() => Math.random() - 0.5);
-                 // Figure out new correctOption index
+                 
                  const newCorrectIndex = optionsWithIdx.findIndex(o => o.originalIndex === q.correctOption);
                  
                  q.options = optionsWithIdx.map(o => o.opt);
+                 q.optionMapping = optionsWithIdx.map(o => o.originalIndex); // Save mapping
+                 
                  if (newCorrectIndex !== -1) {
                     q.correctOption = newCorrectIndex;
                  }
                }
+               return q;
              });
           }
           
@@ -89,14 +101,11 @@ const TakeTest = () => {
       const paletteContainer = document.getElementById('palette-container');
       
       if (paletteItem && paletteContainer) {
-          // If vertical scrollbar exists
           if (paletteContainer.scrollHeight > paletteContainer.clientHeight) {
              const itemTop = paletteItem.offsetTop;
              const containerScrollHalfY = paletteContainer.clientHeight / 2;
              paletteContainer.scrollTo({ top: itemTop - containerScrollHalfY + (paletteItem.offsetHeight / 2), behavior: 'smooth' });
           }
-          
-          // If horizontal scrollbar exists (Mobile layout)
           if (paletteContainer.scrollWidth > paletteContainer.clientWidth) {
              const itemLeft = paletteItem.offsetLeft;
              const containerScrollHalfX = paletteContainer.clientWidth / 2;
@@ -105,8 +114,6 @@ const TakeTest = () => {
       }
     }
   }, [activeQuestion, submitted]);
-
-
 
   useEffect(() => {
     if (timeLeft > 0 && !submitted) {
@@ -119,7 +126,14 @@ const TakeTest = () => {
 
   const handleSelect = (qIndex, oIndex) => {
     if(submitted) return;
-    setAnswers({ ...answers, [qIndex]: oIndex });
+    if (answers[qIndex] === oIndex) {
+      // Unselect if already selected
+      const newAnswers = { ...answers };
+      delete newAnswers[qIndex];
+      setAnswers(newAnswers);
+    } else {
+      setAnswers({ ...answers, [qIndex]: oIndex });
+    }
   };
 
   const toggleReview = (qIndex) => {
@@ -129,20 +143,33 @@ const TakeTest = () => {
 
   const handleSubmit = async () => {
     let currentScore = 0;
-    test.questions.forEach((q, idx) => {
-      if (answers[idx] === q.correctOption) {
+    
+    // Create payload for backend with mapped original indexes
+    const backendAnswers = {};
+
+    test.questions.forEach((q, visualIdx) => {
+      // Frontend visual score calculation
+      if (answers[visualIdx] === q.correctOption) {
         currentScore += 1;
-      } else if (answers[idx] !== undefined) {
+      } else if (answers[visualIdx] !== undefined) {
         currentScore -= 0.25;
       }
+      
+      // Map to backend structure
+      if (answers[visualIdx] !== undefined) {
+         const originalQIdx = q.originalQIndex;
+         const originalOIdx = q.optionMapping ? q.optionMapping[answers[visualIdx]] : answers[visualIdx];
+         backendAnswers[originalQIdx] = originalOIdx;
+      }
     });
+
     setScore(currentScore);
     setSubmitted(true);
     setShowSuccessVideo(true);
 
     try {
       const res = await axios.post(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}/submit`, {
-        answers,
+        answers: backendAnswers,
         userId: auth.currentUser?.uid || 'anonymous'
       });
       if(res.data.success) {
