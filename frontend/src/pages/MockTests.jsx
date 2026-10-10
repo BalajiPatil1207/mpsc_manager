@@ -86,7 +86,28 @@ const MockTests = () => {
     return aSolved - bSolved;
   });
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
+      <div className="skeleton-box" style={{ height: '40px', width: '250px' }}></div>
+      <div className="skeleton-box" style={{ height: '20px', width: '60%' }}></div>
+      
+      <div className="flex-col gap-6" style={{ marginTop: '16px' }}>
+         <div className="glass-panel" style={{ padding: '24px' }}>
+            <div className="skeleton-box" style={{ height: '24px', width: '180px', marginBottom: '16px' }}></div>
+            <div className="skeleton-box" style={{ height: '80px', width: '100%' }}></div>
+         </div>
+         
+         <div className="glass-panel" style={{ padding: '24px', marginTop: '24px' }}>
+            <div className="skeleton-box" style={{ height: '24px', width: '220px', marginBottom: '16px' }}></div>
+            <div className="flex-col gap-4">
+               <div className="skeleton-box" style={{ height: '100px', width: '100%' }}></div>
+               <div className="skeleton-box" style={{ height: '100px', width: '100%' }}></div>
+               <div className="skeleton-box" style={{ height: '100px', width: '100%' }}></div>
+            </div>
+         </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
