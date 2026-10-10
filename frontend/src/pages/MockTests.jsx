@@ -20,7 +20,8 @@ const MockTests = () => {
       const res = await axios.put(`https://mpsc-manager.onrender.com/api/custom-tests/${editingTest.id}`, {
         title: editingTest.title,
         subject: editingTest.subject,
-        timeLimit: editingTest.timeLimit
+        timeLimit: editingTest.timeLimit,
+        topic: editingTest.topic
       });
       if(res.data.success) {
         toast.success("Test updated successfully!");
@@ -152,15 +153,15 @@ const MockTests = () => {
                return Object.keys(groupedTests).map(topicName => (
                  <div key={topicName} className="glass-panel" style={{ padding: '24px' }}>
                    <h3 style={{ fontSize: '1.25rem', marginBottom: '16px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>📂 {topicName}</h3>
-                   <div className="flex-col gap-4">
+                   <div className="flex-row gap-4" style={{ overflowX: 'auto', paddingBottom: '16px', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
                      {groupedTests[topicName].map(test => {
                        const isSolved = test.attemptedBy?.includes(currentUser);
                        return (
-               <div key={test.id} className="glass-card" style={{ padding: '20px', borderLeft: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+               <div key={test.id} className="glass-card" style={{ padding: '20px', minWidth: '280px', maxWidth: '320px', flex: '0 0 auto', scrollSnapAlign: 'start', borderTop: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                  <div className="flex-col gap-2">
-                   <div className="flex-row gap-2 align-center">
+                   <div className="flex-row gap-2 align-center justify-between">
                       <h3 style={{ fontSize: '1.125rem', margin: 0, textDecoration: isSolved ? 'line-through' : 'none', color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)' }}>{test.title}</h3>
-                      <span className="badge" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'var(--accent-glow)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)' }}>{test.timeLimit} Mins</span>
+                      <span className="badge" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'var(--accent-glow)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)', whiteSpace: 'nowrap' }}>{test.timeLimit} Mins</span>
                    </div>
                    <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                      {test.questions?.length || 0} Questions • Mega Test Engine {isSolved && <span style={{color:'var(--success)', fontWeight:'bold'}}> • Solved ✅</span>}
@@ -305,6 +306,10 @@ const MockTests = () => {
               <div className="flex-col gap-1">
                 <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Subject</label>
                 <input type="text" required value={editingTest.subject || ''} onChange={e => setEditingTest({...editingTest, subject: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
+              </div>
+              <div className="flex-col gap-1">
+                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Topic</label>
+                <input type="text" placeholder="e.g. Modern History, Algebra..." value={editingTest.topic || ''} onChange={e => setEditingTest({...editingTest, topic: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
               </div>
               <div className="flex-col gap-1">
                 <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Time Limit (Minutes)</label>

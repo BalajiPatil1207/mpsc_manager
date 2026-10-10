@@ -150,11 +150,11 @@ const NoteReels = () => {
                return Object.keys(groupedReels).map(topicName => (
                  <div key={topicName} className="glass-panel" style={{ padding: '24px' }}>
                    <h3 style={{ fontSize: '1.25rem', marginBottom: '16px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' }}>📂 {topicName}</h3>
-                   <div className="flex-col gap-4">
+                   <div className="flex-row gap-4" style={{ overflowX: 'auto', paddingBottom: '16px', scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin' }}>
                      {groupedReels[topicName].map(reel => (
-               <div key={reel.id} className="glass-card" style={{ padding: '16px', borderLeft: '4px solid var(--accent-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: 'var(--bg-primary)' }}>
+               <div key={reel.id} className="glass-card" style={{ padding: '16px', minWidth: '280px', maxWidth: '320px', flex: '0 0 auto', scrollSnapAlign: 'start', borderTop: '4px solid var(--accent-secondary)', display: 'flex', flexDirection: 'column', gap: '16px', background: 'var(--bg-primary)' }}>
                  <div className="flex-col gap-2">
-                   <div className="flex-row gap-2 align-center">
+                   <div className="flex-row gap-2 align-center justify-between">
                      <h3 style={{ fontSize: '1.125rem', margin: 0, color: 'var(--text-primary)' }}>{reel.title}</h3>
                      <span className="badge pending" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)' }}>
                        {reel.cards?.length || 0} Cards

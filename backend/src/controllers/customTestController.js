@@ -225,10 +225,10 @@ exports.deleteTest = async (req, res, next) => {
 
 exports.updateTest = async (req, res, next) => {
   try {
-    const { title, subject, timeLimit } = req.body;
-    await db.collection('customTests').doc(req.params.testId).update({
-      title, subject, timeLimit
-    });
+    const { title, subject, timeLimit, topic } = req.body;
+    let updateData = { title, subject, timeLimit };
+    if (topic !== undefined) updateData.topic = topic;
+    await db.collection('customTests').doc(req.params.testId).update(updateData);
     res.json({ success: true, message: "Test updated successfully" });
   } catch(err) {
     next(err);
