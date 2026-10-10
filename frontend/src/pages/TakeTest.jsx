@@ -71,10 +71,7 @@ const TakeTest = () => {
           const itemTop = paletteItem.offsetTop;
           const containerScrollHalf = paletteContainer.clientHeight / 2;
           
-          paletteContainer.scrollTo({
-              top: itemTop - containerScrollHalf + 20,
-              behavior: 'smooth'
-          });
+          paletteContainer.scrollTop = itemTop - containerScrollHalf + 20;
       }
     }
   }, [activeQuestion, submitted]);
@@ -360,7 +357,7 @@ const TakeTest = () => {
         {(!submitted || showAnswers) && (
           <div className="glass-panel test-palette-container" style={{ width: '320px', padding: '24px', position: 'sticky', top: '100px', alignSelf: 'flex-start' }}>
             <h3 style={{ fontSize: '1.125rem', marginBottom: '16px' }}>Question Palette</h3>
-            <div id="palette-container" className="palette-grid" style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
+            <div id="palette-container" className="palette-grid" style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', maxHeight: '400px', overflowY: 'auto', paddingRight: '8px', scrollBehavior: 'smooth' }}>
               {test.questions.map((_, idx) => {
                 const isAttempted = answers[idx] !== undefined;
                 const isActive = idx === activeQuestion && !submitted;
