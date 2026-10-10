@@ -112,11 +112,14 @@ const NoteReels = () => {
           </button>
         </div>
         
-        <div className="flex-row justify-between" style={{ alignItems: 'center' }}>
+        <div className="flex-row justify-between" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>
             <span style={{ marginRight: '12px' }}>{activeSubjectData.icon}</span> 
             {activeSubjectData.label} Notes & Reels
           </h1>
+          <button onClick={() => navigate('/test-maker', { state: { defaultSubject: activeSubjectData.id === 'Math' ? 'Maths' : activeSubjectData.id } })} className="btn" style={{ padding: '8px 16px', fontSize: '0.875rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
+             + Create Reel
+          </button>
         </div>
         <p style={{ color: 'var(--text-secondary)' }}>All fast-paced flashcard reels for {activeSubjectData.label}.</p>
         

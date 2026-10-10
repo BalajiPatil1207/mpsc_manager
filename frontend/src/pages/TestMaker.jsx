@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { FiCode, FiFilm, FiPlay, FiCopy, FiLayers } from 'react-icons/fi';
@@ -10,17 +10,20 @@ const TestMaker = () => {
   const defaultTestJson = '[\n  {\n    "question": "भारताची राजधानी कोणती?",\n    "options": ["मुंबई", "पुणे", "नवी दिल्ली", "नागपूर"],\n    "correctOption": 2\n  }\n]';
   const defaultReelJson = '[\n  {\n    "topic": "Geography",\n    "subtopic": "Physical Geo",\n    "content": "The Earth has 3 main layers: crust, mantle, and core."\n  }\n]';
 
+  const location = useLocation();
+  const defaultSub = location.state?.defaultSubject || 'GK/GS';
+
   // Test State
   const [testJsonInput, setTestJsonInput] = useState(defaultTestJson);
   const [testTitle, setTestTitle] = useState('New Shareable Test');
-  const [testSubject, setTestSubject] = useState('GK/GS');
+  const [testSubject, setTestSubject] = useState(defaultSub);
   const [timeLimit, setTimeLimit] = useState(15);
   const [testLink, setTestLink] = useState('');
 
   // Reel State
   const [reelJsonInput, setReelJsonInput] = useState(defaultReelJson);
   const [reelTitle, setReelTitle] = useState('Super Quick Notes');
-  const [reelSubject, setReelSubject] = useState('Mixed');
+  const [reelSubject, setReelSubject] = useState(defaultSub);
   const [reelLink, setReelLink] = useState('');
 
   const handleCreateTest = async () => {
@@ -122,6 +125,7 @@ const TestMaker = () => {
                  <option value="Maths">Maths (गणित)</option>
                  <option value="Reasoning">Reasoning (बुद्धिमत्ता)</option>
                  <option value="Marathi">Marathi</option>
+                 <option value="English">English (इंग्रजी)</option>
                  <option value="Mixed">Mixed</option>
               </select>
               <input type="number" placeholder="Mins" className="glass-card" style={{ flex: '0 1 80px', padding: '12px', outline: 'none', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.2)' }} value={timeLimit} onChange={(e) => setTimeLimit(e.target.value)} />
@@ -156,6 +160,7 @@ const TestMaker = () => {
                  <option value="Maths">Maths (गणित)</option>
                  <option value="Reasoning">Reasoning (बुद्धिमत्ता)</option>
                  <option value="Marathi">Marathi</option>
+                 <option value="English">English (इंग्रजी)</option>
                  <option value="Mixed">Mixed</option>
             </select>
             <textarea className="glass-card" style={{ width: '100%', height: '220px', fontFamily: 'monospace', padding: '16px', outline: 'none', resize: 'vertical', color: 'var(--text-primary)', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-color)' }} value={reelJsonInput} onChange={(e) => setReelJsonInput(e.target.value)} />
