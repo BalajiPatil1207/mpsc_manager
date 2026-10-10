@@ -494,7 +494,9 @@ h1, h2, h3, h4, h5, h6 {
 
   .test-layout-container { flex-direction: column-reverse !important; width: 100%; } 
   .test-palette-container { 
-    position: static; 
+    position: sticky !important; 
+    top: 90px !important;
+    z-index: 50;
     width: 100%; 
     margin-bottom: 16px; 
     padding: 12px; 
