@@ -10,8 +10,8 @@ const NoteReels = () => {
   const [title, setTitle] = useState('Super Quick Notes');
   const [subject, setSubject] = useState('Mixed');
   const [reelLink, setReelLink] = useState('');
-  
   const [history, setHistory] = useState([]);
+  const [filterSubject, setFilterSubject] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const navigate = useNavigate();
 
@@ -80,6 +80,8 @@ const NoteReels = () => {
     }
   };
 
+  const filteredHistory = history.filter(h => filterSubject ? (h.subject || '').toLowerCase().includes(filterSubject.toLowerCase()) : true);
+
   return (
     <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
       <div className="flex-row justify-between align-center">
@@ -91,20 +93,56 @@ const NoteReels = () => {
         
         {/* Reel Library */}
         <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '100%', overflowX: 'hidden' }}>
-           <div className="flex-row justify-between align-center">
+           
+           <h2 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>📚 Filter by Subject</h2>
+           <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', paddingBottom: '16px' }}>
+             {[
+                { id: 'History', label: 'इतिहास', icon: '📖' },
+                { id: 'Geography', label: 'भूगोल', icon: '🌍' },
+                { id: 'Math', label: 'गणित', icon: '🧮' },
+                { id: 'Reasoning', label: 'बुद्धिमत्ता', icon: '🧠' },
+                { id: 'Marathi', label: 'मराठी', icon: '🔠' },
+                { id: 'GK', label: 'सामान्य ज्ञान', icon: '💡' },
+                { id: 'Current Affairs', label: 'Current Affairs', icon: '📰' },
+                { id: '', label: 'All Subjects', icon: '📋' }
+             ].map(sub => (
+               <button 
+                  key={sub.id} 
+                  onClick={() => setFilterSubject(sub.id)}
+                  className="glass-card" 
+                  style={{ 
+                     flex: '0 0 auto', 
+                     padding: '16px 24px', 
+                     display: 'flex', 
+                     alignItems: 'center', 
+                     gap: '12px', 
+                     background: filterSubject === sub.id ? 'var(--accent-glow)' : 'var(--glass-bg)',
+                     border: filterSubject === sub.id ? '1px solid var(--accent-primary)' : '1px solid transparent',
+                     borderRadius: '16px',
+                     cursor: 'pointer',
+                     transition: 'all 0.3s ease'
+                  }}
+               >
+                  <span style={{ fontSize: '1.5rem' }}>{sub.icon}</span>
+                  <span style={{ fontSize: '1.125rem', fontWeight: 600, color: filterSubject === sub.id ? 'var(--accent-primary)' : 'var(--text-primary)' }}>{sub.label}</span>
+               </button>
+             ))}
+           </div>
+           
+           <div className="flex-row justify-between align-center" style={{ marginTop: '16px' }}>
              <h2 style={{ fontSize: '1.25rem' }}>📚 Your Reels</h2>
              <button className="btn" onClick={() => navigate('/test-maker')} style={{ padding: '6px 12px', fontSize: '0.875rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>+ Create New Reel</button>
            </div>
            
            <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '16px', width: '100%' }}>
-             {history.length === 0 ? (
+             {filteredHistory.length === 0 ? (
                <div style={{ textAlign: 'center', padding: '40px', background: 'var(--glass-bg)', borderRadius: '12px', flex: '1' }}>
                  <p style={{ color: 'var(--text-muted)' }}>No reels found.</p>
                  <button onClick={() => navigate('/test-maker')} className="btn btn-primary" style={{ marginTop: '16px' }}>Go to Creator Studio</button>
                </div>
              ) : null}
              
-             {history.map(reel => (
+             {filteredHistory.map(reel => (
                <div key={reel.id} className="glass-card flex-col justify-between" style={{ minWidth: '300px', flex: '0 0 auto', scrollSnapAlign: 'start', padding: '16px', borderTop: '4px solid var(--accent-secondary)' }}>
                  <div className="flex-col gap-2" style={{ marginBottom: '16px' }}>
                    <div className="flex-row justify-between align-center">

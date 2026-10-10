@@ -192,22 +192,43 @@ const Practice = () => {
           </div>
           
           <div className="glass-panel" style={{ padding: '24px', gridColumn: '1 / -1' }}>
-             <div className="flex-row justify-between align-center" style={{ marginBottom: '16px' }}>
-               <h2 style={{ fontSize: '1.25rem', margin: 0 }}>🔍 Auto-Generated Daily Tests</h2>
-               <select className="glass-card" value={filterSubject} onChange={(e)=>setFilterSubject(e.target.value)} style={{ padding: '6px 12px', fontSize: '0.875rem', outline: 'none', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', cursor: 'pointer' }}>
-                 <option value="">All Subjects</option>
-                 <option value="Current Affairs">Current Affairs</option>
-                 <option value="Economics">Economics</option>
-                 <option value="Geography">Geography</option>
-                 <option value="History">History</option>
-                 <option value="Polity">Polity</option>
-                 <option value="Science">Science (विज्ञान)</option>
-                 <option value="GK">GK / GS</option>
-                 <option value="Math">Maths (गणित)</option>
-                 <option value="Reasoning">Reasoning (बुद्धिमत्ता)</option>
-                 <option value="Marathi">Marathi</option>
-                 <option value="Mixed">Mixed</option>
-               </select>
+             <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>📚 Choose Subject</h2>
+             <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', paddingBottom: '16px' }}>
+                {[
+                  { id: 'History', label: 'इतिहास', icon: '📖' },
+                  { id: 'Geography', label: 'भूगोल', icon: '🌍' },
+                  { id: 'Math', label: 'गणित', icon: '🧮' },
+                  { id: 'Reasoning', label: 'बुद्धिमत्ता', icon: '🧠' },
+                  { id: 'Marathi', label: 'मराठी', icon: '🔠' },
+                  { id: 'GK', label: 'सामान्य ज्ञान', icon: '💡' },
+                  { id: 'Current Affairs', label: 'Current Affairs', icon: '📰' },
+                  { id: '', label: 'All Subjects', icon: '📋' }
+                ].map(sub => (
+                  <button 
+                     key={sub.id} 
+                     onClick={() => setFilterSubject(sub.id)}
+                     className="glass-card" 
+                     style={{ 
+                        flex: '0 0 auto', 
+                        padding: '16px 24px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '12px', 
+                        background: filterSubject === sub.id ? 'var(--accent-glow)' : 'var(--glass-bg)',
+                        border: filterSubject === sub.id ? '1px solid var(--accent-primary)' : '1px solid transparent',
+                        borderRadius: '16px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease'
+                     }}
+                  >
+                     <span style={{ fontSize: '1.5rem' }}>{sub.icon}</span>
+                     <span style={{ fontSize: '1.125rem', fontWeight: 600, color: filterSubject === sub.id ? 'var(--accent-primary)' : 'var(--text-primary)' }}>{sub.label}</span>
+                  </button>
+                ))}
+             </div>
+             
+             <div className="flex-row justify-between align-center" style={{ marginBottom: '16px', marginTop: '16px' }}>
+               <h2 style={{ fontSize: '1.25rem', margin: 0 }}>🔍 Available Tests</h2>
              </div>
              
              <div className="flex-col gap-4">
