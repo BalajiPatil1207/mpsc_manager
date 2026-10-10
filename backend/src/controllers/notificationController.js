@@ -70,10 +70,39 @@ exports.startCronJobs = () => {
                     },
                     url: 'https://mpsc-manager.vercel.app/'
                  });
-                 // Send web push via Vapid
+                  // Send web push via Vapid
                  webpush.sendNotification(subscription, payload).catch(e => console.error("Push Error", e));
               }
            }
+        }
+        
+        // 2. Check for old (1+ day) untreated Mistake Book mocks
+        const oneDayAgo = new Date();
+        oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+        
+        const oldMistakesQuery = await db.collection('customTests')
+          .where('createdBy', '==', userId)
+          .where('isMistakeMock', '==', true)
+          .get();
+          
+        let oldMistakeCount = 0;
+        oldMistakesQuery.forEach(mDoc => {
+           const data = mDoc.data();
+           if (data.createdAt && new Date(data.createdAt) < oneDayAgo) {
+              oldMistakeCount++;
+           }
+        });
+        
+        if (oldMistakeCount > 0) {
+           const mistakePayload = JSON.stringify({
+              title: "⚠️ Mistake Book Reminder!",
+              body: `You have ${oldMistakeCount} unresolved mistake mock(s) waiting for over a day. Please revise them now so you don't lose track of weak areas!`,
+              icon: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+              badge: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+              vibrate: [200, 100, 200, 100, 200],
+              url: 'https://mpsc-manager.vercel.app/mistakes'
+           });
+           webpush.sendNotification(subscription, mistakePayload).catch(e => {});
         }
       });
     } catch(err) {
