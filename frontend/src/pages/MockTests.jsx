@@ -166,9 +166,9 @@ const MockTests = () => {
                      {test.questions?.length || 0} Questions • Mega Test Engine {isSolved && <span style={{color:'var(--success)', fontWeight:'bold'}}> • Solved ✅</span>}
                    </span>
                  </div>
-                 <div className="flex-row gap-2">
+                 <div className="flex-row gap-2" style={{ flexWrap: 'wrap' }}>
                    <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                     <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiShare2 /> Share</span>
+                     <span className="desktop-text"><FiShare2 /> Share</span>
                      <FiShare2 className="mobile-icon" size={16} />
                    </button>
                    <button title="Edit Test" className="btn task-action-btn" onClick={() => setEditingTest(test)} style={{ padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>
@@ -180,7 +180,7 @@ const MockTests = () => {
                      <FiTrash2 className="mobile-icon" size={16} />
                    </button>
                    <button title="Take Test" className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${test.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                     <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'8px'}}><FiPlay /> Start</span>
+                     <span className="desktop-text"><FiPlay /> Start</span>
                      <FiPlay className="mobile-icon" size={16} />
                    </button>
                  </div>

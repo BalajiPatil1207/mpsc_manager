@@ -164,7 +164,7 @@ const NoteReels = () => {
                      {reel.subject} • {new Date(reel.createdAt).toLocaleDateString()}
                    </p>
                  </div>
-                 <div className="flex-row gap-2">
+                 <div className="flex-row gap-2" style={{ flexWrap: 'wrap' }}>
                      <button title="Delete" onClick={() => setDeleteTarget(reel.id)} className="btn task-action-btn" style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}>
                        <span className="desktop-text">Delete</span>
                        <FiTrash2 className="mobile-icon" size={16} />
@@ -174,7 +174,7 @@ const NoteReels = () => {
                        <FiCopy className="mobile-icon" size={16} />
                      </button>
                      <button className="btn btn-primary task-action-btn" onClick={() => navigate(`/reel/${reel.id}`)} style={{ padding: '8px 24px', fontSize: '0.75rem', display: 'flex', alignItems: 'center', background: 'var(--accent-secondary)' }}>
-                       <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiPlay size={16} /> Watch</span>
+                       <span className="desktop-text"><FiPlay size={16} /> Watch</span>
                        <FiPlay className="mobile-icon" size={16} />
                      </button>
                  </div>

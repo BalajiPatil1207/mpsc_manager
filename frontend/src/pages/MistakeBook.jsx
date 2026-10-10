@@ -70,13 +70,13 @@ const MistakeBook = () => {
                       </div>
                       <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{m.subject} • {m.questions?.length} Questions • Created {new Date(m.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <div className="flex-row gap-2">
+                    <div className="flex-row gap-2" style={{ flexWrap: 'wrap' }}>
                       <button onClick={() => setDeletingTest(m)} className="btn task-action-btn" title="Delete Mistake Test" style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                         <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiTrash2 /> Delete</span>
+                         <span className="desktop-text"><FiTrash2 /> Delete</span>
                          <FiTrash2 className="mobile-icon" size={16} />
                       </button>
                       <button className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${m.id}`)} style={{ background: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                         <span className="desktop-text" style={{display:'flex', alignItems:'center', gap:'6px'}}><FiBook /> Revise</span>
+                         <span className="desktop-text"><FiBook /> Revise</span>
                          <FiBook className="mobile-icon" size={16} />
                       </button>
                     </div>
