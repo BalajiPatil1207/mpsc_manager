@@ -70,14 +70,18 @@ const NoteReels = () => {
 
   const processDelete = async () => {
     if(!deleteTarget) return;
+    
+    const targetId = deleteTarget;
+    // Optimistic UI Update
+    setHistory(history.filter(h => h.id !== targetId));
+    setDeleteTarget(null);
+    
     try {
-      await axios.delete(`https://mpsc-manager.onrender.com/api/reels/${deleteTarget}`);
+      await axios.delete(`https://mpsc-manager.onrender.com/api/reels/${targetId}`);
       toast.success("Reel deleted!");
-      setDeleteTarget(null);
-      fetchHistory();
     } catch(e) {
-      toast.error("Failed to delete");
-      setDeleteTarget(null);
+      toast.error("Failed to delete on server");
+      fetchHistory();
     }
   };
 

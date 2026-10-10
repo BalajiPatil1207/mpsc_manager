@@ -17,20 +17,24 @@ const MockTests = () => {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    const updatedTest = { ...editingTest };
+    
+    // Optimistic UI Update
+    setHistory(history.map(h => h.id === updatedTest.id ? updatedTest : h));
+    setEditingTest(null);
+
     try {
-      const res = await axios.put(`https://mpsc-manager.onrender.com/api/custom-tests/${editingTest.id}`, {
-        title: editingTest.title,
-        subject: editingTest.subject,
-        timeLimit: editingTest.timeLimit,
-        topic: editingTest.topic
+      const res = await axios.put(`https://mpsc-manager.onrender.com/api/custom-tests/${updatedTest.id}`, {
+        title: updatedTest.title,
+        subject: updatedTest.subject,
+        timeLimit: updatedTest.timeLimit,
+        topic: updatedTest.topic
       });
       if(res.data.success) {
         toast.success("Test updated successfully!");
-        setHistory(history.map(h => h.id === editingTest.id ? editingTest : h));
-        setEditingTest(null);
       }
     } catch(err) {
-      toast.error("Failed to update test");
+      toast.error("Failed to update test details on server");
     }
   };
 
@@ -390,15 +394,17 @@ const MockTests = () => {
               <button 
                 type="button" 
                 onClick={async () => {
+                   const targetId = deletingTest.id;
+                   // Optimistic UI Update
+                   setHistory(history.filter(h => h.id !== targetId));
+                   setDeletingTest(null);
                    try {
-                     const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${deletingTest.id}`);
+                     const res = await axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${targetId}`);
                      if(res.data.success) {
                        toast.success('Test deleted successfully');
-                       setHistory(history.filter(h => h.id !== deletingTest.id));
-                       setDeletingTest(null);
                      }
                    } catch(err) {
-                     toast.error('Failed to delete test');
+                     toast.error('Failed to update deletion on server');
                    }
                 }} 
                 className="btn btn-primary" style={{ flex: 1, background: 'linear-gradient(135deg, var(--danger), #b91c1c)', boxShadow: '0 4px 15px rgba(239, 68, 68, 0.4)' }}
