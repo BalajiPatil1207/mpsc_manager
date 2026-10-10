@@ -28,8 +28,28 @@ const TakeTest = () => {
       try {
         const res = await axios.get(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}`);
         if(res.data.success) {
-          setTest(res.data.data);
-          setTimeLeft(res.data.data.timeLimit * 60);
+          const fetchedTest = res.data.data;
+          
+          // Shuffle options for anti-cheat
+          if (fetchedTest.questions && Array.isArray(fetchedTest.questions)) {
+             fetchedTest.questions.forEach(q => {
+               if (q.options && q.options.length > 0) {
+                 const optionsWithIdx = q.options.map((opt, i) => ({ opt, originalIndex: i }));
+                 // Shuffle
+                 optionsWithIdx.sort(() => Math.random() - 0.5);
+                 // Figure out new correctOption index
+                 const newCorrectIndex = optionsWithIdx.findIndex(o => o.originalIndex === q.correctOption);
+                 
+                 q.options = optionsWithIdx.map(o => o.opt);
+                 if (newCorrectIndex !== -1) {
+                    q.correctOption = newCorrectIndex;
+                 }
+               }
+             });
+          }
+          
+          setTest(fetchedTest);
+          setTimeLeft(fetchedTest.timeLimit * 60);
         }
       } catch (err) {
         console.error(err);
@@ -68,15 +88,19 @@ const TakeTest = () => {
       const paletteContainer = document.getElementById('palette-container');
       
       if (paletteItem && paletteContainer) {
-          // Calculate vertical center
-          const itemTop = paletteItem.offsetTop;
-          const containerScrollHalfY = paletteContainer.clientHeight / 2;
-          paletteContainer.scrollTop = itemTop - containerScrollHalfY + (paletteItem.offsetHeight / 2);
+          // If vertical scrollbar exists
+          if (paletteContainer.scrollHeight > paletteContainer.clientHeight) {
+             const itemTop = paletteItem.offsetTop;
+             const containerScrollHalfY = paletteContainer.clientHeight / 2;
+             paletteContainer.scrollTo({ top: itemTop - containerScrollHalfY + (paletteItem.offsetHeight / 2), behavior: 'smooth' });
+          }
           
-          // Calculate horizontal center (for mobile layouts that scroll horizontally)
-          const itemLeft = paletteItem.offsetLeft;
-          const containerScrollHalfX = paletteContainer.clientWidth / 2;
-          paletteContainer.scrollLeft = itemLeft - containerScrollHalfX + (paletteItem.offsetWidth / 2);
+          // If horizontal scrollbar exists (Mobile layout)
+          if (paletteContainer.scrollWidth > paletteContainer.clientWidth) {
+             const itemLeft = paletteItem.offsetLeft;
+             const containerScrollHalfX = paletteContainer.clientWidth / 2;
+             paletteContainer.scrollTo({ left: itemLeft - containerScrollHalfX + (paletteItem.offsetWidth / 2), behavior: 'smooth' });
+          }
       }
     }
   }, [activeQuestion, submitted]);
