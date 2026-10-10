@@ -28,7 +28,15 @@ function App() {
   const [theme, setTheme] = useState('light');
   const [isSyncing, setIsSyncing] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [showIntro, setShowIntro] = useState(true);
+  
+  const [showIntro, setShowIntro] = useState(() => {
+    return sessionStorage.getItem('intro_played') ? false : true;
+  });
+
+  const hideIntro = () => {
+    sessionStorage.setItem('intro_played', 'true');
+    setShowIntro(false);
+  };
 
   useEffect(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -178,10 +186,10 @@ function App() {
            autoPlay 
            muted 
            playsInline
-           onEnded={() => setShowIntro(false)} 
+           onEnded={hideIntro} 
            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
          />
-         <button onClick={() => setShowIntro(false)} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', zIndex: 100000, fontSize: '0.875rem' }}>Skip Intro</button>
+         <button onClick={hideIntro} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', zIndex: 100000, fontSize: '0.875rem' }}>Skip Intro</button>
       </div>
     );
   }
