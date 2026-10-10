@@ -184,7 +184,6 @@ function App() {
          <video 
            src="/video/intro.mp4" 
            autoPlay 
-           muted 
            playsInline
            onEnded={hideIntro} 
            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 

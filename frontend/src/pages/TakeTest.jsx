@@ -228,7 +228,6 @@ const TakeTest = () => {
          <video 
            src="/video/test-success.mp4" 
            autoPlay 
-           muted 
            playsInline
            onEnded={() => setShowSuccessVideo(false)} 
            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 

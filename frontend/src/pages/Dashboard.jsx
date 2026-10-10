@@ -344,7 +344,6 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
            <video 
              src="/video/task-complete.mp4" 
              autoPlay 
-             muted 
              playsInline
              onEnded={() => setShowTaskVideo(false)} 
              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
