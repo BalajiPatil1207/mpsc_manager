@@ -146,6 +146,28 @@ const TakeTest = () => {
     }
   };
 
+  useEffect(() => {
+    if (submitted && test) {
+      const percent = test.questions.length > 0 ? (score / test.questions.length) * 100 : 0;
+      let ttsMsg = '';
+      const fName = auth.currentUser?.displayName ? auth.currentUser.displayName.split(' ')[0] : '';
+      if (percent >= 80) {
+        ttsMsg = `Excellent ${fName}! Outstanding performance.`;
+      } else if (percent >= 40) {
+        ttsMsg = `Good ${fName}, but keep practicing!`;
+      } else {
+        ttsMsg = `Try again ${fName}. Better luck next time!`;
+      }
+      
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(ttsMsg);
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+  }, [submitted, score, test]);
+
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
