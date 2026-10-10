@@ -109,6 +109,25 @@ exports.startCronJobs = () => {
         });
      } catch(err) { console.error("6 AM Cron Error", err); }
   }, { timezone: "Asia/Kolkata" });
+
+  // TEST CRON AT 10:05 AM
+  cron.schedule('5 10 * * *', async () => {
+     console.log("Running 10:05 AM TEST Push");
+     try {
+        const subs = await db.collection('pushSubscriptions').get();
+        subs.forEach(docSnap => {
+           const { subscription } = docSnap.data();
+           const payload = JSON.stringify({
+              title: "🔔 Scheduled Live Test (10:05 AM)",
+              body: "If you received this, the timezone and automatic scheduling on the live server are working perfectly!",
+              icon: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+              badge: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+              url: 'https://mpsc-manager.vercel.app/'
+           });
+           webpush.sendNotification(subscription, payload).catch(e => {});
+        });
+     } catch(err) { }
+  }, { timezone: "Asia/Kolkata" });
   
   console.log("Study Notifications Cron Jobs initialized for IST.");
 };
