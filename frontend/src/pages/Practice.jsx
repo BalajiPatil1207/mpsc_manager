@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiBookOpen, FiZap, FiPlayCircle, FiCheckCircle, FiShare2, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { FiBookOpen, FiZap, FiPlayCircle, FiCheckCircle, FiShare2, FiEdit, FiTrash2, FiAward } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { auth } from '../firebase';
@@ -33,6 +33,27 @@ const Practice = () => {
   const [filterTopic, setFilterTopic] = useState('');
   const [editingTest, setEditingTest] = useState(null);
   const [deletingTest, setDeletingTest] = useState(null);
+  const [viewingLeaderboard, setViewingLeaderboard] = useState(null);
+  const [lbLoading, setLbLoading] = useState(false);
+  const [lbData, setLbData] = useState([]);
+
+  const openLeaderboard = async (test) => {
+    setViewingLeaderboard(test);
+    setLbLoading(true);
+    try {
+      const testId = test._id || test.id;
+      const res = await axios.get(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}/leaderboard`);
+      if (res.data.success) {
+        setLbData(res.data.leaderboard || []);
+      } else {
+        setLbData(test.leaderboard || []);
+      }
+    } catch (err) {
+      setLbData(test.leaderboard || []);
+    } finally {
+      setLbLoading(false);
+    }
+  };
   
   const handleEditSubmit = async (e) => {
     e.preventDefault();
@@ -120,6 +141,73 @@ const Practice = () => {
                 Yes, Delete
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Test Leaderboard Modal */}
+      {viewingLeaderboard && (
+        <div className="modal-overlay" onClick={() => setViewingLeaderboard(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', textAlign: 'left', maxWidth: '520px', width: '90%' }}>
+            <div className="flex-row justify-between align-center" style={{ marginBottom: '16px' }}>
+              <div className="flex-row gap-2 align-center">
+                <FiAward size={24} style={{ color: 'var(--accent-primary)' }} />
+                <div>
+                  <h2 style={{ fontSize: '1.2rem', margin: 0 }}>🏆 टेस्ट लीडरबोर्ड (Top Ranks)</h2>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{viewingLeaderboard.title}</p>
+                </div>
+              </div>
+              <button onClick={() => setViewingLeaderboard(null)} className="btn" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>✕</button>
+            </div>
+
+            {lbLoading ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                रँकिंग लोड होत आहे...
+              </div>
+            ) : lbData.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                <span style={{ fontSize: '2rem' }}>🎯</span>
+                <h4 style={{ margin: '8px 0 4px 0', color: 'var(--text-primary)' }}>अजून कोणीही रँक मिळवलेला नाही!</h4>
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                  टेस्ट सोडवा आणि किमान १ बरोबर उत्तर देऊन थेट #१ रँक मिळवणारे पहिले व्हा!
+                </p>
+                <button 
+                  onClick={() => {
+                    const id = viewingLeaderboard._id || viewingLeaderboard.id;
+                    setViewingLeaderboard(null);
+                    navigate(`/test/${id}`);
+                  }}
+                  className="btn btn-primary"
+                  style={{ marginTop: '14px', padding: '8px 20px' }}
+                >
+                  <FiPlayCircle className="inline mr-1" /> आताच टेस्ट द्या
+                </button>
+              </div>
+            ) : (
+              <div className="leaderboard-box-list" style={{ maxHeight: '340px', overflowY: 'auto' }}>
+                {lbData.map((item, idx) => {
+                  const isMe = item.userId === auth.currentUser?.uid;
+                  const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                  return (
+                    <div key={idx} className={`leaderboard-item-row ${isMe ? 'leaderboard-item-row-me' : ''}`}>
+                      <div className="lb-col-rank">{medal}</div>
+                      <div className="lb-col-user">
+                        <div className="lb-username">
+                          {item.userName} {isMe && <span className="lb-me-tag">तुम्ही</span>}
+                        </div>
+                        <div className="lb-user-meta">
+                          {item.accuracy}% अचूकता • {Math.floor((item.timeTaken || 0) / 60)}m {((item.timeTaken || 0) % 60)}s
+                        </div>
+                      </div>
+                      <div className="lb-col-score">
+                        <span className="lb-score-val">{item.netScore}</span>
+                        <span className="lb-score-label">गुण</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -376,6 +464,15 @@ const Practice = () => {
                 </p>
               </div>
               <div className="flex-row gap-2" style={{ flexWrap: 'wrap', marginTop: 'auto' }}>
+                <button 
+                  title="View Leaderboard" 
+                  className="btn task-action-btn" 
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLeaderboard(test); }} 
+                  style={{ padding: '8px 14px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <FiAward size={16} />
+                  <span className="desktop-text">रँक ({test.leaderboard?.length || 0})</span>
+                </button>
                 <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test._id || test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span className="desktop-text"><FiShare2 /> Share</span>
                   <FiShare2 className="mobile-icon" size={16} />
