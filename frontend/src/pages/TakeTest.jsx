@@ -172,12 +172,14 @@ const TakeTest = () => {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            const idx = parseInt(entry.target.id.replace('q-', ''));
-            setActiveQuestion(idx);
+            const idx = parseInt(entry.target.id.replace('q-', ''), 10);
+            if (!isNaN(idx)) {
+              setActiveQuestion(prev => (prev !== idx ? idx : prev));
+            }
           }
         });
       },
-      { root: null, rootMargin: '-30% 0px -60% 0px', threshold: 0 }
+      { root: null, rootMargin: '-20% 0px -60% 0px', threshold: 0 }
     );
     
     test.questions.forEach((_, idx) => {
@@ -197,12 +199,12 @@ const TakeTest = () => {
           if (paletteContainer.scrollHeight > paletteContainer.clientHeight) {
              const itemTop = paletteItem.offsetTop;
              const containerScrollHalfY = paletteContainer.clientHeight / 2;
-             paletteContainer.scrollTo({ top: itemTop - containerScrollHalfY + (paletteItem.offsetHeight / 2), behavior: 'smooth' });
+             paletteContainer.scrollTo({ top: itemTop - containerScrollHalfY + (paletteItem.offsetHeight / 2), behavior: 'auto' });
           }
           if (paletteContainer.scrollWidth > paletteContainer.clientWidth) {
              const itemLeft = paletteItem.offsetLeft;
              const containerScrollHalfX = paletteContainer.clientWidth / 2;
-             paletteContainer.scrollTo({ left: itemLeft - containerScrollHalfX + (paletteItem.offsetWidth / 2), behavior: 'smooth' });
+             paletteContainer.scrollTo({ left: itemLeft - containerScrollHalfX + (paletteItem.offsetWidth / 2), behavior: 'auto' });
           }
       }
     }
