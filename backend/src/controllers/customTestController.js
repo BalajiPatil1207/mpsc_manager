@@ -162,15 +162,17 @@ exports.submitTest = async (req, res, next) => {
     const accuracy = totalAttempted > 0 ? parseFloat(((correctCount / totalAttempted) * 100).toFixed(1)) : 0;
     const scoreEarned = rawScore;
 
+    const isMistakeMockTest = Boolean(test.isMistakeMock || (test.title && test.title.includes('Mistakes:')));
+
     // 🔒 ANTI-SPAM & QUALIFICATION LOGIC:
     // रँक मिळवण्यासाठी किमान १ प्रश्न अचूक सोडवून पॉझिटिव्ह नेट स्कोर आवश्यक आहे.
-    // रिकाम्या किंवा ० मार्क्सच्या प्रयत्नांना रँक दिली जाणार नाही!
-    const isQualified = correctCount > 0 && rawScore > 0 && totalAttempted > 0;
+    // मिस्टेक मॉक (Mistake Mock) ही केवळ वैयक्तिक रिव्हिजन असल्याने तिच्यावर रँक नसतो!
+    const isQualified = !isMistakeMockTest && correctCount > 0 && rawScore > 0 && totalAttempted > 0;
 
     let leaderboard = Array.isArray(test.leaderboard) ? [...test.leaderboard] : [];
     let userRank = null;
 
-    if (isQualified && userId && userId !== 'anonymous') {
+    if (!isMistakeMockTest && isQualified && userId && userId !== 'anonymous') {
       const candidateName = userName && userName !== 'anonymous' ? userName : 'MPSC Aspirant';
       const existingIdx = leaderboard.findIndex(entry => entry.userId === userId);
 
@@ -214,9 +216,9 @@ exports.submitTest = async (req, res, next) => {
       userRank = leaderboard.findIndex(e => e.userId === userId) + 1;
     }
 
-    // Update test doc with latest participant & leaderboard
+    // Update test doc with latest participant & leaderboard (if regular test)
     const docUpdates = { attemptedBy };
-    if (isQualified && userId && userId !== 'anonymous') {
+    if (!isMistakeMockTest && isQualified && userId && userId !== 'anonymous') {
       docUpdates.leaderboard = leaderboard;
     }
     await db.collection('customTests').doc(testId).update(docUpdates);

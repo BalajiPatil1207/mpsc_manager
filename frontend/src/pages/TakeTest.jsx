@@ -14,6 +14,12 @@ const TakeTest = () => {
   const { testId } = useParams();
   const [test, setTest] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const isMistake = Boolean(
+    test?.isMistakeMock || 
+    (test?.title && test.title.toLowerCase().includes('mistake')) ||
+    (test?.topic && test.topic.toLowerCase().includes('mistake'))
+  );
   
   // State
   const [answers, setAnswers] = useState({});
@@ -260,7 +266,9 @@ const TakeTest = () => {
 
     setScore(currentScore);
     setSubmitted(true);
-    setShowSuccessVideo(true);
+    if (!isMistake) {
+      setShowSuccessVideo(true);
+    }
 
     try {
       const totalAllocatedSeconds = (test?.timeLimit ? test.timeLimit * 60 : 0);
@@ -276,13 +284,13 @@ const TakeTest = () => {
       });
       if(res.data.success) {
         setRankData({
-          userRank: res.data.userRank,
-          totalParticipants: res.data.totalParticipants || 0,
-          isQualified: res.data.isQualified,
-          leaderboard: res.data.leaderboard || []
+          userRank: isMistake ? null : res.data.userRank,
+          totalParticipants: isMistake ? 0 : (res.data.totalParticipants || 0),
+          isQualified: isMistake ? false : res.data.isQualified,
+          leaderboard: isMistake ? [] : (res.data.leaderboard || [])
         });
 
-        if (res.data.userRank) {
+        if (!isMistake && res.data.userRank) {
           toast.success(`🏆 तुमचा रँक: #${res.data.userRank} (${res.data.totalParticipants} विद्यार्थ्यांपैकी)`, { duration: 4000, icon: '🏅' });
         }
 
@@ -310,8 +318,10 @@ const TakeTest = () => {
            const totalOld = parseFloat(localStorage.getItem('xp_total')) || 0;
            batchUpdates['xp_total'] = (totalOld + res.data.scoreEarned).toFixed(2);
            
-           import('../utils/sound').then(({ playSound }) => playSound.playXpGain());
-           toast.success(`🎉 Earned +${res.data.scoreEarned} XP for ${sub}!`);
+           if (!isMistake) {
+             import('../utils/sound').then(({ playSound }) => playSound.playXpGain());
+             toast.success(`🎉 Earned +${res.data.scoreEarned} XP for ${sub}!`);
+           }
         }
         
         import('../utils/dbStore').then(({ saveMultipleToDB }) => saveMultipleToDB(batchUpdates));
@@ -322,7 +332,7 @@ const TakeTest = () => {
   };
 
   useEffect(() => {
-    if (submitted && test) {
+    if (submitted && test && !isMistake) {
       const percent = test.questions.length > 0 ? (score / test.questions.length) * 100 : 0;
       let ttsMsg = '';
       const fName = auth.currentUser?.displayName ? auth.currentUser.displayName.split(' ')[0] : '';
@@ -341,7 +351,7 @@ const TakeTest = () => {
         window.speechSynthesis.speak(utterance);
       }
     }
-  }, [submitted, score, test]);
+  }, [submitted, score, test, isMistake]);
 
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -362,7 +372,7 @@ const TakeTest = () => {
   );
   if (!test) return <div style={{color:'var(--text-primary)', padding: '40px', textAlign: 'center'}}>Test not found or invalid link.</div>;
 
-  if (showSuccessVideo) {
+  if (!isMistake && showSuccessVideo) {
     return (
       <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 99999, background: '#000' }}>
          <video 
@@ -420,7 +430,7 @@ const TakeTest = () => {
                 
                 return (
                    <>
-                     {config.showConfetti && <Confetti width={width} height={height} recycle={false} numberOfPieces={600} gravity={0.15} />}
+                     {!isMistake && config.showConfetti && <Confetti width={width} height={height} recycle={false} numberOfPieces={600} gravity={0.15} />}
                      <div style={{ padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', marginBottom: '16px', fontSize: '4rem' }}>
                        {config.icon}
                      </div>
@@ -526,73 +536,89 @@ const TakeTest = () => {
                       </div>
                     )}
 
-                    {/* Official Test Rank Banner */}
-                    {rankData.userRank ? (
-                      <div className="test-rank-banner">
-                        <div className="rank-left-section">
-                          <div className="rank-trophy-badge">
-                            {rankData.userRank === 1 ? '🥇' : rankData.userRank === 2 ? '🥈' : rankData.userRank === 3 ? '🥉' : '🏆'}
-                          </div>
-                          <div>
-                            <div className="rank-sub-title">अधिकृत टेस्ट रँक (Official Test Rank)</div>
-                            <div className="rank-number-display">
-                              रँक #{rankData.userRank} <span className="rank-total-count">/ {rankData.totalParticipants} विद्यार्थी</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="rank-valid-badge">
-                          ✓ १००% गुण & अचूकतेवर आधारित
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="test-rank-unqualified">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span style={{ fontSize: '1.4rem' }}>⚠️</span>
-                          <div>
-                            <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.88rem' }}>रँकसाठी अपात्र (Unranked)</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: '1.4' }}>
-                              रँक मिळवण्यासाठी किमान १ प्रश्न अचूक सोडवून पॉझिटिव्ह नेट गुण मिळवणे अनिवार्य आहे. केवळ रिकामी टेस्ट सबमिट केल्यास रँक मिळत नाही!
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Test Leaderboard Accordion/Table */}
-                    {rankData.leaderboard && rankData.leaderboard.length > 0 && (
-                      <div className="test-leaderboard-box">
-                        <div className="leaderboard-box-header">
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                            <FiAward size={18} style={{ color: 'var(--accent-primary)' }} />
-                            <span>या टेस्टचा रँकिंग तक्ता (Leaderboard)</span>
-                          </div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                            एकूण {rankData.totalParticipants} रँकधारक
-                          </span>
-                        </div>
-
-                        <div className="leaderboard-box-list">
-                          {rankData.leaderboard.map((item, idx) => {
-                            const isMe = item.userId === auth.currentUser?.uid;
-                            const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
-                            return (
-                              <div key={idx} className={`leaderboard-item-row ${isMe ? 'leaderboard-item-row-me' : ''}`}>
-                                <div className="lb-col-rank">{medal}</div>
-                                <div className="lb-col-user">
-                                  <div className="lb-username">
-                                    {item.userName} {isMe && <span className="lb-me-tag">तुम्ही</span>}
-                                  </div>
-                                  <div className="lb-user-meta">
-                                    {item.accuracy}% अचूकता • {formatTime(item.timeTaken || 0)} वेळ
-                                  </div>
-                                </div>
-                                <div className="lb-col-score">
-                                  <span className="lb-score-val">{item.netScore}</span>
-                                  <span className="lb-score-label">गुण</span>
+                    {/* Official Test Rank Banner & Leaderboard (Regular Tests Only) */}
+                    {!isMistake ? (
+                      <>
+                        {rankData.userRank ? (
+                          <div className="test-rank-banner">
+                            <div className="rank-left-section">
+                              <div className="rank-trophy-badge">
+                                {rankData.userRank === 1 ? '🥇' : rankData.userRank === 2 ? '🥈' : rankData.userRank === 3 ? '🥉' : '🏆'}
+                              </div>
+                              <div>
+                                <div className="rank-sub-title">अधिकृत टेस्ट रँक (Official Test Rank)</div>
+                                <div className="rank-number-display">
+                                  रँक #{rankData.userRank} <span className="rank-total-count">/ {rankData.totalParticipants} विद्यार्थी</span>
                                 </div>
                               </div>
-                            );
-                          })}
+                            </div>
+                            <div className="rank-valid-badge">
+                              ✓ १००% गुण & अचूकतेवर आधारित
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="test-rank-unqualified">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+                              <div>
+                                <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.88rem' }}>रँकसाठी अपात्र (Unranked)</div>
+                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: '1.4' }}>
+                                  रँक मिळवण्यासाठी किमान १ प्रश्न अचूक सोडवून पॉझिटिव्ह नेट गुण मिळवणे अनिवार्य आहे. केवळ रिकामी टेस्ट सबमिट केल्यास रँक मिळत नाही!
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Test Leaderboard Accordion/Table */}
+                        {rankData.leaderboard && rankData.leaderboard.length > 0 && (
+                          <div className="test-leaderboard-box">
+                            <div className="leaderboard-box-header">
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                                <FiAward size={18} style={{ color: 'var(--accent-primary)' }} />
+                                <span>या टेस्टचा रँकिंग तक्ता (Leaderboard)</span>
+                              </div>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                एकूण {rankData.totalParticipants} रँकधारक
+                              </span>
+                            </div>
+
+                            <div className="leaderboard-box-list">
+                              {rankData.leaderboard.map((item, idx) => {
+                                const isMe = item.userId === auth.currentUser?.uid;
+                                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                                return (
+                                  <div key={idx} className={`leaderboard-item-row ${isMe ? 'leaderboard-item-row-me' : ''}`}>
+                                    <div className="lb-col-rank">{medal}</div>
+                                    <div className="lb-col-user">
+                                      <div className="lb-username">
+                                        {item.userName} {isMe && <span className="lb-me-tag">तुम्ही</span>}
+                                      </div>
+                                      <div className="lb-user-meta">
+                                        {item.accuracy}% अचूकता • {formatTime(item.timeTaken || 0)} वेळ
+                                      </div>
+                                    </div>
+                                    <div className="lb-col-score">
+                                      <span className="lb-score-val">{item.netScore}</span>
+                                      <span className="lb-score-label">गुण</span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="glass-card" style={{ marginTop: '16px', padding: '16px 20px', textAlign: 'left', border: '1px solid rgba(168, 85, 247, 0.3)', background: 'rgba(168, 85, 247, 0.08)', borderRadius: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ fontSize: '1.6rem' }}>📖</span>
+                          <div>
+                            <h4 style={{ margin: 0, color: '#c084fc', fontSize: '0.95rem', fontWeight: 700 }}>मिस्टेक बुक रिव्हिजन पूर्ण (Mistake Book Drill)</h4>
+                            <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem', lineHeight: '1.4' }}>
+                              हा केवळ तुमच्या चुका सुधारण्यासाठीचा वैयक्तिक सराव आहे. यासाठी कोणताही रँक किंवा लीडरबोर्ड लागू होत नाही.
+                            </p>
+                          </div>
                         </div>
                       </div>
                     )}
