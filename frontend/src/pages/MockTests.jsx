@@ -7,8 +7,22 @@ import { toast } from 'react-hot-toast';
 
 const MockTests = () => {
   const [hasPlan, setHasPlan] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState(() => {
+    try {
+      const cached = localStorage.getItem('mpsc_cached_mocks');
+      return cached ? JSON.parse(cached) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = localStorage.getItem('mpsc_cached_mocks');
+      return !(cached && JSON.parse(cached).length > 0);
+    } catch (e) {
+      return true;
+    }
+  });
   const [filterSubject, setFilterSubject] = useState('');
   const [filterTopic, setFilterTopic] = useState('');
   const [editingTest, setEditingTest] = useState(null);
@@ -119,37 +133,54 @@ const MockTests = () => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
+    // Safety timeout: Never let skeleton loader freeze for more than 1.5s
+    const timeoutTimer = setTimeout(() => {
+      if (isMounted) setLoading(false);
+    }, 1500);
+
     const fetchPlan = async () => {
       try {
         const uid = auth.currentUser?.uid || 'testUser';
-        const res = await axios.get(`https://mpsc-manager.onrender.com/api/plans/user/${uid}`);
-        if(res.data.success && res.data.hasPlan) {
+        const res = await axios.get(`https://mpsc-manager.onrender.com/api/plans/user/${uid}`, { timeout: 6000 });
+        if (isMounted && res.data.success && res.data.hasPlan) {
           setHasPlan(true);
         }
       } catch (e) {
-        console.error(e);
+        console.warn("Plan fetch fallback", e?.message);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     
     const fetchHistory = async () => {
       try {
-        const res = await axios.get('https://mpsc-manager.onrender.com/api/custom-tests/all');
-        if(res.data.success) {
+        const res = await axios.get('https://mpsc-manager.onrender.com/api/custom-tests/all', { timeout: 8000 });
+        if (isMounted && res.data.success) {
           const mockTests = res.data.data.filter(t => 
              !t.isMistakeMock && 
              ((t.subject || '').includes('Mega') || (t.title || '').includes('Mock'))
           );
           setHistory(mockTests);
+          try {
+            localStorage.setItem('mpsc_cached_mocks', JSON.stringify(mockTests));
+          } catch(e) {}
         }
       } catch (e) {
-        console.error(e);
+        console.warn("History fetch fallback", e?.message);
+      } finally {
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchPlan();
     fetchHistory();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutTimer);
+    };
   }, []);
 
   const currentUser = auth.currentUser?.uid || 'anonymous';

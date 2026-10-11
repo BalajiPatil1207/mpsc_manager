@@ -321,30 +321,97 @@ const TakeTest = () => {
                 {score} <span style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>/ {test.questions.length}</span>
               </h1>
               
-              {/* Negative Marking Impact Analysis */}
+              {/* Detailed MPSC Score Summary Breakdown */}
               {(() => {
-                let lost = 0;
+                let correctCount = 0;
                 let wrongCount = 0;
+                let unattemptedCount = 0;
+                let lost = 0;
+
                 test.questions.forEach((q, idx) => {
-                  if (answers[idx] !== undefined && answers[idx] !== q.correctOption) {
-                    lost += 0.25;
+                  if (answers[idx] === undefined) {
+                    unattemptedCount += 1;
+                  } else if (answers[idx] === q.correctOption) {
+                    correctCount += 1;
+                  } else {
                     wrongCount += 1;
+                    lost += 0.25;
                   }
                 });
-                return lost > 0 ? (
-                  <div style={{ marginTop: '16px', marginBottom: '24px', padding: '16px', background: 'rgba(239, 68, 68, 0.1)', border: '1px dashed var(--danger)', borderRadius: '12px' }}>
-                    <p style={{ margin: 0, color: 'var(--danger)', fontWeight: 600 }}>⚠️ Negative Marking Impact</p>
-                    <p style={{ margin: '8px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                      तुम्ही {wrongCount} चुकीचे उत्तर दिले, ज्यामुळे तुमचे <strong>{lost} मार्क्स</strong> वजा झाले. 
-                      जर तुम्ही हे प्रश्न सोडवले नसते, तर तुमचा स्कोर <strong>{score + lost}</strong> असता!
-                    </p>
-                  </div>
-                ) : (
-                  <div style={{ marginTop: '16px', marginBottom: '24px', padding: '16px', background: 'rgba(34, 197, 94, 0.1)', border: '1px dashed var(--success)', borderRadius: '12px' }}>
-                    <p style={{ margin: 0, color: 'var(--success)', fontWeight: 600 }}>🎉 Perfect Accuracy!</p>
-                    <p style={{ margin: '8px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                      एकही चुकीचं उत्तर नाही! Negative Marking मुळे तुमचे ० मार्क्स वजा झाले!
-                    </p>
+
+                const attempted = correctCount + wrongCount;
+                const accuracy = attempted > 0 ? ((correctCount / attempted) * 100).toFixed(1) : '0';
+                const deducted = lost.toFixed(2);
+                const finalFormattedScore = (score % 1 === 0) ? score : score.toFixed(2);
+
+                return (
+                  <div style={{ width: '100%', maxWidth: '540px', marginTop: '16px', marginBottom: '24px' }}>
+                    {/* 4 Metric Cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
+                      <div className="glass-card" style={{ padding: '12px 8px', textAlign: 'center', background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.25)' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--success)' }}>{correctCount}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>बरोबर (+{correctCount})</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '12px 8px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--danger)' }}>{wrongCount}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>चुकीचे (-{deducted})</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '12px 8px', textAlign: 'center', background: 'var(--glass-bg)', border: '1px solid var(--border-color)' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-muted)' }}>{unattemptedCount}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>सोडवले नाही</div>
+                      </div>
+                      <div className="glass-card" style={{ padding: '12px 8px', textAlign: 'center', background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--info)' }}>{accuracy}%</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>अचूकता</div>
+                      </div>
+                    </div>
+
+                    {/* Marking Breakdown Row */}
+                    <div style={{ 
+                      padding: '12px 16px', 
+                      background: 'var(--glass-bg)', 
+                      borderRadius: '12px', 
+                      border: '1px solid var(--border-color)',
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      textAlign: 'left'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                        <span>मिळालेले गुण (Gross Marks):</span>
+                        <span style={{ fontWeight: 600, color: 'var(--success)' }}>+{correctCount}.00</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
+                        <span>निगेटिव्ह मार्किंग कपात (1/4th Penalty):</span>
+                        <span style={{ fontWeight: 600, color: 'var(--danger)' }}>-{deducted}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '6px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        <span>अंतिम गुण (Net Score):</span>
+                        <span style={{ color: 'var(--accent-primary)', fontSize: '1.05rem' }}>{finalFormattedScore} / {test.questions.length}</span>
+                      </div>
+                    </div>
+
+                    {/* Negative Marking Advice */}
+                    {lost > 0 ? (
+                      <div style={{ marginTop: '12px', padding: '14px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px dashed var(--danger)', borderRadius: '12px', textAlign: 'left' }}>
+                        <p style={{ margin: 0, color: 'var(--danger)', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          ⚠️ MPSC निगेटिव्ह मार्किंग विश्लेषण (1/4th Rule)
+                        </p>
+                        <p style={{ margin: '6px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.4' }}>
+                          तुम्ही {wrongCount} चुकीचे उत्तर दिले, ज्यामुळे तुमचे <strong>{deducted} मार्क्स</strong> वजा झाले. जर तुम्ही हे {wrongCount} चुकीचे प्रश्न सोडवले नसते (Skip केले असते), तर तुमचा अंतिम स्कोर <strong>{correctCount}.00</strong> असता!
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: '12px', padding: '14px 16px', background: 'rgba(34, 197, 94, 0.08)', border: '1px dashed var(--success)', borderRadius: '12px', textAlign: 'left' }}>
+                        <p style={{ margin: 0, color: 'var(--success)', fontWeight: 700, fontSize: '0.9rem' }}>
+                          🎉 उत्कृष्ट अचूकता (100% Accuracy)!
+                        </p>
+                        <p style={{ margin: '6px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                          एकही प्रश्न चुकीचा गेला नाही! निगेटिव्ह मार्किंगमुळे एकही गुण वजा झालेला नाही.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 );
               })()}

@@ -8,6 +8,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import { FiMenu, FiSun, FiMoon, FiBell, FiCloud, FiDownload } from 'react-icons/fi';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
+import NotificationCenter from './components/NotificationCenter';
 import Dashboard from './pages/Dashboard';
 import StudyPlanner from './pages/StudyPlanner';
 import Practice from './pages/Practice';
@@ -28,6 +29,8 @@ function App() {
   const [theme, setTheme] = useState('light');
   const [isSyncing, setIsSyncing] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   
   const [showIntro, setShowIntro] = useState(() => {
     return sessionStorage.getItem('intro_played') ? false : true;
@@ -100,19 +103,10 @@ function App() {
   };
 
   const handleNotificationClick = () => {
-    if (Notification.permission !== "granted") {
-      Notification.requestPermission().then(perm => {
-        if (perm === 'granted') {
-           toast.success("Notification permissions enabled! 🔔");
-        } else {
-           alert("Please enable notification permissions in your browser settings!");
-        }
-      });
-    } else {
-      toast("You're all caught up! No active alerts.", {
-        icon: '🔔',
-        style: { borderRadius: '12px', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }
-      });
+    setShowNotifications(prev => !prev);
+    // Request permission if not yet decided, quietly in background
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
     }
   };
 
@@ -222,11 +216,38 @@ function App() {
                       <button onClick={toggleTheme} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Toggle Theme">
                         {theme === 'dark' ? <FiSun size={18} color="var(--text-secondary)" /> : <FiMoon size={18} color="var(--text-secondary)" />}
                       </button>
-                      <button onClick={handleNotificationClick} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '40px', height: '40px', padding: 0 }} title="Notifications">
+                      <button 
+                        onClick={handleNotificationClick} 
+                        className="btn" 
+                        style={{ 
+                          background: 'var(--glass-bg)', 
+                          border: '1px solid var(--border-color)', 
+                          borderRadius: '50%', 
+                          width: '40px', 
+                          height: '40px', 
+                          padding: 0,
+                          position: 'relative',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }} 
+                        title="Notifications"
+                      >
                          <FiBell size={18} color="var(--accent-primary)" />
+                         {unreadNotifCount > 0 && (
+                           <span className="bell-badge-pill">
+                             {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                           </span>
+                         )}
                       </button>
                    </div>
                 </div>
+
+                <NotificationCenter 
+                  isOpen={showNotifications} 
+                  onClose={() => setShowNotifications(false)} 
+                  onCountChange={setUnreadNotifCount} 
+                />
                 <Routes>
                   <Route path="/" element={<Dashboard user={user} deferredPrompt={deferredPrompt} setDeferredPrompt={setDeferredPrompt} />} />
                   <Route path="/planner" element={<StudyPlanner user={user} />} />
