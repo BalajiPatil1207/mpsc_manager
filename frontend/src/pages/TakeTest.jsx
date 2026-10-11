@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FiBookmark, FiTarget, FiArrowLeft, FiArrowRight } from 'react-icons/fi';
+import { 
+  FiBookmark, FiTarget, FiArrowLeft, FiArrowRight, 
+  FiBookOpen, FiFilm, FiCpu, FiExternalLink, FiChevronDown, FiChevronUp, FiCheckCircle, FiAward 
+} from 'react-icons/fi';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
 import axios from 'axios';
@@ -21,8 +24,98 @@ const TakeTest = () => {
   const [showAnswers, setShowAnswers] = useState(false);
   const [activeQuestion, setActiveQuestion] = useState(0);
   const [showSuccessVideo, setShowSuccessVideo] = useState(false);
+  const [allReels, setAllReels] = useState([]);
+  const [aiExplanations, setAiExplanations] = useState({});
+  const [loadingAi, setLoadingAi] = useState({});
+  const [expandedReelPreview, setExpandedReelPreview] = useState({});
+  const [rankData, setRankData] = useState({
+    userRank: null,
+    totalParticipants: 0,
+    isQualified: false,
+    leaderboard: []
+  });
   const navigate = useNavigate();
   const { width, height } = useWindowSize();
+
+  // Load study reels for automatic topic referencing
+  useEffect(() => {
+    const fetchReels = async () => {
+      try {
+        const cached = localStorage.getItem('mpsc_cached_reels');
+        if (cached) {
+          setAllReels(JSON.parse(cached));
+        }
+        const res = await axios.get('https://mpsc-manager.onrender.com/api/reels/all', { timeout: 4000 });
+        if (res.data.success && Array.isArray(res.data.data)) {
+          setAllReels(res.data.data);
+          localStorage.setItem('mpsc_cached_reels', JSON.stringify(res.data.data));
+        }
+      } catch (e) {
+        // Fallback to cached
+      }
+    };
+    fetchReels();
+  }, []);
+
+  // Find matching Note Reel based on topic or subject
+  const findMatchingReel = (q, currentTest) => {
+    if (!allReels || allReels.length === 0) return null;
+    const testSub = (currentTest?.subject || '').trim().toLowerCase();
+    const testTopic = (currentTest?.topic || '').trim().toLowerCase();
+    const qText = (q?.question || '').toLowerCase();
+
+    // 1. Precise match on topic
+    if (testTopic) {
+      const topicMatch = allReels.find(r => 
+        (r.topic && r.topic.toLowerCase().includes(testTopic)) ||
+        (r.title && r.title.toLowerCase().includes(testTopic))
+      );
+      if (topicMatch) return topicMatch;
+    }
+
+    // 2. Keyword match in question text vs reel title or card content
+    const keywordMatch = allReels.find(r => {
+      const rTitle = (r.title || '').toLowerCase();
+      const rSub = (r.subject || '').toLowerCase();
+      const titleWords = rTitle.split(/\s+/).filter(w => w.length > 3);
+      const hasWordMatch = titleWords.some(w => qText.includes(w));
+      return hasWordMatch || (testSub && rSub.includes(testSub));
+    });
+
+    if (keywordMatch) return keywordMatch;
+
+    // 3. Fallback: match by subject or return first available reel
+    const subMatch = allReels.find(r => (r.subject || '').toLowerCase() === testSub);
+    return subMatch || allReels[0] || null;
+  };
+
+  // Fetch AI explanation on demand
+  const handleGetAiExplanation = async (qIndex, q) => {
+    setLoadingAi(prev => ({ ...prev, [qIndex]: true }));
+    try {
+      const res = await axios.post('https://mpsc-manager.onrender.com/api/ai/explain', {
+        question: q.question,
+        options: q.options,
+        correctOption: q.correctOption,
+        subject: test?.subject || 'MPSC'
+      }, { timeout: 10000 });
+
+      if (res.data.success && res.data.explanation) {
+        setAiExplanations(prev => ({ ...prev, [qIndex]: res.data.explanation }));
+        toast.success("AI स्पष्टीकरण तयार झाले! ✨");
+      } else {
+        throw new Error("No explanation returned");
+      }
+    } catch (err) {
+      const correctText = (q.options && q.options[q.correctOption]) ? q.options[q.correctOption] : 'पर्याय';
+      setAiExplanations(prev => ({
+        ...prev,
+        [qIndex]: `या प्रश्नाचे अधिकृत उत्तर "${correctText}" आहे. हा प्रश्न ${test?.subject || 'MPSC'} च्या अभ्यासक्रमातील महत्त्वाच्या घटकावर आधारित आहे.`
+      }));
+    } finally {
+      setLoadingAi(prev => ({ ...prev, [qIndex]: false }));
+    }
+  };
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -168,12 +261,30 @@ const TakeTest = () => {
     setShowSuccessVideo(true);
 
     try {
+      const totalAllocatedSeconds = (test?.timeLimit ? test.timeLimit * 60 : 0);
+      const timeSpent = Math.max(1, totalAllocatedSeconds - timeLeft);
+      const usr = auth.currentUser;
+      const userName = usr?.displayName ? usr.displayName.split(' ')[0] : 'परीक्षार्थी';
+
       const res = await axios.post(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}/submit`, {
         answers: backendAnswers,
-        userId: auth.currentUser?.uid || 'anonymous'
+        userId: usr?.uid || 'anonymous',
+        userName: userName,
+        timeTaken: timeSpent
       });
       if(res.data.success) {
-        if (res.data.message.includes('Mistake Mock')) {
+        setRankData({
+          userRank: res.data.userRank,
+          totalParticipants: res.data.totalParticipants || 0,
+          isQualified: res.data.isQualified,
+          leaderboard: res.data.leaderboard || []
+        });
+
+        if (res.data.userRank) {
+          toast.success(`🏆 तुमचा रँक: #${res.data.userRank} (${res.data.totalParticipants} विद्यार्थ्यांपैकी)`, { duration: 4000, icon: '🏅' });
+        }
+
+        if (res.data.message && res.data.message.includes('Mistake Mock')) {
           toast.success(res.data.message, { duration: 5000, icon: '🔥' });
         }
         
@@ -412,6 +523,77 @@ const TakeTest = () => {
                         </p>
                       </div>
                     )}
+
+                    {/* Official Test Rank Banner */}
+                    {rankData.userRank ? (
+                      <div className="test-rank-banner">
+                        <div className="rank-left-section">
+                          <div className="rank-trophy-badge">
+                            {rankData.userRank === 1 ? '🥇' : rankData.userRank === 2 ? '🥈' : rankData.userRank === 3 ? '🥉' : '🏆'}
+                          </div>
+                          <div>
+                            <div className="rank-sub-title">अधिकृत टेस्ट रँक (Official Test Rank)</div>
+                            <div className="rank-number-display">
+                              रँक #{rankData.userRank} <span className="rank-total-count">/ {rankData.totalParticipants} विद्यार्थी</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="rank-valid-badge">
+                          ✓ १००% गुण & अचूकतेवर आधारित
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="test-rank-unqualified">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontSize: '1.4rem' }}>⚠️</span>
+                          <div>
+                            <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.88rem' }}>रँकसाठी अपात्र (Unranked)</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: '1.4' }}>
+                              रँक मिळवण्यासाठी किमान १ प्रश्न अचूक सोडवून पॉझिटिव्ह नेट गुण मिळवणे अनिवार्य आहे. केवळ रिकामी टेस्ट सबमिट केल्यास रँक मिळत नाही!
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Test Leaderboard Accordion/Table */}
+                    {rankData.leaderboard && rankData.leaderboard.length > 0 && (
+                      <div className="test-leaderboard-box">
+                        <div className="leaderboard-box-header">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                            <FiAward size={18} style={{ color: 'var(--accent-primary)' }} />
+                            <span>या टेस्टचा रँकिंग तक्ता (Leaderboard)</span>
+                          </div>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            एकूण {rankData.totalParticipants} रँकधारक
+                          </span>
+                        </div>
+
+                        <div className="leaderboard-box-list">
+                          {rankData.leaderboard.map((item, idx) => {
+                            const isMe = item.userId === auth.currentUser?.uid;
+                            const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                            return (
+                              <div key={idx} className={`leaderboard-item-row ${isMe ? 'leaderboard-item-row-me' : ''}`}>
+                                <div className="lb-col-rank">{medal}</div>
+                                <div className="lb-col-user">
+                                  <div className="lb-username">
+                                    {item.userName} {isMe && <span className="lb-me-tag">तुम्ही</span>}
+                                  </div>
+                                  <div className="lb-user-meta">
+                                    {item.accuracy}% अचूकता • {formatTime(item.timeTaken || 0)} वेळ
+                                  </div>
+                                </div>
+                                <div className="lb-col-score">
+                                  <span className="lb-score-val">{item.netScore}</span>
+                                  <span className="lb-score-label">गुण</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -483,6 +665,102 @@ const TakeTest = () => {
                   );
                 })}
               </div>
+
+              {/* Reference & Automatic Note Reel Section */}
+              {submitted && showAnswers && (() => {
+                const matchingReel = findMatchingReel(q, test);
+                const hasDirectExplanation = !!q.explanation;
+                const aiExpl = aiExplanations[qIndex];
+                const isLoadingThisAi = loadingAi[qIndex];
+                const isReelExpanded = expandedReelPreview[qIndex];
+
+                return (
+                  <div className="reference-container" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {/* 1. Direct or AI Explanation Card */}
+                    {(hasDirectExplanation || aiExpl) ? (
+                      <div className="explanation-card">
+                        <div className="flex-row gap-2" style={{ alignItems: 'center', marginBottom: '8px', color: 'var(--accent-primary)', fontWeight: 700, fontSize: '0.9rem' }}>
+                          <FiBookOpen size={16} />
+                          <span>{hasDirectExplanation ? '📖 सविस्तर स्पष्टीकरण (Reference)' : '✨ AI संदर्भासहित स्पष्टीकरण'}</span>
+                        </div>
+                        <p style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                          {hasDirectExplanation ? q.explanation : aiExpl}
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <button
+                          onClick={() => handleGetAiExplanation(qIndex, q)}
+                          disabled={isLoadingThisAi}
+                          className="btn-ai-explain"
+                        >
+                          <FiCpu size={14} />
+                          {isLoadingThisAi ? 'स्पष्टीकरण तयार होत आहे...' : '✨ AI कडून स्पष्टीकरण मिळवा'}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* 2. Automatic Linked Note Reel Card */}
+                    {matchingReel && (
+                      <div className="auto-reel-card">
+                        <div className="flex-row justify-between" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                          <div className="flex-row gap-2" style={{ alignItems: 'center' }}>
+                            <div className="reel-badge-icon">📽️</div>
+                            <div>
+                              <div style={{ fontSize: '0.72rem', color: 'var(--accent-primary)', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                                संबंधित Note Reel रिव्हिजन (Auto-Linked)
+                              </div>
+                              <h4 style={{ margin: '2px 0 0 0', fontSize: '0.95rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                                {matchingReel.title}
+                              </h4>
+                            </div>
+                          </div>
+
+                          <div className="flex-row gap-2" style={{ alignItems: 'center' }}>
+                            <button
+                              onClick={() => setExpandedReelPreview(prev => ({ ...prev, [qIndex]: !prev[qIndex] }))}
+                              className="btn-reel-preview"
+                              title="कार्ड्स येथेच पहा"
+                            >
+                              {isReelExpanded ? <FiChevronUp size={14} /> : <FiChevronDown size={14} />}
+                              {matchingReel.cards?.length || 0} कार्ड्स रिव्हिजन
+                            </button>
+                            <a
+                              href={`/reel/${matchingReel.id || matchingReel._id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-reel-open"
+                              title="मोठ्या स्क्रीनवर रील उघडा"
+                            >
+                              पूर्ण रील पहा <FiExternalLink size={12} />
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* Inline Flashcard Mini Viewer */}
+                        {isReelExpanded && matchingReel.cards && matchingReel.cards.length > 0 && (
+                          <div className="reel-inline-preview">
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px', fontWeight: 600 }}>
+                              फ्लॅशकार्ड्स सारांश ({matchingReel.subject || 'MPSC'}):
+                            </div>
+                            <div className="flex-col gap-2">
+                              {matchingReel.cards.map((card, cIdx) => (
+                                <div key={cIdx} className="mini-card-item">
+                                  <span className="mini-card-num">#{cIdx + 1}</span>
+                                  <div>
+                                    {card.topic && <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent-primary)' }}>{card.topic}</div>}
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{card.content}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {!submitted && (
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>

@@ -30,3 +30,36 @@ exports.getCoachAdvice = async (req, res) => {
     res.status(500).json({ success: false, error: error.message || 'AI Generation Failed' });
   }
 };
+
+exports.explainQuestion = async (req, res) => {
+  const { question, options, correctOption, subject } = req.body;
+  
+  try {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) return res.status(500).json({ success: false, error: "API Key missing" });
+
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const correctText = (options && options[correctOption] !== undefined) ? options[correctOption] : '';
+    const prompt = `Act as an expert MPSC exam mentor and educator.
+Question: "${question}"
+Options: ${JSON.stringify(options || [])}
+Correct Answer: "${correctText}"
+Subject: ${subject || 'General Studies'}
+
+Provide a clear, accurate, and concise explanation in Marathi for why this is the correct answer. 
+Include key facts, relevant constitutional articles, historical dates, or MPSC reference points if applicable.
+Keep the explanation between 2 to 4 sentences (under 60 words).
+Respond ONLY with the explanation text in Marathi.`;
+
+    const result = await model.generateContent(prompt);
+    const explanation = result.response.text().trim();
+    
+    res.json({ success: true, explanation });
+  } catch (error) {
+    console.error('AI Explanation Error:', error.message || error);
+    res.status(500).json({ success: false, error: error.message || 'AI Explanation Failed' });
+  }
+};
+

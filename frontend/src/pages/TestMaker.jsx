@@ -6,8 +6,8 @@ import { FiCode, FiFilm, FiPlay, FiCopy, FiLayers } from 'react-icons/fi';
 import { auth } from '../firebase';
 
 const TestMaker = () => {
-  // Test State
-  const defaultTestJson = '[\n  {\n    "question": "भारताची राजधानी कोणती?",\n    "options": ["मुंबई", "पुणे", "नवी दिल्ली", "नागपूर"],\n    "correctOption": 2\n  }\n]';
+  // Test State with optional explanation reference
+  const defaultTestJson = '[\n  {\n    "question": "भारताची राज्यघटना केव्हा स्वीकृत करण्यात आली?",\n    "options": ["२६ जानेवारी १९५०", "२६ नोव्हेंबर १९४९", "१५ ऑगस्ट १९४७", "२६ जानेवारी १९४९"],\n    "correctOption": 1,\n    "explanation": "२६ नोव्हेंबर १९४९ रोजी घटना समितीने राज्यघटना स्वीकृत केली, तर २६ जानेवारी १९५० पासून ती प्रत्यक्ष अंमलात आली."\n  }\n]';
   const defaultReelJson = '[\n  {\n    "topic": "Geography",\n    "subtopic": "Physical Geo",\n    "content": "The Earth has 3 main layers: crust, mantle, and core."\n  }\n]';
 
   const location = useLocation();

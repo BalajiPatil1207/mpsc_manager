@@ -128,7 +128,7 @@ exports.generateMegaTest = async (req, res, next) => {
 exports.submitTest = async (req, res, next) => {
   try {
     const { testId } = req.params;
-    const { answers, userId } = req.body;
+    const { answers, userId, userName, timeTaken } = req.body;
     
     const doc = await db.collection('customTests').doc(testId).get();
     if (!doc.exists) return res.status(404).json({ success: false, message: "Test not found" });
@@ -137,23 +137,93 @@ exports.submitTest = async (req, res, next) => {
     let attemptedBy = test.attemptedBy || [];
     if (userId && userId !== 'anonymous' && !attemptedBy.includes(userId)) {
       attemptedBy.push(userId);
-      await db.collection('customTests').doc(testId).update({ attemptedBy });
     }
 
     let wrongQuestions = [];
-    let scoreEarned = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let unattemptedCount = 0;
     
     test.questions.forEach((q, idx) => {
       if (answers[idx] === q.correctOption) {
-        scoreEarned += 1;
+        correctCount += 1;
       } else if (answers[idx] !== undefined && answers[idx] !== null) {
         wrongQuestions.push(q);
-        scoreEarned -= 0.25;
+        wrongCount += 1;
+      } else {
+        unattemptedCount += 1;
       }
     });
 
+    const totalAttempted = correctCount + wrongCount;
+    const rawScore = (correctCount * 1) - (wrongCount * 0.25);
+    const netScore = Math.max(0, parseFloat(rawScore.toFixed(2)));
+    const penalty = parseFloat((wrongCount * 0.25).toFixed(2));
+    const accuracy = totalAttempted > 0 ? parseFloat(((correctCount / totalAttempted) * 100).toFixed(1)) : 0;
+    const scoreEarned = rawScore;
+
+    // 🔒 ANTI-SPAM & QUALIFICATION LOGIC:
+    // रँक मिळवण्यासाठी किमान १ प्रश्न अचूक सोडवून पॉझिटिव्ह नेट स्कोर आवश्यक आहे.
+    // रिकाम्या किंवा ० मार्क्सच्या प्रयत्नांना रँक दिली जाणार नाही!
+    const isQualified = correctCount > 0 && rawScore > 0 && totalAttempted > 0;
+
+    let leaderboard = Array.isArray(test.leaderboard) ? [...test.leaderboard] : [];
+    let userRank = null;
+
+    if (isQualified && userId && userId !== 'anonymous') {
+      const candidateName = userName && userName !== 'anonymous' ? userName : 'MPSC Aspirant';
+      const existingIdx = leaderboard.findIndex(entry => entry.userId === userId);
+
+      const candidateEntry = {
+        userId,
+        userName: candidateName,
+        netScore,
+        grossMarks: correctCount,
+        penalty,
+        accuracy,
+        timeTaken: typeof timeTaken === 'number' ? timeTaken : 0,
+        submittedAt: new Date().toISOString()
+      };
+
+      if (existingIdx !== -1) {
+        const existing = leaderboard[existingIdx];
+        // Only update if current score is better or faster
+        if (
+          netScore > existing.netScore ||
+          (netScore === existing.netScore && accuracy > existing.accuracy) ||
+          (netScore === existing.netScore && accuracy === existing.accuracy && candidateEntry.timeTaken < (existing.timeTaken || 99999))
+        ) {
+          leaderboard[existingIdx] = candidateEntry;
+        }
+      } else {
+        leaderboard.push(candidateEntry);
+      }
+
+      // 🏆 Strict Ranking:
+      // 1. Highest Net Score first
+      // 2. Highest Accuracy first
+      // 3. Lowest Time Taken (Faster) first
+      leaderboard.sort((a, b) => {
+        if (b.netScore !== a.netScore) return b.netScore - a.netScore;
+        if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
+        return (a.timeTaken || 0) - (b.timeTaken || 0);
+      });
+
+      // Cap to Top 50 best performers
+      leaderboard = leaderboard.slice(0, 50);
+      userRank = leaderboard.findIndex(e => e.userId === userId) + 1;
+    }
+
+    // Update test doc with latest participant & leaderboard
+    const docUpdates = { attemptedBy };
+    if (isQualified && userId && userId !== 'anonymous') {
+      docUpdates.leaderboard = leaderboard;
+    }
+    await db.collection('customTests').doc(testId).update(docUpdates);
+
+    // Mistake Mock Generation & Update logic
+    let returnMessage = "Test submitted successfully!";
     if (wrongQuestions.length > 0 && !test.isMistakeMock) {
-      // Check if a mistake mock already exists for this original test
       const existingMistakeDocs = await db.collection('customTests')
         .where('parentTestId', '==', testId)
         .where('createdBy', '==', userId || 'anonymous')
@@ -161,11 +231,8 @@ exports.submitTest = async (req, res, next) => {
         .get();
         
       if (!existingMistakeDocs.empty) {
-         // Append to existing
          const existingDoc = existingMistakeDocs.docs[0];
          const existingData = existingDoc.data();
-         
-         // Merge questions and deduplicate by question text
          const mergedQuestions = [...existingData.questions];
          wrongQuestions.forEach(wq => {
             if (!mergedQuestions.find(q => q.question === wq.question)) {
@@ -178,12 +245,11 @@ exports.submitTest = async (req, res, next) => {
             timeLimit: Math.max(mergedQuestions.length, 5),
             updatedAt: new Date().toISOString()
          });
-         
-         return res.json({ success: true, message: `Updated Mistake Mock with ${wrongQuestions.length} new mistakes!`, scoreEarned, subject: test.subject });
+         returnMessage = `Updated Mistake Mock with ${wrongQuestions.length} new mistakes!`;
       } else {
         const newTest = {
           title: `Mistakes: ${test.title}`,
-          subject: `${test.subject || 'General'}`, // For subject sorting in Analytics
+          subject: `${test.subject || 'General'}`,
           timeLimit: Math.max(wrongQuestions.length, 5),
           questions: wrongQuestions,
           createdBy: userId || 'anonymous',
@@ -192,23 +258,48 @@ exports.submitTest = async (req, res, next) => {
           parentTestId: testId
         };
         await db.collection('customTests').add(newTest);
-        return res.json({ success: true, message: `Generated Mistake Mock for revision!`, scoreEarned, subject: test.subject });
+        returnMessage = `Generated Mistake Mock for revision!`;
       }
     } else if (wrongQuestions.length > 0 && test.isMistakeMock) {
-        // Auto-remove correctly answered questions by only saving the still-wrong ones!
         await db.collection('customTests').doc(testId).update({
             questions: wrongQuestions,
             timeLimit: Math.max(wrongQuestions.length, 5),
             updatedAt: new Date().toISOString()
         });
-        return res.json({ success: true, message: `Progress! Only ${wrongQuestions.length} mistakes remain to revise.`, scoreEarned, subject: test.subject });
+        returnMessage = `Progress! Only ${wrongQuestions.length} mistakes remain to revise.`;
     } else if (wrongQuestions.length === 0 && test.isMistakeMock) {
-        // If it was a mistake mock and they got everything right, delete it!
         await db.collection('customTests').doc(testId).delete();
-        return res.json({ success: true, message: "Perfect Revision! Mistake Mock deleted automatically.", scoreEarned, subject: test.subject });
+        returnMessage = "Perfect Revision! Mistake Mock deleted automatically.";
     }
 
-    res.json({ success: true, message: "Perfect! No mistakes!", scoreEarned, subject: test.subject });
+    res.json({ 
+      success: true, 
+      message: returnMessage, 
+      scoreEarned, 
+      netScore,
+      correctCount,
+      wrongCount,
+      unattemptedCount,
+      accuracy,
+      userRank,
+      totalParticipants: leaderboard.length,
+      isQualified,
+      leaderboard: leaderboard.slice(0, 10), // Top 10 for client
+      subject: test.subject 
+    });
+  } catch(err) {
+    next(err);
+  }
+};
+
+exports.getTestLeaderboard = async (req, res, next) => {
+  try {
+    const { testId } = req.params;
+    const doc = await db.collection('customTests').doc(testId).get();
+    if (!doc.exists) return res.status(404).json({ success: false, message: "Test not found" });
+    const test = doc.data();
+    const leaderboard = Array.isArray(test.leaderboard) ? test.leaderboard : [];
+    res.json({ success: true, leaderboard: leaderboard.slice(0, 20), totalParticipants: leaderboard.length });
   } catch(err) {
     next(err);
   }
