@@ -129,39 +129,81 @@ const TakeTest = () => {
         const res = await axios.get(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}`);
         if(res.data.success) {
           const fetchedTest = res.data.data;
-          
-          // Shuffle questions and options for anti-cheat
-          if (fetchedTest.questions && Array.isArray(fetchedTest.questions)) {
-             
-             // Map questions with their originalIndex
-             const questionsWithIdx = fetchedTest.questions.map((q, qIndex) => ({ q, originalQIndex: qIndex }));
-             // Shuffle questions
-             questionsWithIdx.sort(() => Math.random() - 0.5);
-             
-             fetchedTest.questions = questionsWithIdx.map(item => {
-               const q = item.q;
-               q.originalQIndex = item.originalQIndex;
-               
-               if (q.options && q.options.length > 0) {
-                 const optionsWithIdx = q.options.map((opt, i) => ({ opt, originalIndex: i }));
-                 // Shuffle Options
-                 optionsWithIdx.sort(() => Math.random() - 0.5);
-                 
-                 const newCorrectIndex = optionsWithIdx.findIndex(o => o.originalIndex === q.correctOption);
-                 
-                 q.options = optionsWithIdx.map(o => o.opt);
-                 q.optionMapping = optionsWithIdx.map(o => o.originalIndex); // Save mapping
-                 
-                 if (newCorrectIndex !== -1) {
-                    q.correctOption = newCorrectIndex;
-                 }
-               }
-               return q;
-             });
+          const sessionKey = `mpsc_active_test_${testId}`;
+          const savedSessionRaw = localStorage.getItem(sessionKey);
+          let sessionRestored = false;
+
+          // Check for existing ongoing session (e.g. after refresh)
+          if (savedSessionRaw) {
+            try {
+              const session = JSON.parse(savedSessionRaw);
+              if (session && Array.isArray(session.questions) && session.questions.length > 0) {
+                // Calculate elapsed time accurately (even if user was away / reloading)
+                const elapsedSeconds = Math.max(0, Math.floor((Date.now() - (session.lastSavedTimestamp || Date.now())) / 1000));
+                const remainingTime = Math.max(0, (session.timeLeft ?? (fetchedTest.timeLimit * 60)) - elapsedSeconds);
+                
+                fetchedTest.questions = session.questions;
+                setTest(fetchedTest);
+                setAnswers(session.answers || {});
+                setReviews(session.reviews || {});
+                setTimeLeft(remainingTime);
+                if (typeof session.activeQuestion === 'number') {
+                  setActiveQuestion(session.activeQuestion);
+                }
+                sessionRestored = true;
+                toast.success("🔄 तुमची चालू टेस्ट पूर्ववत केली आहे! (Test Resumed)", { icon: '⚡', duration: 4000 });
+              }
+            } catch(err) {
+              console.error("Failed to restore test session", err);
+            }
           }
-          
-          setTest(fetchedTest);
-          setTimeLeft(fetchedTest.timeLimit * 60);
+
+          if (!sessionRestored) {
+            // Shuffle questions and options for anti-cheat
+            if (fetchedTest.questions && Array.isArray(fetchedTest.questions)) {
+               // Map questions with their originalIndex
+               const questionsWithIdx = fetchedTest.questions.map((q, qIndex) => ({ q, originalQIndex: qIndex }));
+               // Shuffle questions
+               questionsWithIdx.sort(() => Math.random() - 0.5);
+               
+               fetchedTest.questions = questionsWithIdx.map(item => {
+                 const q = item.q;
+                 q.originalQIndex = item.originalQIndex;
+                 
+                 if (q.options && q.options.length > 0) {
+                   const optionsWithIdx = q.options.map((opt, i) => ({ opt, originalIndex: i }));
+                   // Shuffle Options
+                   optionsWithIdx.sort(() => Math.random() - 0.5);
+                   
+                   const newCorrectIndex = optionsWithIdx.findIndex(o => o.originalIndex === q.correctOption);
+                   
+                   q.options = optionsWithIdx.map(o => o.opt);
+                   q.optionMapping = optionsWithIdx.map(o => o.originalIndex); // Save mapping
+                   
+                   if (newCorrectIndex !== -1) {
+                      q.correctOption = newCorrectIndex;
+                   }
+                 }
+                 return q;
+               });
+            }
+            
+            setTest(fetchedTest);
+            const initialTime = fetchedTest.timeLimit * 60;
+            setTimeLeft(initialTime);
+
+            try {
+              localStorage.setItem(sessionKey, JSON.stringify({
+                testId,
+                questions: fetchedTest.questions,
+                answers: {},
+                reviews: {},
+                timeLeft: initialTime,
+                lastSavedTimestamp: Date.now(),
+                activeQuestion: 0
+              }));
+            } catch (e) {}
+          }
         }
       } catch (err) {
         console.error(err);
@@ -225,6 +267,38 @@ const TakeTest = () => {
     }
   }, [timeLeft, submitted, test]);
 
+  // Auto-save test progress to localStorage continuously so refresh won't lose answers
+  useEffect(() => {
+    if (test && !submitted && test.questions && test.questions.length > 0) {
+      try {
+        const sessionData = {
+          testId,
+          questions: test.questions,
+          answers,
+          reviews,
+          timeLeft,
+          lastSavedTimestamp: Date.now(),
+          activeQuestion
+        };
+        localStorage.setItem(`mpsc_active_test_${testId}`, JSON.stringify(sessionData));
+      } catch (e) {}
+    }
+  }, [test, answers, reviews, timeLeft, activeQuestion, submitted, testId]);
+
+  // Warn user on accidental refresh or window close
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (!submitted && test && (Object.keys(answers).length > 0 || timeLeft > 0)) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [submitted, test, answers, timeLeft]);
+
   const handleSelect = (qIndex, oIndex) => {
     if(submitted) return;
     if (answers[qIndex] === oIndex) {
@@ -258,14 +332,20 @@ const TakeTest = () => {
       
       // Map to backend structure
       if (answers[visualIdx] !== undefined) {
-         const originalQIdx = q.originalQIndex;
-         const originalOIdx = q.optionMapping ? q.optionMapping[answers[visualIdx]] : answers[visualIdx];
-         backendAnswers[originalQIdx] = originalOIdx;
+        const originalQIdx = q.originalQIndex;
+        const originalOIdx = q.optionMapping ? q.optionMapping[answers[visualIdx]] : answers[visualIdx];
+        backendAnswers[originalQIdx] = originalOIdx;
       }
     });
 
     setScore(currentScore);
     setSubmitted(true);
+    
+    // Clean up active session from localStorage so test won't resume after final submission
+    try {
+      localStorage.removeItem(`mpsc_active_test_${testId}`);
+    } catch(e) {}
+
     if (!isMistake) {
       setShowSuccessVideo(true);
     }
@@ -390,24 +470,90 @@ const TakeTest = () => {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', color: 'var(--text-primary)', padding: '20px', paddingBottom: '100px', fontFamily: 'system-ui' }}>
       
-      {/* Header Sticky */}
-      <div className="test-header-sticky">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-           <button onClick={() => navigate(-1)} style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Go Back">
-              <FiArrowLeft size={24} />
-           </button>
-           <h2 className="test-header-title" title={test.title}>{test.title}</h2>
+      {/* 🚀 FIXED TOP STICKY BAR: Timer + Question Palette */}
+      <div className="test-fixed-top-bar">
+        <div className="test-top-main-row">
+          <div className="test-top-left">
+            <button onClick={() => navigate(-1)} className="test-back-btn" title="Go Back">
+              <FiArrowLeft size={20} />
+            </button>
+            <div className="test-title-meta">
+              <h2 className="test-fixed-title" title={test.title}>{test.title}</h2>
+              {test.questions && test.questions.length > 0 && (
+                <span className="test-q-badge">
+                  प्रश्न {activeQuestion + 1} / {test.questions.length}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="test-top-right">
+            {!submitted && (
+              <div className={`test-fixed-timer ${timeLeft < 60 ? 'timer-danger' : ''}`}>
+                <span>⏱</span>
+                <span>{formatTime(timeLeft)}</span>
+              </div>
+            )}
+            {!submitted && (
+              <button onClick={handleSubmit} className="btn btn-primary test-header-submit-btn">
+                सबमिट करा
+              </button>
+            )}
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexShrink: 0 }}>
-          {!submitted && (
-             <h2 className="test-header-timer" style={{ margin: 0, color: timeLeft < 60 ? 'var(--warning)' : 'var(--accent-primary)' }}>
-               ⏱ {formatTime(timeLeft)}
-             </h2>
-          )}
-          {!submitted && (
-            <button onClick={handleSubmit} className="btn btn-primary desktop-submit-btn" style={{ padding: '8px 16px' }}>Submit Test</button>
-          )}
-        </div>
+
+        {/* 🧭 Horizontal Question Palette Bar (Pinned right in the sticky top bar!) */}
+        {(!submitted || showAnswers) && test.questions && test.questions.length > 0 && (
+          <div className="test-top-palette-row">
+            <div id="palette-container" className="palette-horizontal-track">
+              {test.questions.map((_, idx) => {
+                const isAttempted = answers[idx] !== undefined;
+                const isActive = idx === activeQuestion && !submitted;
+                const isReviewed = reviews[idx];
+                
+                let chipClass = 'palette-chip';
+                if (submitted) {
+                  if (answers[idx] === test.questions[idx].correctOption) {
+                    chipClass += ' chip-correct';
+                  } else if (isAttempted) {
+                    chipClass += ' chip-wrong';
+                  }
+                } else if (isReviewed) {
+                  chipClass += isAttempted ? ' chip-review-ans' : ' chip-review-blank';
+                } else if (isAttempted) {
+                  chipClass += ' chip-answered';
+                }
+                if (isActive) chipClass += ' chip-current';
+
+                return (
+                  <button
+                    key={idx}
+                    id={`palette-q-${idx}`}
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById(`q-${idx}`);
+                      if (el) {
+                        const yOffset = -140;
+                        const y = el.getBoundingClientRect().top + window.scrollY + yOffset;
+                        window.scrollTo({ top: y, behavior: 'smooth' });
+                      }
+                    }}
+                    className={chipClass}
+                    title={`प्रश्न #${idx + 1}`}
+                  >
+                    {idx + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="palette-strip-legend desktop-only">
+              <span className="legend-tag tag-ans">{Object.keys(answers).length} सोडवले</span>
+              <span className="legend-tag tag-rev">{Object.keys(reviews).filter(k => reviews[k]).length} रिव्ह्यू</span>
+              <span className="legend-tag tag-left">{test.questions.length - Object.keys(answers).length} बाकी</span>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="test-layout-container" style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
@@ -810,81 +956,6 @@ const TakeTest = () => {
           )
         })}
         </div>
-
-        {/* Right Column: Question Palette */}
-        {(!submitted || showAnswers) && (
-          <div className="glass-panel test-palette-container">
-            <h3 className="mobile-hide" style={{ fontSize: '1.125rem', marginBottom: '16px' }}>Question Palette</h3>
-            <div id="palette-container" className="palette-grid" style={{ position: 'relative', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', maxHeight: '400px', overflowY: 'auto', paddingRight: '8px', scrollBehavior: 'smooth' }}>
-              {test.questions.map((_, idx) => {
-                const isAttempted = answers[idx] !== undefined;
-                const isActive = idx === activeQuestion && !submitted;
-                let bgState = 'var(--glass-bg)';
-                let colorState = 'var(--text-primary)';
-                let borderState = 'var(--border-color)';
-                
-                if (submitted) {
-                  if (answers[idx] === test.questions[idx].correctOption) {
-                    bgState = 'rgba(34, 197, 94, 0.2)'; colorState = 'var(--success)'; borderState = 'transparent';
-                  } else if (isAttempted) {
-                    bgState = 'rgba(239, 68, 68, 0.2)'; colorState = '#ef4444'; borderState = 'transparent';
-                  }
-                } else if (reviews[idx]) {
-                  bgState = isAttempted ? 'linear-gradient(135deg, var(--accent-primary), var(--warning))' : 'rgba(245, 158, 11, 0.2)'; 
-                  colorState = isAttempted ? '#fff' : 'var(--warning)'; 
-                  borderState = isAttempted ? 'transparent' : 'var(--warning)';
-                } else if (isAttempted) {
-                  bgState = 'var(--accent-primary)'; colorState = '#fff'; borderState = 'transparent';
-                }
-
-                if (isActive) borderState = 'var(--accent-secondary)';
-
-                return (
-                  <div 
-                    id={`palette-q-${idx}`}
-                    key={idx} 
-                    onClick={() => {
-                      const el = document.getElementById(`q-${idx}`);
-                      if (el) {
-                        const yOffset = -100; 
-                        const y = el.getBoundingClientRect().top + window.scrollY + yOffset;
-                        window.scrollTo({top: y, behavior: 'smooth'});
-                      }
-                    }}
-                    style={{ 
-                      width: '40px', height: '40px', borderRadius: '8px', 
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.875rem', cursor: 'pointer',
-                      background: bgState,
-                      color: colorState,
-                      border: `2px solid ${borderState}`,
-                      boxShadow: isActive ? '0 0 12px var(--accent-glow)' : 'none',
-                      transform: isActive ? 'scale(1.1)' : 'scale(1)',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    {idx+1}
-                  </div>
-                )
-              })}
-            </div>
-            
-            {!submitted && (
-              <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: 'var(--accent-primary)', borderRadius: '3px' }}></div> Answered</div>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '3px' }}></div> Not Answered</div>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: 'rgba(245, 158, 11, 0.2)', border: '1px solid var(--warning)', borderRadius: '3px' }}></div> Mrk (Blank)</div>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{ width: '12px', height: '12px', background: 'linear-gradient(135deg, var(--accent-primary), var(--warning))', borderRadius: '3px' }}></div> Mrk (Ans)</div>
-              </div>
-            )}
-            {submitted && (
-              <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '16px', height: '16px', background: 'rgba(34, 197, 94, 0.2)', border: '1px solid var(--success)', borderRadius: '4px' }}></div> Correct</div>
-                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><div style={{ width: '16px', height: '16px', background: 'rgba(239, 68, 68, 0.2)', border: '1px solid var(--danger)', borderRadius: '4px' }}></div> Incorrect</div>
-              </div>
-            )}
-          </div>
-        )}
-
       </div>
       
       {/* Mobile Sticky Submit Button */}
