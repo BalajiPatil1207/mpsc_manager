@@ -79,6 +79,151 @@ const ReelViewer = () => {
 
   const currentCard = reel.cards[currentIndex];
 
+  const renderCardContent = (card) => {
+    if (!card) return null;
+
+    // Check all potential keys for content/points
+    const rawContent = 
+      card.points || 
+      card.bullets || 
+      card.bullet_points || 
+      card.details || 
+      card.content || 
+      card.notes || 
+      card.description || 
+      card.text ||
+      card.explanation ||
+      card.info;
+
+    // If it's an Array of points
+    if (Array.isArray(rawContent) && rawContent.length > 0) {
+      return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+          {rawContent.map((point, idx) => (
+            <div 
+              key={idx} 
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px',
+                background: 'var(--glass-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '14px',
+                padding: '12px 14px',
+                fontSize: '1.05rem',
+                color: 'var(--text-primary)',
+                lineHeight: 1.5,
+                boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+              }}
+            >
+              <span style={{ color: 'var(--accent-primary)', fontSize: '1.1rem', flexShrink: 0, marginTop: '2px' }}>⚡</span>
+              <span style={{ flex: 1, fontWeight: 500 }}>{typeof point === 'string' ? point : JSON.stringify(point)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // If it's a string
+    if (typeof rawContent === 'string' && rawContent.trim().length > 0) {
+      const lines = rawContent.split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length > 1) {
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+            {lines.map((line, idx) => (
+              <div 
+                key={idx} 
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                  background: 'var(--glass-bg)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '14px',
+                  padding: '12px 14px',
+                  fontSize: '1.05rem',
+                  color: 'var(--text-primary)',
+                  lineHeight: 1.5,
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                }}
+              >
+                <span style={{ color: 'var(--accent-primary)', fontSize: '1.1rem', flexShrink: 0, marginTop: '2px' }}>⚡</span>
+                <span style={{ flex: 1, fontWeight: 500 }}>{line.replace(/^[-*•\d.]\s*/, '')}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+      return (
+        <div style={{
+          background: 'var(--glass-bg)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '16px',
+          padding: '18px 20px',
+          fontSize: '1.15rem',
+          color: 'var(--text-primary)',
+          lineHeight: 1.6,
+          fontWeight: 500,
+          whiteSpace: 'pre-wrap'
+        }}>
+          {rawContent}
+        </div>
+      );
+    }
+
+    // Fallback: check if there are any other properties in card
+    const otherKeys = Object.keys(card).filter(k => 
+      !['topic', 'subtopic', 'title', 'heading', 'subject', 'category'].includes(k.toLowerCase())
+    );
+    if (otherKeys.length > 0) {
+      const fallbackVal = card[otherKeys[0]];
+      if (Array.isArray(fallbackVal)) {
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+            {fallbackVal.map((pt, idx) => (
+              <div key={idx} style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '12px',
+                background: 'var(--glass-bg)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '14px',
+                padding: '12px 14px',
+                fontSize: '1.05rem',
+                color: 'var(--text-primary)',
+                lineHeight: 1.5
+              }}>
+                <span style={{ color: 'var(--accent-primary)', fontSize: '1.1rem', flexShrink: 0, marginTop: '2px' }}>⚡</span>
+                <span style={{ flex: 1 }}>{typeof pt === 'string' ? pt : JSON.stringify(pt)}</span>
+              </div>
+            ))}
+          </div>
+        );
+      }
+      if (fallbackVal) {
+        return (
+          <div style={{
+            background: 'var(--glass-bg)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '16px',
+            padding: '18px 20px',
+            fontSize: '1.15rem',
+            color: 'var(--text-primary)',
+            lineHeight: 1.6
+          }}>
+            {String(fallbackVal)}
+          </div>
+        );
+      }
+    }
+
+    return (
+      <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', padding: '16px 0', textAlign: 'center' }}>
+        (माहिती उपलब्ध नाही)
+      </div>
+    );
+  };
+
   return (
     <div style={{ height: '100vh', width: '100vw', background: 'var(--bg-primary)', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
       
@@ -116,10 +261,10 @@ const ReelViewer = () => {
       </div>
 
       {/* Main Card Container */}
-      <div style={{ width: '100%', maxWidth: '420px', height: '80vh', position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ width: '100%', maxWidth: '440px', height: 'min(84vh, 660px)', position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', margin: '0 16px' }}>
         
         {/* Card Frame with AnimatePresence */}
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden', perspective: '1000px' }}>
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden', perspective: '1000px', borderRadius: '32px' }}>
           <AnimatePresence initial={false} custom={direction} mode="popLayout">
             <motion.div
               key={currentIndex}
@@ -164,50 +309,82 @@ const ReelViewer = () => {
               className="glass-card" 
               style={{ 
                 position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                display: 'flex', flexDirection: 'column', padding: '40px 32px', 
+                display: 'flex', flexDirection: 'column', padding: '32px 24px 20px 24px', 
                 border: '1px solid var(--border-color)', borderRadius: '32px', 
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-                touchAction: 'none'
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)',
+                background: 'var(--bg-secondary)',
+                overflow: 'hidden'
               }}
             >
-              <div style={{ marginBottom: 'auto' }}>
-                <span style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', padding: '8px 16px', borderRadius: '100px', fontSize: '0.75rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  {currentCard.topic}
+              {/* Header: Topic Badge + Subtopic Title */}
+              <div style={{ flexShrink: 0, marginBottom: '14px' }}>
+                <span style={{ 
+                  background: 'var(--accent-glow)', 
+                  color: 'var(--accent-primary)', 
+                  padding: '6px 14px', 
+                  borderRadius: '100px', 
+                  fontSize: '0.78rem', 
+                  fontWeight: 800, 
+                  textTransform: 'uppercase', 
+                  letterSpacing: '0.8px',
+                  display: 'inline-block'
+                }}>
+                  {currentCard.topic || currentCard.subject || currentCard.category || 'MPSC Study OS'}
                 </span>
-                <h2 style={{ fontSize: '2rem', marginTop: '24px', color: 'var(--text-primary)', lineHeight: 1.2 }}>
-                  {currentCard.subtopic}
+                <h2 style={{ 
+                  fontSize: '1.65rem', 
+                  marginTop: '12px', 
+                  marginBottom: 0,
+                  color: 'var(--text-primary)', 
+                  lineHeight: 1.25,
+                  fontWeight: 800
+                }}>
+                  {currentCard.subtopic || currentCard.title || currentCard.heading || ''}
                 </h2>
               </div>
 
-              <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 'auto' }}>
-                {currentCard.content}
-              </p>
+              {/* Scrollable Points / Content Body */}
+              <div 
+                className="reel-card-content-scroll"
+                style={{ 
+                  flex: 1, 
+                  overflowY: 'auto', 
+                  paddingRight: '4px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'flex-start',
+                  minHeight: 0
+                }}
+              >
+                {renderCardContent(currentCard)}
+              </div>
 
-              <div style={{ marginTop: 'auto', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>MahaPrep AI Study OS</span>
+              {/* Footer Stamp */}
+              <div style={{ flexShrink: 0, marginTop: '12px', paddingTop: '10px', textAlign: 'center', borderTop: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>MahaPrep AI Study OS</span>
               </div>
             </motion.div>
           </AnimatePresence>
         </div>
 
         {/* Controls */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '24px', marginTop: '32px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginTop: '20px' }}>
           <button 
             onClick={handlePrev}
             disabled={currentIndex === 0}
             className="btn"
-            style={{ borderRadius: '50%', width: '64px', height: '64px', padding: 0, background: currentIndex === 0 ? 'var(--glass-bg)' : 'var(--bg-tertiary)', color: currentIndex === 0 ? 'var(--text-muted)' : 'var(--text-primary)', border: '1px solid var(--border-color)', opacity: currentIndex === 0 ? 0.5 : 1 }}
+            style={{ borderRadius: '50%', width: '56px', height: '56px', padding: 0, background: currentIndex === 0 ? 'var(--glass-bg)' : 'var(--bg-tertiary)', color: currentIndex === 0 ? 'var(--text-muted)' : 'var(--text-primary)', border: '1px solid var(--border-color)', opacity: currentIndex === 0 ? 0.4 : 1 }}
           >
-            <FiChevronUp size={32} />
+            <FiChevronUp size={28} />
           </button>
           
           <button 
             onClick={handleNext}
             disabled={currentIndex === reel.cards.length - 1}
             className="btn"
-            style={{ borderRadius: '50%', width: '64px', height: '64px', padding: 0, background: currentIndex === reel.cards.length - 1 ? 'var(--glass-bg)' : 'var(--accent-primary)', color: currentIndex === reel.cards.length - 1 ? 'var(--text-muted)' : 'white', border: currentIndex === reel.cards.length - 1 ? '1px solid var(--border-color)' : 'none', opacity: currentIndex === reel.cards.length - 1 ? 0.5 : 1, boxShadow: currentIndex === reel.cards.length - 1 ? 'none' : '0 10px 25px var(--accent-glow)' }}
+            style={{ borderRadius: '50%', width: '56px', height: '56px', padding: 0, background: currentIndex === reel.cards.length - 1 ? 'var(--glass-bg)' : 'var(--accent-primary)', color: currentIndex === reel.cards.length - 1 ? 'var(--text-muted)' : 'white', border: currentIndex === reel.cards.length - 1 ? '1px solid var(--border-color)' : 'none', opacity: currentIndex === reel.cards.length - 1 ? 0.4 : 1, boxShadow: currentIndex === reel.cards.length - 1 ? 'none' : '0 8px 20px var(--accent-glow)' }}
           >
-            <FiChevronDown size={32} />
+            <FiChevronDown size={28} />
           </button>
         </div>
 

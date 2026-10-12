@@ -6,7 +6,7 @@ import { FiFilm, FiPlay, FiPlayCircle, FiCopy, FiTrash2 } from 'react-icons/fi';
 import ConfirmModal from '../components/ConfirmModal';
 
 const NoteReels = () => {
-  const [jsonInput, setJsonInput] = useState('[\n  {\n    "topic": "Geography",\n    "subtopic": "Physical Geography",\n    "content": "The Earth is divided into three main layers: crust, mantle, and core."\n  },\n  {\n    "topic": "History",\n    "subtopic": "Ancient India",\n    "content": "Indus Valley Civilization is one of the oldest civilizations..."\n  }\n]');
+  const [jsonInput, setJsonInput] = useState('[\n  {\n    "topic": "महाराष्ट्राचा भूगोल",\n    "subtopic": "परीक्षेसाठी महत्त्वाचे मुद्दे",\n    "points": [\n      "राज्यप्राणी: शेकरू.",\n      "राज्यपक्षी: हरियाल.",\n      "राज्यवृक्ष: आंबा.",\n      "राज्यफूल: ताम्हण."\n    ]\n  },\n  {\n    "topic": "History",\n    "subtopic": "Ancient India",\n    "content": "Indus Valley Civilization is one of the oldest civilizations..."\n  }\n]');
   const [title, setTitle] = useState('Super Quick Notes');
   const [subject, setSubject] = useState('Mixed');
   const [reelLink, setReelLink] = useState('');

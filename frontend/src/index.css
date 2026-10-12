@@ -1587,4 +1587,19 @@ h1, h2, h3, h4, h5, h6 {
   border: 1.5px solid #cbd5e1 !important;
 }
 
+/* ========================================================
+   📽️ STUDY REELS CARD SCROLLBAR & POLISH
+   ======================================================== */
+.reel-card-content-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+.reel-card-content-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.reel-card-content-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 10px;
+}
+
+
 
