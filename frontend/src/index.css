@@ -555,23 +555,32 @@ h1, h2, h3, h4, h5, h6 {
 
   /* Mobile styles for fixed test top bar */
   .test-fixed-top-bar {
-    margin: -16px -16px 16px -16px !important;
-    padding: 10px 14px 8px 14px !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 8px 12px 6px 12px !important;
     border-radius: 0 0 16px 16px !important;
+    z-index: 9999 !important;
   }
   .test-fixed-title {
-    max-width: 140px !important;
-    font-size: 0.95rem !important;
+    max-width: 130px !important;
+    font-size: 0.92rem !important;
   }
   .test-fixed-timer {
-    font-size: 1.05rem !important;
-    padding: 5px 10px !important;
+    font-size: 1rem !important;
+    padding: 4px 10px !important;
   }
   .palette-chip {
     flex: 0 0 34px !important;
     width: 34px !important;
     height: 34px !important;
     font-size: 0.78rem !important;
+  }
+  .test-header-submit-btn {
+    display: none !important;
   }
   .desktop-submit-btn { display: none !important; }
   .mobile-submit-btn { 
@@ -1245,16 +1254,19 @@ h1, h2, h3, h4, h5, h6 {
    🚀 FIXED TOP STICKY COMMAND BAR (Timer + Question Palette)
    ======================================================== */
 .test-fixed-top-bar {
-  position: sticky;
-  top: 0;
-  z-index: 999;
-  background: rgba(15, 23, 42, 0.94);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
-  margin: -20px -20px 24px -20px;
-  padding: 12px 20px;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  width: 100% !important;
+  z-index: 9999 !important;
+  background: var(--bg-secondary) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+  margin: 0 !important;
+  padding: 10px 20px 8px 20px !important;
   transform: translateZ(0);
 }
 
@@ -1474,6 +1486,105 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-muted);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ========================================================
+   ☀️ LIGHT MODE OPTIMIZATIONS FOR TEST TOP BAR
+   ======================================================== */
+[data-theme='light'] .test-fixed-top-bar {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-bottom: 1.5px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07) !important;
+}
+
+[data-theme='light'] .test-fixed-title {
+  color: #0f172a !important;
+}
+
+[data-theme='light'] .test-back-btn {
+  background: #f1f5f9 !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+[data-theme='light'] .test-back-btn:hover {
+  background: #e2e8f0 !important;
+}
+
+[data-theme='light'] .test-fixed-timer {
+  background: #fff7ed !important;
+  border: 1.5px solid rgba(234, 88, 12, 0.45) !important;
+  color: #ea580c !important;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.12) !important;
+}
+
+[data-theme='light'] .test-fixed-timer.timer-danger {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #dc2626 !important;
+}
+
+[data-theme='light'] .test-top-palette-row {
+  border-top: 1.5px solid #e2e8f0 !important;
+}
+
+[data-theme='light'] .palette-chip {
+  background: #ffffff !important;
+  color: #1e293b !important;
+  border: 1.5px solid #cbd5e1 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme='light'] .palette-chip:hover {
+  background: #f8fafc !important;
+  border-color: #ea580c !important;
+  color: #ea580c !important;
+}
+
+[data-theme='light'] .palette-chip.chip-current {
+  border: 2px solid #ea580c !important;
+  background: #fff7ed !important;
+  color: #ea580c !important;
+  box-shadow: 0 0 10px rgba(234, 88, 12, 0.25) !important;
+}
+
+[data-theme='light'] .palette-chip.chip-answered {
+  background: #ea580c !important;
+  color: #ffffff !important;
+  border-color: #ea580c !important;
+}
+
+[data-theme='light'] .palette-chip.chip-review-blank {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border-color: #f59e0b !important;
+}
+
+[data-theme='light'] .palette-chip.chip-review-ans {
+  background: linear-gradient(135deg, #ea580c, #f59e0b) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+}
+
+[data-theme='light'] .palette-chip.chip-correct {
+  background: rgba(34, 197, 94, 0.2) !important;
+  color: #15803d !important;
+  border-color: #22c55e !important;
+}
+
+[data-theme='light'] .palette-chip.chip-wrong {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #b91c1c !important;
+  border-color: #ef4444 !important;
+}
+
+[data-theme='light'] .palette-horizontal-track::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25) !important;
+}
+
+[data-theme='light'] .legend-tag.tag-left {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1.5px solid #cbd5e1 !important;
 }
 
 

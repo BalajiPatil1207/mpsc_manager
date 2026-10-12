@@ -37,19 +37,18 @@ const Practice = () => {
   const [lbLoading, setLbLoading] = useState(false);
   const [lbData, setLbData] = useState([]);
 
-  const openLeaderboard = async (test) => {
-    setViewingLeaderboard(test);
+  const openGlobalLeaderboard = async () => {
+    setViewingLeaderboard(true);
     setLbLoading(true);
     try {
-      const testId = test._id || test.id;
-      const res = await axios.get(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}/leaderboard`);
+      const res = await axios.get(`https://mpsc-manager.onrender.com/api/custom-tests/global-leaderboard`);
       if (res.data.success) {
         setLbData(res.data.leaderboard || []);
       } else {
-        setLbData(test.leaderboard || []);
+        setLbData([]);
       }
     } catch (err) {
-      setLbData(test.leaderboard || []);
+      setLbData([]);
     } finally {
       setLbLoading(false);
     }
@@ -145,7 +144,7 @@ const Practice = () => {
         </div>
       )}
 
-      {/* Test Leaderboard Modal */}
+      {/* All-Tests Global Leaderboard Modal */}
       {viewingLeaderboard && (
         <div className="modal-overlay" onClick={() => setViewingLeaderboard(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', textAlign: 'left', maxWidth: '520px', width: '90%' }}>
@@ -153,8 +152,8 @@ const Practice = () => {
               <div className="flex-row gap-2 align-center">
                 <FiAward size={24} style={{ color: 'var(--accent-primary)' }} />
                 <div>
-                  <h2 style={{ fontSize: '1.2rem', margin: 0 }}>🏆 टेस्ट लीडरबोर्ड (Top Ranks)</h2>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{viewingLeaderboard.title}</p>
+                  <h2 style={{ fontSize: '1.2rem', margin: 0 }}>🏆 सर्व टेस्ट्सचा महा-लीडरबोर्ड</h2>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>सर्व टेस्ट्सचे एकूण गुण & अचूकतेनुसार क्रमवारी</p>
                 </div>
               </div>
               <button onClick={() => setViewingLeaderboard(null)} className="btn" style={{ padding: '6px 12px', fontSize: '0.8rem' }}>✕</button>
@@ -169,22 +168,11 @@ const Practice = () => {
                 <span style={{ fontSize: '2rem' }}>🎯</span>
                 <h4 style={{ margin: '8px 0 4px 0', color: 'var(--text-primary)' }}>अजून कोणीही रँक मिळवलेला नाही!</h4>
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                  टेस्ट सोडवा आणि किमान १ बरोबर उत्तर देऊन थेट #१ रँक मिळवणारे पहिले व्हा!
+                  कोणतीही टेस्ट सोडवा आणि किमान १ बरोबर उत्तर देऊन थेट #१ रँक मिळवणारे पहिले व्हा!
                 </p>
-                <button 
-                  onClick={() => {
-                    const id = viewingLeaderboard._id || viewingLeaderboard.id;
-                    setViewingLeaderboard(null);
-                    navigate(`/test/${id}`);
-                  }}
-                  className="btn btn-primary"
-                  style={{ marginTop: '14px', padding: '8px 20px' }}
-                >
-                  <FiPlayCircle className="inline mr-1" /> आताच टेस्ट द्या
-                </button>
               </div>
             ) : (
-              <div className="leaderboard-box-list" style={{ maxHeight: '340px', overflowY: 'auto' }}>
+              <div className="leaderboard-box-list" style={{ maxHeight: '360px', overflowY: 'auto' }}>
                 {lbData.map((item, idx) => {
                   const isMe = item.userId === auth.currentUser?.uid;
                   const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
@@ -196,12 +184,12 @@ const Practice = () => {
                           {item.userName} {isMe && <span className="lb-me-tag">तुम्ही</span>}
                         </div>
                         <div className="lb-user-meta">
-                          {item.accuracy}% अचूकता • {Math.floor((item.timeTaken || 0) / 60)}m {((item.timeTaken || 0) % 60)}s
+                          {item.totalTests || 1} टेस्ट्स सोडवल्या • {item.accuracy}% अचूकता
                         </div>
                       </div>
                       <div className="lb-col-score">
-                        <span className="lb-score-val">{item.netScore}</span>
-                        <span className="lb-score-label">गुण</span>
+                        <span className="lb-score-val">{item.totalScore !== undefined ? item.totalScore : item.netScore}</span>
+                        <span className="lb-score-label">एकूण गुण</span>
                       </div>
                     </div>
                   );
@@ -464,15 +452,6 @@ const Practice = () => {
                 </p>
               </div>
               <div className="flex-row gap-2" style={{ flexWrap: 'wrap', marginTop: 'auto' }}>
-                <button 
-                  title="View Leaderboard" 
-                  className="btn task-action-btn" 
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); openLeaderboard(test); }} 
-                  style={{ padding: '8px 14px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <FiAward size={16} />
-                  <span className="desktop-text">रँक ({test.leaderboard?.length || 0})</span>
-                </button>
                 <button title="Share Test" className="btn task-action-btn" onClick={() => copyShareLink(test._id || test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span className="desktop-text"><FiShare2 /> Share</span>
                   <FiShare2 className="mobile-icon" size={16} />
@@ -501,9 +480,30 @@ const Practice = () => {
 
   return (
     <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.3s' }}>
-      <div className="flex-row justify-between" style={{ alignItems: 'center' }}>
+      <div className="flex-row justify-between" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>Practice & PYQ</h1>
-        {hasPlan && <button onClick={() => navigate('/test-maker')} className="btn btn-primary"><FiPlayCircle className="inline mr-2" /> Daily Challenge</button>}
+        <div className="flex-row gap-2" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+          <button 
+            onClick={openGlobalLeaderboard}
+            className="btn" 
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(249, 115, 22, 0.15))', 
+              color: '#f59e0b', 
+              border: '1.5px solid rgba(245, 158, 11, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontWeight: 700,
+              padding: '8px 16px',
+              borderRadius: '12px',
+              cursor: 'pointer'
+            }}
+          >
+            <FiAward size={18} />
+            <span>🏆 सर्व टेस्ट्सचा महा-लीडरबोर्ड</span>
+          </button>
+          {hasPlan && <button onClick={() => navigate('/test-maker')} className="btn btn-primary"><FiPlayCircle className="inline mr-2" /> Daily Challenge</button>}
+        </div>
       </div>
       <p style={{ color: 'var(--text-secondary)' }}>Targeted daily practice based on your active study plan.</p>
 

@@ -468,92 +468,94 @@ const TakeTest = () => {
   }
 
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', color: 'var(--text-primary)', padding: '20px', paddingBottom: '100px', fontFamily: 'system-ui' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', color: 'var(--text-primary)', padding: '20px', paddingTop: '125px', paddingBottom: '100px', fontFamily: 'system-ui' }}>
       
-      {/* 🚀 FIXED TOP STICKY BAR: Timer + Question Palette */}
+      {/* 🚀 FIXED TOP COMMAND BAR: Timer + Question Palette (100% Pinned to Viewport) */}
       <div className="test-fixed-top-bar">
-        <div className="test-top-main-row">
-          <div className="test-top-left">
-            <button onClick={() => navigate(-1)} className="test-back-btn" title="Go Back">
-              <FiArrowLeft size={20} />
-            </button>
-            <div className="test-title-meta">
-              <h2 className="test-fixed-title" title={test.title}>{test.title}</h2>
-              {test.questions && test.questions.length > 0 && (
-                <span className="test-q-badge">
-                  प्रश्न {activeQuestion + 1} / {test.questions.length}
-                </span>
+        <div className="test-top-inner-wrap">
+          <div className="test-top-main-row">
+            <div className="test-top-left">
+              <button onClick={() => navigate(-1)} className="test-back-btn" title="Go Back">
+                <FiArrowLeft size={20} />
+              </button>
+              <div className="test-title-meta">
+                <h2 className="test-fixed-title" title={test.title}>{test.title}</h2>
+                {test.questions && test.questions.length > 0 && (
+                  <span className="test-q-badge">
+                    प्रश्न {activeQuestion + 1} / {test.questions.length}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="test-top-right">
+              {!submitted && (
+                <div className={`test-fixed-timer ${timeLeft < 60 ? 'timer-danger' : ''}`}>
+                  <span>⏱</span>
+                  <span>{formatTime(timeLeft)}</span>
+                </div>
+              )}
+              {!submitted && (
+                <button onClick={handleSubmit} className="btn btn-primary test-header-submit-btn">
+                  सबमिट करा
+                </button>
               )}
             </div>
           </div>
 
-          <div className="test-top-right">
-            {!submitted && (
-              <div className={`test-fixed-timer ${timeLeft < 60 ? 'timer-danger' : ''}`}>
-                <span>⏱</span>
-                <span>{formatTime(timeLeft)}</span>
-              </div>
-            )}
-            {!submitted && (
-              <button onClick={handleSubmit} className="btn btn-primary test-header-submit-btn">
-                सबमिट करा
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* 🧭 Horizontal Question Palette Bar (Pinned right in the sticky top bar!) */}
-        {(!submitted || showAnswers) && test.questions && test.questions.length > 0 && (
-          <div className="test-top-palette-row">
-            <div id="palette-container" className="palette-horizontal-track">
-              {test.questions.map((_, idx) => {
-                const isAttempted = answers[idx] !== undefined;
-                const isActive = idx === activeQuestion && !submitted;
-                const isReviewed = reviews[idx];
-                
-                let chipClass = 'palette-chip';
-                if (submitted) {
-                  if (answers[idx] === test.questions[idx].correctOption) {
-                    chipClass += ' chip-correct';
+          {/* 🧭 Horizontal Question Palette Bar (Pinned right in the fixed top bar!) */}
+          {(!submitted || showAnswers) && test.questions && test.questions.length > 0 && (
+            <div className="test-top-palette-row">
+              <div id="palette-container" className="palette-horizontal-track">
+                {test.questions.map((_, idx) => {
+                  const isAttempted = answers[idx] !== undefined;
+                  const isActive = idx === activeQuestion && !submitted;
+                  const isReviewed = reviews[idx];
+                  
+                  let chipClass = 'palette-chip';
+                  if (submitted) {
+                    if (answers[idx] === test.questions[idx].correctOption) {
+                      chipClass += ' chip-correct';
+                    } else if (isAttempted) {
+                      chipClass += ' chip-wrong';
+                    }
+                  } else if (isReviewed) {
+                    chipClass += isAttempted ? ' chip-review-ans' : ' chip-review-blank';
                   } else if (isAttempted) {
-                    chipClass += ' chip-wrong';
+                    chipClass += ' chip-answered';
                   }
-                } else if (isReviewed) {
-                  chipClass += isAttempted ? ' chip-review-ans' : ' chip-review-blank';
-                } else if (isAttempted) {
-                  chipClass += ' chip-answered';
-                }
-                if (isActive) chipClass += ' chip-current';
+                  if (isActive) chipClass += ' chip-current';
 
-                return (
-                  <button
-                    key={idx}
-                    id={`palette-q-${idx}`}
-                    type="button"
-                    onClick={() => {
-                      const el = document.getElementById(`q-${idx}`);
-                      if (el) {
-                        const yOffset = -140;
-                        const y = el.getBoundingClientRect().top + window.scrollY + yOffset;
-                        window.scrollTo({ top: y, behavior: 'smooth' });
-                      }
-                    }}
-                    className={chipClass}
-                    title={`प्रश्न #${idx + 1}`}
-                  >
-                    {idx + 1}
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={idx}
+                      id={`palette-q-${idx}`}
+                      type="button"
+                      onClick={() => {
+                        const el = document.getElementById(`q-${idx}`);
+                        if (el) {
+                          const yOffset = -140;
+                          const y = el.getBoundingClientRect().top + window.scrollY + yOffset;
+                          window.scrollTo({ top: y, behavior: 'smooth' });
+                        }
+                      }}
+                      className={chipClass}
+                      title={`प्रश्न #${idx + 1}`}
+                    >
+                      {idx + 1}
+                    </button>
+                  );
+                })}
+              </div>
 
-            <div className="palette-strip-legend desktop-only">
-              <span className="legend-tag tag-ans">{Object.keys(answers).length} सोडवले</span>
-              <span className="legend-tag tag-rev">{Object.keys(reviews).filter(k => reviews[k]).length} रिव्ह्यू</span>
-              <span className="legend-tag tag-left">{test.questions.length - Object.keys(answers).length} बाकी</span>
+              <div className="palette-strip-legend desktop-only">
+                <span className="legend-tag tag-ans">{Object.keys(answers).length} सोडवले</span>
+                <span className="legend-tag tag-rev">{Object.keys(reviews).filter(k => reviews[k]).length} रिव्ह्यू</span>
+                <span className="legend-tag tag-left">{test.questions.length - Object.keys(answers).length} बाकी</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="test-layout-container" style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
@@ -692,14 +694,14 @@ const TakeTest = () => {
                                 {rankData.userRank === 1 ? '🥇' : rankData.userRank === 2 ? '🥈' : rankData.userRank === 3 ? '🥉' : '🏆'}
                               </div>
                               <div>
-                                <div className="rank-sub-title">अधिकृत टेस्ट रँक (Official Test Rank)</div>
+                                <div className="rank-sub-title">सर्व टेस्ट्सचा महा-रँक (Overall All-Tests Rank)</div>
                                 <div className="rank-number-display">
                                   रँक #{rankData.userRank} <span className="rank-total-count">/ {rankData.totalParticipants} विद्यार्थी</span>
                                 </div>
                               </div>
                             </div>
                             <div className="rank-valid-badge">
-                              ✓ १००% गुण & अचूकतेवर आधारित
+                              ✓ सर्व टेस्ट्सचे एकूण गुण & अचूकतेवर आधारित
                             </div>
                           </div>
                         ) : (
@@ -722,7 +724,7 @@ const TakeTest = () => {
                             <div className="leaderboard-box-header">
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                                 <FiAward size={18} style={{ color: 'var(--accent-primary)' }} />
-                                <span>या टेस्टचा रँकिंग तक्ता (Leaderboard)</span>
+                                <span>🏆 सर्व टेस्ट्सचा एकत्रित महा-लीडरबोर्ड</span>
                               </div>
                               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                 एकूण {rankData.totalParticipants} रँकधारक
@@ -741,12 +743,12 @@ const TakeTest = () => {
                                         {item.userName} {isMe && <span className="lb-me-tag">तुम्ही</span>}
                                       </div>
                                       <div className="lb-user-meta">
-                                        {item.accuracy}% अचूकता • {formatTime(item.timeTaken || 0)} वेळ
+                                        {item.totalTests || 1} टेस्ट्स सोडवल्या • {item.accuracy}% अचूकता
                                       </div>
                                     </div>
                                     <div className="lb-col-score">
-                                      <span className="lb-score-val">{item.netScore}</span>
-                                      <span className="lb-score-label">गुण</span>
+                                      <span className="lb-score-val">{item.totalScore !== undefined ? item.totalScore : item.netScore}</span>
+                                      <span className="lb-score-label">एकूण गुण</span>
                                     </div>
                                   </div>
                                 );

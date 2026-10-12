@@ -320,20 +320,11 @@ const NotificationCenter = ({ isOpen, onClose, onCountChange }) => {
           </div>
 
           <div className="flex-row gap-2" style={{ alignItems: 'center' }}>
-            {notifications.length > 0 && (
-              <button 
-                onClick={clearAllNotifications} 
-                className="btn-clear-header"
-                title="सर्व सूचना क्लिअर करा"
-              >
-                <FiTrash2 size={13} style={{ marginRight: '4px' }} /> सर्व हटवा
-              </button>
-            )}
             {unreadCount > 0 && (
               <button 
                 onClick={markAllAsRead} 
                 className="btn-mark-read"
-                title="Mark all read"
+                title="सर्व वाचले म्हणून चिन्हांकित करा"
               >
                 <FiCheck size={13} style={{ marginRight: '2px' }} /> वाचले
               </button>
@@ -346,11 +337,6 @@ const NotificationCenter = ({ isOpen, onClose, onCountChange }) => {
               <FiX size={18} />
             </button>
           </div>
-        </div>
-
-        {/* Offline & Realtime Notice */}
-        <div className="notification-status-notice">
-          <span>⚡ <strong>रिअल-टाइम अपडेट्स:</strong> नवीन टेस्ट्स आणि वेळेनुसार येणाऱ्या सूचना येथे मिळतील. नको असलेल्या सूचना '✕' वर क्लिक करून हटवू शकता.</span>
         </div>
 
         {/* Notification List */}

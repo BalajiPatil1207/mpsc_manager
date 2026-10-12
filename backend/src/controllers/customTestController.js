@@ -169,59 +169,105 @@ exports.submitTest = async (req, res, next) => {
     // मिस्टेक मॉक (Mistake Mock) ही केवळ वैयक्तिक रिव्हिजन असल्याने तिच्यावर रँक नसतो!
     const isQualified = !isMistakeMockTest && correctCount > 0 && rawScore > 0 && totalAttempted > 0;
 
-    let leaderboard = Array.isArray(test.leaderboard) ? [...test.leaderboard] : [];
     let userRank = null;
+    let globalLeaderboard = [];
+    let totalParticipants = 0;
 
+    // 🌐 GLOBAL ALL-TESTS LEADERBOARD UPDATE:
+    // प्रत्येक स्वतंत्र टेस्टसाठी वेगळा लीडरबोर्ड न ठेवता सर्व टेस्ट्सचा मिळून एकत्रित महा-लीडरबोर्ड अपडेट केला जातो.
     if (!isMistakeMockTest && isQualified && userId && userId !== 'anonymous') {
       const candidateName = userName && userName !== 'anonymous' ? userName : 'MPSC Aspirant';
-      const existingIdx = leaderboard.findIndex(entry => entry.userId === userId);
+      const userRef = db.collection('globalLeaderboard').doc(userId);
+      const userDoc = await userRef.get();
+      
+      let testsMap = {};
+      let existingName = candidateName;
 
-      const candidateEntry = {
-        userId,
-        userName: candidateName,
-        netScore,
-        grossMarks: correctCount,
-        penalty,
-        accuracy,
-        timeTaken: typeof timeTaken === 'number' ? timeTaken : 0,
-        submittedAt: new Date().toISOString()
-      };
-
-      if (existingIdx !== -1) {
-        const existing = leaderboard[existingIdx];
-        // Only update if current score is better or faster
-        if (
-          netScore > existing.netScore ||
-          (netScore === existing.netScore && accuracy > existing.accuracy) ||
-          (netScore === existing.netScore && accuracy === existing.accuracy && candidateEntry.timeTaken < (existing.timeTaken || 99999))
-        ) {
-          leaderboard[existingIdx] = candidateEntry;
+      if (userDoc.exists) {
+        const uData = userDoc.data();
+        testsMap = uData.testsMap || {};
+        if (uData.userName && (!userName || userName === 'anonymous')) {
+          existingName = uData.userName;
         }
-      } else {
-        leaderboard.push(candidateEntry);
       }
 
-      // 🏆 Strict Ranking:
-      // 1. Highest Net Score first
-      // 2. Highest Accuracy first
-      // 3. Lowest Time Taken (Faster) first
-      leaderboard.sort((a, b) => {
-        if (b.netScore !== a.netScore) return b.netScore - a.netScore;
-        if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
-        return (a.timeTaken || 0) - (b.timeTaken || 0);
+      // Record / update candidate's best result for this specific test
+      const existingTest = testsMap[testId];
+      if (
+        !existingTest || 
+        netScore > existingTest.netScore || 
+        (netScore === existingTest.netScore && accuracy > existingTest.accuracy)
+      ) {
+        testsMap[testId] = {
+          testId,
+          testTitle: test.title || 'MPSC Test',
+          netScore,
+          grossMarks: correctCount,
+          penalty,
+          accuracy,
+          timeTaken: typeof timeTaken === 'number' ? timeTaken : 0,
+          submittedAt: new Date().toISOString()
+        };
+      }
+
+      // Calculate aggregate cumulative metrics across all tests
+      const testEntries = Object.values(testsMap);
+      const totalTests = testEntries.length;
+      const totalScore = parseFloat(testEntries.reduce((sum, t) => sum + (t.netScore || 0), 0).toFixed(2));
+      const totalCorrect = testEntries.reduce((sum, t) => sum + (t.grossMarks || 0), 0);
+      const totalPenalty = parseFloat(testEntries.reduce((sum, t) => sum + (t.penalty || 0), 0).toFixed(2));
+      const totalAttempts = testEntries.reduce((sum, t) => sum + ((t.grossMarks || 0) + (Math.round((t.penalty || 0) * 4))), 0);
+      const overallAccuracy = totalAttempts > 0 ? parseFloat(((totalCorrect / totalAttempts) * 100).toFixed(1)) : accuracy;
+      const totalTimeSpent = testEntries.reduce((sum, t) => sum + (t.timeTaken || 0), 0);
+
+      const updatedUserData = {
+        userId,
+        userName: existingName,
+        totalTests,
+        totalScore,
+        totalCorrect,
+        totalPenalty,
+        accuracy: overallAccuracy,
+        totalTimeSpent,
+        testsMap,
+        lastActive: new Date().toISOString()
+      };
+
+      await userRef.set(updatedUserData, { merge: true });
+
+      // Fetch all users to compute global rank
+      const allDocs = await db.collection('globalLeaderboard').get();
+      const allUsers = [];
+      allDocs.forEach(d => {
+        const dData = d.data();
+        if (dData && (dData.totalScore > 0 || dData.totalTests > 0)) {
+          allUsers.push({
+            userId: dData.userId || d.id,
+            userName: dData.userName || 'MPSC Aspirant',
+            totalScore: dData.totalScore || 0,
+            totalTests: dData.totalTests || 0,
+            accuracy: dData.accuracy || 0,
+            totalTimeSpent: dData.totalTimeSpent || 0,
+            lastActive: dData.lastActive
+          });
+        }
       });
 
-      // Cap to Top 50 best performers
-      leaderboard = leaderboard.slice(0, 50);
-      userRank = leaderboard.findIndex(e => e.userId === userId) + 1;
+      // Rank across all tests combined:
+      allUsers.sort((a, b) => {
+        if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+        if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
+        if (b.totalTests !== a.totalTests) return b.totalTests - a.totalTests;
+        return (a.totalTimeSpent || 0) - (b.totalTimeSpent || 0);
+      });
+
+      totalParticipants = allUsers.length;
+      userRank = allUsers.findIndex(u => u.userId === userId) + 1;
+      globalLeaderboard = allUsers.slice(0, 20);
     }
 
-    // Update test doc with latest participant & leaderboard (if regular test)
-    const docUpdates = { attemptedBy };
-    if (!isMistakeMockTest && isQualified && userId && userId !== 'anonymous') {
-      docUpdates.leaderboard = leaderboard;
-    }
-    await db.collection('customTests').doc(testId).update(docUpdates);
+    // Update test document with participant info
+    await db.collection('customTests').doc(testId).update({ attemptedBy });
 
     // Mistake Mock Generation & Update logic
     let returnMessage = "Test submitted successfully!";
@@ -284,10 +330,47 @@ exports.submitTest = async (req, res, next) => {
       unattemptedCount,
       accuracy,
       userRank,
-      totalParticipants: leaderboard.length,
+      totalParticipants,
       isQualified,
-      leaderboard: leaderboard.slice(0, 10), // Top 10 for client
+      leaderboard: globalLeaderboard.slice(0, 10), // Top 10 All-Tests Global Leaderboard
       subject: test.subject 
+    });
+  } catch(err) {
+    next(err);
+  }
+};
+
+// 🏆 Get Global Cumulative Leaderboard (All tests combined)
+exports.getGlobalLeaderboard = async (req, res, next) => {
+  try {
+    const allDocs = await db.collection('globalLeaderboard').get();
+    const allUsers = [];
+    allDocs.forEach(d => {
+      const dData = d.data();
+      if (dData && (dData.totalScore > 0 || dData.totalTests > 0)) {
+        allUsers.push({
+          userId: dData.userId || d.id,
+          userName: dData.userName || 'MPSC Aspirant',
+          totalScore: dData.totalScore || 0,
+          totalTests: dData.totalTests || 0,
+          accuracy: dData.accuracy || 0,
+          totalTimeSpent: dData.totalTimeSpent || 0,
+          lastActive: dData.lastActive
+        });
+      }
+    });
+
+    allUsers.sort((a, b) => {
+      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+      if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
+      if (b.totalTests !== a.totalTests) return b.totalTests - a.totalTests;
+      return (a.totalTimeSpent || 0) - (b.totalTimeSpent || 0);
+    });
+
+    res.json({
+      success: true,
+      leaderboard: allUsers.slice(0, 50),
+      totalParticipants: allUsers.length
     });
   } catch(err) {
     next(err);
@@ -296,12 +379,8 @@ exports.submitTest = async (req, res, next) => {
 
 exports.getTestLeaderboard = async (req, res, next) => {
   try {
-    const { testId } = req.params;
-    const doc = await db.collection('customTests').doc(testId).get();
-    if (!doc.exists) return res.status(404).json({ success: false, message: "Test not found" });
-    const test = doc.data();
-    const leaderboard = Array.isArray(test.leaderboard) ? test.leaderboard : [];
-    res.json({ success: true, leaderboard: leaderboard.slice(0, 20), totalParticipants: leaderboard.length });
+    // Redirect to global leaderboard as leaderboards are now all-tests combined
+    return exports.getGlobalLeaderboard(req, res, next);
   } catch(err) {
     next(err);
   }
