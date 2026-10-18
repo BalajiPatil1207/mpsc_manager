@@ -411,3 +411,32 @@ exports.updateTest = async (req, res, next) => {
     next(err);
   }
 };
+
+// Fix a single question's correctOption
+exports.fixAnswer = async (req, res, next) => {
+  try {
+    const { testId } = req.params;
+    const { questionIndex, newCorrectOption } = req.body;
+    
+    if (questionIndex === undefined || newCorrectOption === undefined) {
+      return res.status(400).json({ success: false, message: "questionIndex and newCorrectOption required" });
+    }
+
+    const doc = await db.collection('customTests').doc(testId).get();
+    if (!doc.exists) return res.status(404).json({ success: false, message: "Test not found" });
+    
+    const test = doc.data();
+    const questions = [...test.questions];
+    
+    if (questionIndex < 0 || questionIndex >= questions.length) {
+      return res.status(400).json({ success: false, message: "Invalid question index" });
+    }
+
+    questions[questionIndex] = { ...questions[questionIndex], correctOption: newCorrectOption };
+    
+    await db.collection('customTests').doc(testId).update({ questions });
+    res.json({ success: true, message: "Answer fixed successfully!" });
+  } catch(err) {
+    next(err);
+  }
+};

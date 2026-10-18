@@ -157,11 +157,22 @@ const MockTests = () => {
       try {
         const res = await axios.get('https://mpsc-manager.onrender.com/api/custom-tests/all', { timeout: 8000 });
         if (isMounted && res.data.success) {
-          // Show ALL non-mistake tests
-          const allTests = res.data.data.filter(t => !t.isMistakeMock);
-          setHistory(allTests);
+          // Only show Mock/Mega tests (not practice tests)
+          const mockTests = res.data.data.filter(t => {
+            if (t.isMistakeMock) return false;
+            const title = (t.title || '').toLowerCase();
+            const subject = (t.subject || '').toLowerCase();
+            const createdBy = (t.createdBy || '').toLowerCase();
+            return (
+              title.includes('mock') ||
+              title.includes('mega') ||
+              subject.includes('mega') ||
+              createdBy === 'system engine'
+            );
+          });
+          setHistory(mockTests);
           try {
-            localStorage.setItem('mpsc_cached_mocks', JSON.stringify(allTests));
+            localStorage.setItem('mpsc_cached_mocks', JSON.stringify(mockTests));
           } catch(e) {}
         }
       } catch (e) {
@@ -182,7 +193,12 @@ const MockTests = () => {
 
   const currentUser = auth.currentUser?.uid || 'anonymous';
 
-  // Flat filtered + sorted list (no subject drill-down)
+  // Short name generator: Mock Test - 1, 2, 3...
+  const getShortName = (test, idx) => {
+    return `Mock Test - ${idx + 1}`;
+  };
+
+  // Flat filtered + sorted list
   const filteredHistory = history
     .filter(h => {
       if (!searchQuery.trim()) return true;
@@ -267,92 +283,68 @@ const MockTests = () => {
             {filteredHistory.length} टेस्ट्स उपलब्ध {searchQuery && `("${searchQuery}" साठी)`}
           </p>
           <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 310px), 1fr))' }}>
-            {filteredHistory.map(test => {
+            {filteredHistory.map((test, idx) => {
               const isSolved = test.attemptedBy?.includes(currentUser);
+              const shortName = getShortName(test, idx);
               return (
                 <div
                   key={test._id || test.id}
                   className="glass-card"
                   style={{
-                    padding: '18px 20px',
+                    padding: '16px 18px',
                     borderTop: isSolved ? '3px solid var(--success)' : '3px solid var(--accent-primary)',
                     background: isSolved ? 'rgba(34, 197, 94, 0.04)' : 'var(--bg-secondary)',
-                    display: 'flex', flexDirection: 'column', gap: '12px',
+                    display: 'flex', flexDirection: 'column', gap: '10px',
                     transition: 'all 0.2s ease'
                   }}
                 >
                   {/* Title + badge */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                     <h3 style={{
                       fontSize: '1rem', margin: 0, flex: 1,
                       color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)',
                       textDecoration: isSolved ? 'line-through' : 'none',
-                      lineHeight: 1.3
+                      fontWeight: 700
                     }}>
-                      {test.title}
+                      {shortName}
                     </h3>
                     <span style={{
                       flexShrink: 0,
                       background: isSolved ? 'rgba(34, 197, 94, 0.15)' : 'var(--accent-glow)',
                       color: isSolved ? 'var(--success)' : 'var(--accent-primary)',
-                      padding: '3px 10px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700
+                      padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700
                     }}>
                       {test.timeLimit} Min
                     </span>
                   </div>
 
                   {/* Meta */}
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      📋 {test.questions?.length || 0} प्रश्न
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                      📋 {test.questions?.length || 0} Qs
                     </span>
-                    {test.subject && (
-                      <span style={{
-                        fontSize: '0.78rem', background: 'var(--glass-bg)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: '8px'
-                      }}>
-                        {test.subject.length > 22 ? test.subject.slice(0, 22) + '…' : test.subject}
-                      </span>
-                    )}
                     {isSolved && (
-                      <span style={{ fontSize: '0.78rem', color: 'var(--success)', fontWeight: 700 }}>✅ Solved</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--success)', fontWeight: 700 }}>✅ Solved</span>
                     )}
                   </div>
 
-                  {/* Action Buttons */}
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto' }}>
-                    <button
-                      title="Share Link"
-                      className="btn task-action-btn"
-                      onClick={() => copyShareLink(test._id || test.id)}
-                      style={{ padding: '7px 12px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem' }}
-                    >
-                      <FiShare2 size={14} /> Share
+                  {/* Action Buttons - icon only on mobile */}
+                  <div style={{ display: 'flex', gap: '6px', marginTop: 'auto', alignItems: 'center' }}>
+                    <button title="Share" className="btn mock-icon-btn" onClick={() => copyShareLink(test._id || test.id)}
+                      style={{ padding: '7px', background: 'rgba(34,197,94,0.1)', color: 'var(--success)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '34px', minHeight: '34px' }}>
+                      <FiShare2 size={15} />
                     </button>
-                    <button
-                      title="Edit Test"
-                      className="btn task-action-btn"
-                      onClick={e => { e.stopPropagation(); setEditingTest(test); }}
-                      style={{ padding: '7px 12px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem' }}
-                    >
-                      <FiEdit size={14} /> Edit
+                    <button title="Edit" className="btn mock-icon-btn" onClick={e => { e.stopPropagation(); setEditingTest(test); }}
+                      style={{ padding: '7px', background: 'rgba(59,130,246,0.1)', color: 'var(--info)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '34px', minHeight: '34px' }}>
+                      <FiEdit size={15} />
                     </button>
-                    <button
-                      title="Delete Test"
-                      className="btn task-action-btn"
-                      onClick={e => { e.stopPropagation(); setDeletingTest(test); }}
-                      style={{ padding: '7px 12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem' }}
-                    >
-                      <FiTrash2 size={14} /> Delete
+                    <button title="Delete" className="btn mock-icon-btn" onClick={e => { e.stopPropagation(); setDeletingTest(test); }}
+                      style={{ padding: '7px', background: 'rgba(239,68,68,0.1)', color: 'var(--danger)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '34px', minHeight: '34px' }}>
+                      <FiTrash2 size={15} />
                     </button>
-                    <button
-                      title="Start Test"
-                      className="btn btn-primary task-action-btn"
-                      onClick={() => navigate(`/test/${test._id || test.id}`)}
-                      style={{ padding: '7px 18px', display: 'flex', alignItems: 'center', gap: '6px', flex: 1, justifyContent: 'center', fontSize: '0.88rem' }}
-                    >
-                      <FiPlay size={14} /> {isSolved ? 'Revise' : 'Start Test'}
+                    <button title="Start" className="btn btn-primary" onClick={() => navigate(`/test/${test._id || test.id}`)}
+                      style={{ padding: '7px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flex: 1, borderRadius: '10px', fontSize: '0.85rem', fontWeight: 700 }}>
+                      <FiPlay size={14} /> {isSolved ? 'Revise' : 'Start'}
                     </button>
                   </div>
                 </div>

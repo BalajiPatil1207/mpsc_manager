@@ -417,7 +417,7 @@ const TakeTest = () => {
     if (!editingCorrectOption || editingCorrectOption.qIndex !== qIndex) return;
     const newCorrect = editingCorrectOption.value;
     const q = test.questions[qIndex];
-    // Apply the mapping back to original index if question was shuffled
+    // Map back to original DB indices
     const originalQIdx = q.originalQIndex !== undefined ? q.originalQIndex : qIndex;
     const originalCorrect = q.optionMapping ? q.optionMapping[newCorrect] : newCorrect;
     
@@ -426,23 +426,21 @@ const TakeTest = () => {
     updatedQuestions[qIndex] = { ...q, correctOption: newCorrect };
     setTest(prev => ({ ...prev, questions: updatedQuestions }));
     setEditingCorrectOption(null);
-    toast.loading('प्रश्न अपडेट होत आहे...', { id: 'fix-ans' });
+    toast.loading('उत्तर दुरुस्त होत आहे...', { id: 'fix-ans' });
 
     try {
-      // Fetch original test to update `questions` array in DB
-      const res = await axios.get(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}`);
+      const res = await axios.patch(
+        `https://mpsc-manager.onrender.com/api/custom-tests/${testId}/fix-answer`,
+        { questionIndex: originalQIdx, newCorrectOption: originalCorrect }
+      );
       if (res.data.success) {
-        const origQuestions = [...res.data.data.questions];
-        if (origQuestions[originalQIdx]) {
-          origQuestions[originalQIdx] = { ...origQuestions[originalQIdx], correctOption: originalCorrect };
-          await axios.put(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}`, {
-            questions: origQuestions
-          });
-          toast.success('✅ उत्तर यशस्वीरित्या दुरुस्त केले!', { id: 'fix-ans' });
-        }
+        toast.success('✅ उत्तर यशस्वीरित्या दुरुस्त केले!', { id: 'fix-ans' });
+      } else {
+        toast.error(res.data.message || 'Fix failed', { id: 'fix-ans' });
       }
     } catch (err) {
-      toast.error('Server update failed', { id: 'fix-ans' });
+      console.error('Fix answer error:', err);
+      toast.error('Server update failed: ' + (err.response?.data?.message || err.message), { id: 'fix-ans' });
     }
   };
 
