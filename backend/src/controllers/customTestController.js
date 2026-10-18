@@ -397,12 +397,13 @@ exports.deleteTest = async (req, res, next) => {
 
 exports.updateTest = async (req, res, next) => {
   try {
-    const { title, subject, timeLimit, topic } = req.body;
+    const { title, subject, timeLimit, topic, questions } = req.body;
     let updateData = {};
     if (title !== undefined) updateData.title = title;
     if (subject !== undefined) updateData.subject = subject;
     if (timeLimit !== undefined) updateData.timeLimit = timeLimit;
     if (topic !== undefined) updateData.topic = topic;
+    if (questions !== undefined && Array.isArray(questions)) updateData.questions = questions;
     
     await db.collection('customTests').doc(req.params.testId).update(updateData);
     res.json({ success: true, message: "Test updated successfully" });

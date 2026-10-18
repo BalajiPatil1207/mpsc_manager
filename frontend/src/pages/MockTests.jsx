@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FiTarget, FiBarChart2, FiPlay, FiShare2, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { FiTarget, FiPlay, FiShare2, FiEdit, FiTrash2, FiSearch } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { auth } from '../firebase';
@@ -23,8 +23,7 @@ const MockTests = () => {
       return true;
     }
   });
-  const [filterSubject, setFilterSubject] = useState('');
-  const [filterTopic, setFilterTopic] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [editingTest, setEditingTest] = useState(null);
   const [deletingTest, setDeletingTest] = useState(null);
   const navigate = useNavigate();
@@ -158,13 +157,11 @@ const MockTests = () => {
       try {
         const res = await axios.get('https://mpsc-manager.onrender.com/api/custom-tests/all', { timeout: 8000 });
         if (isMounted && res.data.success) {
-          const mockTests = res.data.data.filter(t => 
-             !t.isMistakeMock && 
-             ((t.subject || '').includes('Mega') || (t.title || '').includes('Mock'))
-          );
-          setHistory(mockTests);
+          // Show ALL non-mistake tests
+          const allTests = res.data.data.filter(t => !t.isMistakeMock);
+          setHistory(allTests);
           try {
-            localStorage.setItem('mpsc_cached_mocks', JSON.stringify(mockTests));
+            localStorage.setItem('mpsc_cached_mocks', JSON.stringify(allTests));
           } catch(e) {}
         }
       } catch (e) {
@@ -184,275 +181,187 @@ const MockTests = () => {
   }, []);
 
   const currentUser = auth.currentUser?.uid || 'anonymous';
-  const filteredHistory = history.filter(h => {
-    if (!filterSubject) return true;
-    const subj = (h.subject || '').toLowerCase();
-    const filterId = filterSubject.toLowerCase();
-    if (filterId === 'history') return subj.includes('history') || subj.includes('gk');
-    return subj.includes(filterId);
-  }).sort((a, b) => {
-    const aSolved = a.attemptedBy?.includes(currentUser) ? 1 : 0;
-    const bSolved = b.attemptedBy?.includes(currentUser) ? 1 : 0;
-    return aSolved - bSolved;
-  });
 
-  const SUBJECTS = [
-    { id: 'History', label: 'इतिहास', icon: '📖' },
-    { id: 'Geography', label: 'भूगोल', icon: '🌍' },
-    { id: 'Polity', label: 'राज्यव्यवस्था', icon: '🏛️' },
-    { id: 'Economics', label: 'अर्थव्यवस्था', icon: '📈' },
-    { id: 'Science', label: 'सामान्य विज्ञान', icon: '🧬' },
-    { id: 'Math', label: 'गणित', icon: '🧮' },
-    { id: 'Reasoning', label: 'बुद्धिमत्ता', icon: '🧠' },
-    { id: 'Marathi', label: 'मराठी', icon: '🔠' },
-    { id: 'English', label: 'इंग्रजी', icon: '🅰️' },
-    { id: 'Current Affairs', label: 'चालू घडामोडी', icon: '📰' }
-  ];
-
-  const activeSubjectData = filterSubject ? SUBJECTS.find(s => s.id === filterSubject) : null;
-
-  if (filterSubject && activeSubjectData && !filterTopic) {
-    const testsForSubject = filteredHistory.filter(h => {
-      const subj = (h.subject || '').toLowerCase();
-      const activeId = activeSubjectData.id.toLowerCase();
-      if (activeId === 'history') return subj.includes('history') || subj.includes('gk');
-      return subj.includes(activeId);
-    });
-    
-    if (testsForSubject.length === 0) {
+  // Flat filtered + sorted list (no subject drill-down)
+  const filteredHistory = history
+    .filter(h => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.toLowerCase();
       return (
-        <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.3s' }}>
-          <div className="flex-row gap-4 align-center" style={{ marginBottom: '8px' }}>
-            <button className="btn" onClick={() => setFilterSubject('')} style={{ background: 'var(--glass-bg)', padding: '8px 16px', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>←</span> Back to All Subjects
-            </button>
-          </div>
-          <div className="glass-panel" style={{ textAlign: 'center', padding: '40px' }}>
-            <p style={{ color: 'var(--text-muted)' }}>No mocks available for {activeSubjectData.label}.</p>
-          </div>
-        </div>
+        (h.title || '').toLowerCase().includes(q) ||
+        (h.subject || '').toLowerCase().includes(q) ||
+        (h.topic || '').toLowerCase().includes(q)
       );
-    }
-
-    const groupedTests = testsForSubject.reduce((acc, test) => {
-      const topic = test.topic ? test.topic.trim() : 'General Mocks';
-      if(!acc[topic]) acc[topic] = [];
-      acc[topic].push(test);
-      return acc;
-    }, {});
-
-    return (
-      <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.3s' }}>
-        <div className="flex-row gap-4 align-center" style={{ marginBottom: '8px' }}>
-          <button className="btn" onClick={() => setFilterSubject('')} style={{ background: 'var(--glass-bg)', padding: '8px 16px', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>←</span> Back to All Subjects
-          </button>
-        </div>
-        
-        <div className="flex-row justify-between" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>
-            <span style={{ marginRight: '12px' }}>{activeSubjectData.icon}</span> 
-            {activeSubjectData.label} Topics
-          </h1>
-          <button onClick={() => navigate('/test-maker', { state: { defaultSubject: activeSubjectData.id === 'Math' ? 'Maths' : activeSubjectData.id } })} className="btn" style={{ padding: '8px 16px', fontSize: '0.875rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
-             + Create Mock
-          </button>
-        </div>
-        <p style={{ color: 'var(--text-secondary)' }}>Select a topic to view its mocks.</p>
-        
-        <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
-          {Object.keys(groupedTests).map(topicName => (
-            <button 
-              key={topicName}
-              onClick={() => setFilterTopic(topicName)}
-              className="glass-card" 
-              style={{ 
-                 width: '100%',
-                 padding: '24px 24px', 
-                 display: 'flex', 
-                 alignItems: 'center', 
-                 justifyContent: 'flex-start',
-                 gap: '16px', 
-                 background: 'var(--glass-bg)',
-                 border: '1px solid var(--border-color)',
-                 borderRadius: '20px',
-                 cursor: 'pointer',
-                 transition: 'all 0.3s ease'
-              }}
-            >
-              <span style={{ fontSize: '2.5rem' }}>📂</span>
-              <span style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'left' }}>{topicName}</span>
-              <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '12px', fontSize: '0.875rem' }}>{groupedTests[topicName].length} Mocks</span>
-            </button>
-          ))}
-        </div>
-        {renderModals()}
-      </div>
-    );
-  }
-
-  if (filterSubject && activeSubjectData && filterTopic) {
-    const testsForTopic = filteredHistory.filter(h => {
-      const subj = (h.subject || '').toLowerCase();
-      const activeId = activeSubjectData.id.toLowerCase();
-      const isSubjMatch = activeId === 'history' ? (subj.includes('history') || subj.includes('gk')) : subj.includes(activeId);
-      const testTopic = h.topic ? h.topic.trim() : 'General Mocks';
-      return isSubjMatch && testTopic === filterTopic;
+    })
+    .sort((a, b) => {
+      const aSolved = a.attemptedBy?.includes(currentUser) ? 1 : 0;
+      const bSolved = b.attemptedBy?.includes(currentUser) ? 1 : 0;
+      return aSolved - bSolved;
     });
-
-    return (
-      <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.3s' }}>
-        <div className="flex-row gap-4 align-center" style={{ marginBottom: '8px' }}>
-          <button className="btn" onClick={() => setFilterTopic('')} style={{ background: 'var(--glass-bg)', padding: '8px 16px', border: '1px solid var(--border-color)', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>←</span> Back to Topics
-          </button>
-        </div>
-        
-        <div className="flex-row justify-between" style={{ alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>
-            📂 {filterTopic}
-          </h1>
-          <button onClick={() => navigate('/test-maker', { state: { defaultSubject: activeSubjectData.id === 'Math' ? 'Maths' : activeSubjectData.id } })} className="btn" style={{ padding: '8px 16px', fontSize: '0.875rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
-             + Create Mock
-          </button>
-        </div>
-        
-        <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))' }}>
-          {testsForTopic.map(test => {
-            const isSolved = test.attemptedBy?.includes(currentUser);
-            return (
-            <div key={test.id} className="glass-card" style={{ padding: '20px', borderTop: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="flex-col gap-2">
-                <div className="flex-row gap-2 align-center justify-between">
-                   <h3 style={{ fontSize: '1.125rem', margin: 0, textDecoration: isSolved ? 'line-through' : 'none', color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)' }}>{test.title}</h3>
-                   <span className="badge" style={{ background: isSolved ? 'rgba(34, 197, 94, 0.2)' : 'var(--accent-glow)', color: isSolved ? 'var(--success)' : 'var(--accent-primary)', whiteSpace: 'nowrap' }}>{test.timeLimit} Mins</span>
-                </div>
-                <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                  {test.questions?.length || 0} Questions • Mega Test Engine {isSolved && <span style={{color:'var(--success)', fontWeight:'bold'}}> • Solved ✅</span>}
-                </span>
-              </div>
-              <div className="flex-row gap-2" style={{ flexWrap: 'wrap', marginTop: 'auto' }}>
-                  <button title="Share Link" className="btn task-action-btn" onClick={() => copyShareLink(test._id || test.id)} style={{ padding: '8px 16px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span className="desktop-text"><FiShare2 /> Share</span>
-                    <FiShare2 className="mobile-icon" size={16} />
-                  </button>
-                  <button title="Edit Mock" className="btn task-action-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingTest(test); }} style={{ padding: '8px 16px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center' }}>
-                     <span className="desktop-text">Edit</span>
-                     <FiEdit className="mobile-icon" size={16} />
-                  </button>
-                  <button title="Delete Mock" className="btn task-action-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setDeletingTest(test); }} style={{ padding: '8px 16px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}>
-                     <span className="desktop-text">Delete</span>
-                     <FiTrash2 className="mobile-icon" size={16} />
-                  </button>
-                  <button title="Start Exam" className="btn btn-primary task-action-btn" onClick={() => navigate(`/test/${test._id || test.id}`)} style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span className="desktop-text"><FiPlay /> Start</span>
-                    <FiPlay className="mobile-icon" size={16} />
-                  </button>
-              </div>
-            </div>
-            );
-          })}
-        </div>
-        {renderModals()}
-      </div>
-    );
-  }
 
   if (loading) return (
     <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
       <div className="skeleton-box" style={{ height: '40px', width: '250px' }}></div>
       <div className="skeleton-box" style={{ height: '20px', width: '60%' }}></div>
-      
-      <div className="flex-col gap-6" style={{ marginTop: '16px' }}>
-         <div className="glass-panel" style={{ padding: '24px' }}>
-            <div className="skeleton-box" style={{ height: '24px', width: '180px', marginBottom: '16px' }}></div>
-            <div className="skeleton-box" style={{ height: '80px', width: '100%' }}></div>
-         </div>
-         
-         <div className="glass-panel" style={{ padding: '24px', marginTop: '24px' }}>
-            <div className="skeleton-box" style={{ height: '24px', width: '220px', marginBottom: '16px' }}></div>
-            <div className="flex-col gap-4">
-               <div className="skeleton-box" style={{ height: '100px', width: '100%' }}></div>
-               <div className="skeleton-box" style={{ height: '100px', width: '100%' }}></div>
-               <div className="skeleton-box" style={{ height: '100px', width: '100%' }}></div>
-            </div>
-         </div>
+      <div className="flex-col gap-4" style={{ marginTop: '24px' }}>
+        {[1,2,3].map(i => <div key={i} className="skeleton-box" style={{ height: '100px', width: '100%' }}></div>)}
       </div>
     </div>
   );
 
   return (
-    <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
-      <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>Mock Test System</h1>
-      <p style={{ color: 'var(--text-secondary)' }}>Full-length comprehensive mock exams.</p>
+    <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.3s' }}>
+      {/* Header */}
+      <div className="flex-row justify-between align-center" style={{ gap: '12px', flexWrap: 'wrap' }}>
+        <div>
+          <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>🎯 Mock Tests</h1>
+          <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>सर्व उपलब्ध टेस्ट्स एका ठिकाणी — शोधा आणि द्या!</p>
+        </div>
+        <button onClick={() => navigate('/test-maker')} className="btn btn-primary" style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          + Create Test
+        </button>
+      </div>
 
-      {!hasPlan ? (
-        <div className="glass-panel" style={{ padding: '40px', textAlign: 'center', marginTop: '24px' }}>
+      {/* Search Box */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '12px',
+        background: 'var(--bg-secondary)', border: '1.5px solid var(--border-color)',
+        borderRadius: '14px', padding: '10px 16px'
+      }}>
+        <FiSearch size={18} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+        <input
+          type="text"
+          placeholder="टेस्टचे नाव, विषय किंवा टॉपिक शोधा..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          style={{
+            flex: 1, background: 'transparent', border: 'none', outline: 'none',
+            color: 'var(--text-primary)', fontSize: '0.95rem'
+          }}
+        />
+        {searchQuery && (
+          <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.2rem', lineHeight: 1, padding: 0 }}>✕</button>
+        )}
+      </div>
+
+      {/* Test Cards */}
+      {filteredHistory.length === 0 ? (
+        <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
           <FiTarget size={48} color="var(--text-muted)" style={{ marginBottom: '16px' }} />
-          <h2 style={{ fontSize: '1.25rem', color: 'var(--text-secondary)' }}>No Upcoming Mocks</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Generate a Study Plan to schedule your weekly mock tests.</p>
-          <button onClick={() => navigate('/planner')} className="btn btn-primary" style={{ marginTop: '16px' }}>Go to Study Planner</button>
+          <h2 style={{ fontSize: '1.25rem', color: 'var(--text-secondary)' }}>
+            {history.length === 0 ? 'अजून कोणतीही टेस्ट नाही' : 'सापडले नाही'}
+          </h2>
+          <p style={{ color: 'var(--text-muted)' }}>
+            {history.length === 0
+              ? 'पहिली टेस्ट बनवा आणि सुरू करा!'
+              : `"${searchQuery}" साठी कोणतीही टेस्ट सापडली नाही.`
+            }
+          </p>
+          {history.length === 0 && (
+            <button onClick={() => navigate('/test-maker')} className="btn btn-primary" style={{ marginTop: '16px' }}>+ Create Test</button>
+          )}
         </div>
       ) : (
-        <div className="flex-col gap-6" style={{ marginTop: '16px' }}>
-          <div className="glass-panel" style={{ padding: '24px' }}>
-             <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Phase 1 Revision Mocks</h2>
-             
-             <div className="glass-card" style={{ padding: '20px', borderLeft: '4px solid var(--accent-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-               <div className="flex-col gap-2">
-                 <h3 style={{ fontSize: '1.125rem', color: 'var(--text-primary)', margin: 0 }}>MPSC Pre 2027 • Foundation Mock 1</h3>
-                 <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>100 Questions • 120 Mins • Standard</span>
-               </div>
-               <button onClick={startMockTest} className="btn btn-primary" style={{ padding: '8px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}><FiPlay /> Start</button>
-             </div>
-          </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>
+            {filteredHistory.length} टेस्ट्स उपलब्ध {searchQuery && `("${searchQuery}" साठी)`}
+          </p>
+          <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 310px), 1fr))' }}>
+            {filteredHistory.map(test => {
+              const isSolved = test.attemptedBy?.includes(currentUser);
+              return (
+                <div
+                  key={test._id || test.id}
+                  className="glass-card"
+                  style={{
+                    padding: '18px 20px',
+                    borderTop: isSolved ? '3px solid var(--success)' : '3px solid var(--accent-primary)',
+                    background: isSolved ? 'rgba(34, 197, 94, 0.04)' : 'var(--bg-secondary)',
+                    display: 'flex', flexDirection: 'column', gap: '12px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {/* Title + badge */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                    <h3 style={{
+                      fontSize: '1rem', margin: 0, flex: 1,
+                      color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)',
+                      textDecoration: isSolved ? 'line-through' : 'none',
+                      lineHeight: 1.3
+                    }}>
+                      {test.title}
+                    </h3>
+                    <span style={{
+                      flexShrink: 0,
+                      background: isSolved ? 'rgba(34, 197, 94, 0.15)' : 'var(--accent-glow)',
+                      color: isSolved ? 'var(--success)' : 'var(--accent-primary)',
+                      padding: '3px 10px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700
+                    }}>
+                      {test.timeLimit} Min
+                    </span>
+                  </div>
 
-           {filteredHistory.length > 0 && (
-             <div className="glass-panel" style={{ padding: '24px', marginTop: '24px' }}>
-                <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>📚 Subject Wise Mocks</h2>
-                
-                <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))' }}>
-                  {SUBJECTS.map(sub => {
-                     const testsForThisSubject = filteredHistory.filter(h => {
-                       const subj = (h.subject || '').toLowerCase();
-                       const subId = sub.id.toLowerCase();
-                       if (subId === 'history') return subj.includes('history') || subj.includes('gk');
-                       return subj.includes(subId);
-                     });
-                     
-                     return (
-                       <div key={sub.id} className="flex-col gap-2">
-                          {/* BIG SUBJECT CARD */}
-                          <button 
-                             onClick={() => setFilterSubject(sub.id)}
-                             className="glass-card" 
-                             style={{ 
-                                width: '100%',
-                                padding: '24px 24px',
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'flex-start',
-                                gap: '16px', 
-                                background: 'var(--glass-bg)',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: '20px',
-                                cursor: 'pointer',
-                                transition: 'all 0.3s ease'
-                             }}
-                          >
-                             <span style={{ fontSize: '2.5rem' }}>{sub.icon}</span>
-                             <span style={{ fontSize: '1.35rem', fontWeight: 600, color: 'var(--text-primary)' }}>{sub.label}</span>
-                             <span style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.1)', padding: '6px 12px', borderRadius: '12px', fontSize: '0.875rem' }}>{testsForThisSubject.length} Mocks</span>
-                          </button>
-                       </div>
-                     );
-                  })}
+                  {/* Meta */}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      📋 {test.questions?.length || 0} प्रश्न
+                    </span>
+                    {test.subject && (
+                      <span style={{
+                        fontSize: '0.78rem', background: 'var(--glass-bg)',
+                        border: '1px solid var(--border-color)',
+                        color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: '8px'
+                      }}>
+                        {test.subject.length > 22 ? test.subject.slice(0, 22) + '…' : test.subject}
+                      </span>
+                    )}
+                    {isSolved && (
+                      <span style={{ fontSize: '0.78rem', color: 'var(--success)', fontWeight: 700 }}>✅ Solved</span>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto' }}>
+                    <button
+                      title="Share Link"
+                      className="btn task-action-btn"
+                      onClick={() => copyShareLink(test._id || test.id)}
+                      style={{ padding: '7px 12px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem' }}
+                    >
+                      <FiShare2 size={14} /> Share
+                    </button>
+                    <button
+                      title="Edit Test"
+                      className="btn task-action-btn"
+                      onClick={e => { e.stopPropagation(); setEditingTest(test); }}
+                      style={{ padding: '7px 12px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--info)', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem' }}
+                    >
+                      <FiEdit size={14} /> Edit
+                    </button>
+                    <button
+                      title="Delete Test"
+                      className="btn task-action-btn"
+                      onClick={e => { e.stopPropagation(); setDeletingTest(test); }}
+                      style={{ padding: '7px 12px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.82rem' }}
+                    >
+                      <FiTrash2 size={14} /> Delete
+                    </button>
+                    <button
+                      title="Start Test"
+                      className="btn btn-primary task-action-btn"
+                      onClick={() => navigate(`/test/${test._id || test.id}`)}
+                      style={{ padding: '7px 18px', display: 'flex', alignItems: 'center', gap: '6px', flex: 1, justifyContent: 'center', fontSize: '0.88rem' }}
+                    >
+                      <FiPlay size={14} /> {isSolved ? 'Revise' : 'Start Test'}
+                    </button>
+                  </div>
                 </div>
-             </div>
-           )}
-
+              );
+            })}
+          </div>
         </div>
       )}
+
       {renderModals()}
     </div>
   );

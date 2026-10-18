@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FiBookmark, FiTarget, FiArrowLeft, FiArrowRight, 
-  FiBookOpen, FiFilm, FiCpu, FiExternalLink, FiChevronDown, FiChevronUp, FiCheckCircle, FiAward 
+  FiBookOpen, FiFilm, FiCpu, FiExternalLink, FiChevronDown, FiChevronUp, FiCheckCircle, FiAward, FiEdit
 } from 'react-icons/fi';
 import Confetti from 'react-confetti';
 import { useWindowSize } from 'react-use';
@@ -28,6 +28,7 @@ const TakeTest = () => {
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
   const [showAnswers, setShowAnswers] = useState(false);
+  const [editingCorrectOption, setEditingCorrectOption] = useState(null); // { qIndex, value }
   const [activeQuestion, setActiveQuestion] = useState(0);
   const [showSuccessVideo, setShowSuccessVideo] = useState(false);
   const [allReels, setAllReels] = useState([]);
@@ -411,6 +412,40 @@ const TakeTest = () => {
     }
   };
 
+  // Fix incorrect answer in the question bank
+  const handleFixAnswer = async (qIndex) => {
+    if (!editingCorrectOption || editingCorrectOption.qIndex !== qIndex) return;
+    const newCorrect = editingCorrectOption.value;
+    const q = test.questions[qIndex];
+    // Apply the mapping back to original index if question was shuffled
+    const originalQIdx = q.originalQIndex !== undefined ? q.originalQIndex : qIndex;
+    const originalCorrect = q.optionMapping ? q.optionMapping[newCorrect] : newCorrect;
+    
+    // Update UI immediately
+    const updatedQuestions = [...test.questions];
+    updatedQuestions[qIndex] = { ...q, correctOption: newCorrect };
+    setTest(prev => ({ ...prev, questions: updatedQuestions }));
+    setEditingCorrectOption(null);
+    toast.loading('प्रश्न अपडेट होत आहे...', { id: 'fix-ans' });
+
+    try {
+      // Fetch original test to update `questions` array in DB
+      const res = await axios.get(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}`);
+      if (res.data.success) {
+        const origQuestions = [...res.data.data.questions];
+        if (origQuestions[originalQIdx]) {
+          origQuestions[originalQIdx] = { ...origQuestions[originalQIdx], correctOption: originalCorrect };
+          await axios.put(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}`, {
+            questions: origQuestions
+          });
+          toast.success('✅ उत्तर यशस्वीरित्या दुरुस्त केले!', { id: 'fix-ans' });
+        }
+      }
+    } catch (err) {
+      toast.error('Server update failed', { id: 'fix-ans' });
+    }
+  };
+
   useEffect(() => {
     if (submitted && test && !isMistake) {
       const percent = test.questions.length > 0 ? (score / test.questions.length) * 100 : 0;
@@ -563,227 +598,111 @@ const TakeTest = () => {
         {/* Main Content */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
           
-          {submitted && !showAnswers && (
-            <div className="glass-card flex-col align-center" style={{ padding: '40px 24px', textAlign: 'center', animation: 'fadeIn 0.5s ease-out', position: 'relative' }}>
-              {(() => {
-                const percent = test.questions.length > 0 ? (score / test.questions.length) * 100 : 0;
-                let config = {};
-                if (percent >= 80) {
-                     config = { color: 'var(--success)', icon: '🏆', msg: 'Excellent! Outstanding Performance! 🔥', sub: 'You smashed it like a pro. Keep it up!', showConfetti: true };
-                } else if (percent >= 40) {
-                     config = { color: 'var(--warning)', icon: '👍', msg: 'Good Effort! Keep Practicing! 💡', sub: 'You are on the right track, review your mistakes.', showConfetti: false };
-                } else {
-                     config = { color: 'var(--danger)', icon: '🥺', msg: 'Need Improvement! Better luck next time! 📚', sub: 'Don\'t worry, analyze your weak points and study hard.', showConfetti: false };
-                }
-                
-                return (
-                   <>
-                     {!isMistake && config.showConfetti && <Confetti width={width} height={height} recycle={false} numberOfPieces={600} gravity={0.15} />}
-                     <div style={{ padding: '16px', background: 'rgba(255,255,255,0.05)', borderRadius: '50%', marginBottom: '16px', fontSize: '4rem' }}>
-                       {config.icon}
-                     </div>
-                     <h2 style={{ color: config.color, marginBottom: '8px', fontSize: '1.75rem' }}>{config.msg}</h2>
-                     <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>{config.sub}</p>
-                   </>
-                );
-              })()}
-              
-              <h1 style={{ fontSize: '5rem', margin: '0 0 8px 0', color: 'var(--text-primary)' }}>
-                {score} <span style={{ fontSize: '1.5rem', color: 'var(--text-muted)' }}>/ {test.questions.length}</span>
-              </h1>
-              
-              {/* Detailed MPSC Score Summary Breakdown */}
-              {(() => {
-                let correctCount = 0;
-                let wrongCount = 0;
-                let unattemptedCount = 0;
-                let lost = 0;
+          {submitted && !showAnswers && (() => {
+            const percent = test.questions.length > 0 ? (score / test.questions.length) * 100 : 0;
+            let correctCount = 0, wrongCount = 0, unattemptedCount = 0, lost = 0;
+            test.questions.forEach((q, idx) => {
+              if (answers[idx] === undefined) { unattemptedCount++; }
+              else if (answers[idx] === q.correctOption) { correctCount++; }
+              else { wrongCount++; lost += 0.25; }
+            });
+            const attempted = correctCount + wrongCount;
+            const accuracy = attempted > 0 ? ((correctCount / attempted) * 100).toFixed(1) : '0';
+            const deducted = lost.toFixed(2);
+            const finalFormattedScore = (score % 1 === 0) ? score : score.toFixed(2);
+            const emoji = percent >= 80 ? '🏆' : percent >= 40 ? '👍' : '📚';
+            const color = percent >= 80 ? 'var(--success)' : percent >= 40 ? 'var(--warning)' : 'var(--danger)';
+            const msg = percent >= 80 ? 'उत्कृष्ट कामगिरी!' : percent >= 40 ? 'छान प्रयत्न! आणखी सराव करा.' : 'अभ्यास वाढवा — तुम्ही करू शकता!';
+            return (
+              <div className="glass-card flex-col align-center" style={{ padding: '32px 20px', textAlign: 'center', animation: 'fadeIn 0.5s', position: 'relative' }}>
+                {!isMistake && percent >= 80 && <Confetti width={width} height={height} recycle={false} numberOfPieces={500} gravity={0.15} />}
 
-                test.questions.forEach((q, idx) => {
-                  if (answers[idx] === undefined) {
-                    unattemptedCount += 1;
-                  } else if (answers[idx] === q.correctOption) {
-                    correctCount += 1;
-                  } else {
-                    wrongCount += 1;
-                    lost += 0.25;
-                  }
-                });
+                {/* Big Score */}
+                <div style={{ fontSize: '4.5rem', lineHeight: 1, marginBottom: '4px' }}>{emoji}</div>
+                <h1 style={{ fontSize: '4rem', margin: '8px 0 4px', color: 'var(--text-primary)', fontWeight: 900, letterSpacing: '-2px' }}>
+                  {finalFormattedScore}
+                  <span style={{ fontSize: '1.5rem', color: 'var(--text-muted)', fontWeight: 400 }}> / {test.questions.length}</span>
+                </h1>
+                <p style={{ color, fontWeight: 700, fontSize: '1.05rem', margin: '0 0 20px' }}>{msg}</p>
 
-                const attempted = correctCount + wrongCount;
-                const accuracy = attempted > 0 ? ((correctCount / attempted) * 100).toFixed(1) : '0';
-                const deducted = lost.toFixed(2);
-                const finalFormattedScore = (score % 1 === 0) ? score : score.toFixed(2);
+                {/* 4 Stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', width: '100%', maxWidth: '400px', marginBottom: '16px' }}>
+                  {[
+                    { label: '✅ बरोबर', val: `+${correctCount}`, c: 'rgba(34,197,94,0.12)', tc: 'var(--success)' },
+                    { label: '❌ चुकीचे', val: `-${deducted}`, c: 'rgba(239,68,68,0.1)', tc: 'var(--danger)' },
+                    { label: '⏭ सोडले', val: unattemptedCount, c: 'var(--glass-bg)', tc: 'var(--text-muted)' },
+                    { label: '🎯 अचूकता', val: `${accuracy}%`, c: 'rgba(59,130,246,0.1)', tc: 'var(--info)' },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: s.c, border: '1px solid var(--border-color)', borderRadius: '12px', padding: '10px 4px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '1.2rem', fontWeight: 800, color: s.tc }}>{s.val}</div>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
 
-                return (
-                  <div style={{ width: '100%', maxWidth: '540px', marginTop: '16px', marginBottom: '24px' }}>
-                    {/* 4 Metric Cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', marginBottom: '16px' }}>
-                      <div className="glass-card" style={{ padding: '12px 8px', textAlign: 'center', background: 'rgba(34, 197, 94, 0.08)', border: '1px solid rgba(34, 197, 94, 0.25)' }}>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--success)' }}>{correctCount}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>बरोबर (+{correctCount})</div>
+                {/* Net Score Row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '400px', background: 'var(--glass-bg)', borderRadius: '12px', padding: '10px 16px', border: '1px solid var(--border-color)', fontSize: '0.88rem', marginBottom: '16px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Gross <strong style={{ color: 'var(--success)' }}>+{correctCount}</strong> &nbsp;—&nbsp; Penalty <strong style={{ color: 'var(--danger)' }}>-{deducted}</strong></span>
+                  <span style={{ fontWeight: 800, color: 'var(--accent-primary)', fontSize: '1rem' }}>Net: {finalFormattedScore}</span>
+                </div>
+
+                {/* Rank Banner */}
+                {!isMistake && rankData.userRank && (
+                  <div className="test-rank-banner" style={{ width: '100%', maxWidth: '400px', marginBottom: '12px' }}>
+                    <div className="rank-left-section">
+                      <div className="rank-trophy-badge">
+                        {rankData.userRank === 1 ? '🥇' : rankData.userRank === 2 ? '🥈' : rankData.userRank === 3 ? '🥉' : '🏆'}
                       </div>
-                      <div className="glass-card" style={{ padding: '12px 8px', textAlign: 'center', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--danger)' }}>{wrongCount}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>चुकीचे (-{deducted})</div>
-                      </div>
-                      <div className="glass-card" style={{ padding: '12px 8px', textAlign: 'center', background: 'var(--glass-bg)', border: '1px solid var(--border-color)' }}>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-muted)' }}>{unattemptedCount}</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>सोडवले नाही</div>
-                      </div>
-                      <div className="glass-card" style={{ padding: '12px 8px', textAlign: 'center', background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--info)' }}>{accuracy}%</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>अचूकता</div>
+                      <div>
+                        <div className="rank-sub-title">महा-रँक</div>
+                        <div className="rank-number-display">#{rankData.userRank} <span className="rank-total-count">/ {rankData.totalParticipants}</span></div>
                       </div>
                     </div>
-
-                    {/* Marking Breakdown Row */}
-                    <div style={{ 
-                      padding: '12px 16px', 
-                      background: 'var(--glass-bg)', 
-                      borderRadius: '12px', 
-                      border: '1px solid var(--border-color)',
-                      fontSize: '0.85rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '8px',
-                      textAlign: 'left'
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                        <span>मिळालेले गुण (Gross Marks):</span>
-                        <span style={{ fontWeight: 600, color: 'var(--success)' }}>+{correctCount}.00</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}>
-                        <span>निगेटिव्ह मार्किंग कपात (1/4th Penalty):</span>
-                        <span style={{ fontWeight: 600, color: 'var(--danger)' }}>-{deducted}</span>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '6px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        <span>अंतिम गुण (Net Score):</span>
-                        <span style={{ color: 'var(--accent-primary)', fontSize: '1.05rem' }}>{finalFormattedScore} / {test.questions.length}</span>
-                      </div>
-                    </div>
-
-                    {/* Negative Marking Advice */}
-                    {lost > 0 ? (
-                      <div style={{ marginTop: '12px', padding: '14px 16px', background: 'rgba(239, 68, 68, 0.08)', border: '1px dashed var(--danger)', borderRadius: '12px', textAlign: 'left' }}>
-                        <p style={{ margin: 0, color: 'var(--danger)', fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          ⚠️ MPSC निगेटिव्ह मार्किंग विश्लेषण (1/4th Rule)
-                        </p>
-                        <p style={{ margin: '6px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.4' }}>
-                          तुम्ही {wrongCount} चुकीचे उत्तर दिले, ज्यामुळे तुमचे <strong>{deducted} मार्क्स</strong> वजा झाले. जर तुम्ही हे {wrongCount} चुकीचे प्रश्न सोडवले नसते (Skip केले असते), तर तुमचा अंतिम स्कोर <strong>{correctCount}.00</strong> असता!
-                        </p>
-                      </div>
-                    ) : (
-                      <div style={{ marginTop: '12px', padding: '14px 16px', background: 'rgba(34, 197, 94, 0.08)', border: '1px dashed var(--success)', borderRadius: '12px', textAlign: 'left' }}>
-                        <p style={{ margin: 0, color: 'var(--success)', fontWeight: 700, fontSize: '0.9rem' }}>
-                          🎉 उत्कृष्ट अचूकता (100% Accuracy)!
-                        </p>
-                        <p style={{ margin: '6px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                          एकही प्रश्न चुकीचा गेला नाही! निगेटिव्ह मार्किंगमुळे एकही गुण वजा झालेला नाही.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Official Test Rank Banner & Leaderboard (Regular Tests Only) */}
-                    {!isMistake ? (
-                      <>
-                        {rankData.userRank ? (
-                          <div className="test-rank-banner">
-                            <div className="rank-left-section">
-                              <div className="rank-trophy-badge">
-                                {rankData.userRank === 1 ? '🥇' : rankData.userRank === 2 ? '🥈' : rankData.userRank === 3 ? '🥉' : '🏆'}
-                              </div>
-                              <div>
-                                <div className="rank-sub-title">सर्व टेस्ट्सचा महा-रँक (Overall All-Tests Rank)</div>
-                                <div className="rank-number-display">
-                                  रँक #{rankData.userRank} <span className="rank-total-count">/ {rankData.totalParticipants} विद्यार्थी</span>
-                                </div>
-                              </div>
-                            </div>
-                            <div className="rank-valid-badge">
-                              ✓ सर्व टेस्ट्सचे एकूण गुण & अचूकतेवर आधारित
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="test-rank-unqualified">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                              <span style={{ fontSize: '1.4rem' }}>⚠️</span>
-                              <div>
-                                <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.88rem' }}>रँकसाठी अपात्र (Unranked)</div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px', lineHeight: '1.4' }}>
-                                  रँक मिळवण्यासाठी किमान १ प्रश्न अचूक सोडवून पॉझिटिव्ह नेट गुण मिळवणे अनिवार्य आहे. केवळ रिकामी टेस्ट सबमिट केल्यास रँक मिळत नाही!
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Test Leaderboard Accordion/Table */}
-                        {rankData.leaderboard && rankData.leaderboard.length > 0 && (
-                          <div className="test-leaderboard-box">
-                            <div className="leaderboard-box-header">
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-                                <FiAward size={18} style={{ color: 'var(--accent-primary)' }} />
-                                <span>🏆 सर्व टेस्ट्सचा एकत्रित महा-लीडरबोर्ड</span>
-                              </div>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                एकूण {rankData.totalParticipants} रँकधारक
-                              </span>
-                            </div>
-
-                            <div className="leaderboard-box-list">
-                              {rankData.leaderboard.map((item, idx) => {
-                                const isMe = item.userId === auth.currentUser?.uid;
-                                const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
-                                return (
-                                  <div key={idx} className={`leaderboard-item-row ${isMe ? 'leaderboard-item-row-me' : ''}`}>
-                                    <div className="lb-col-rank">{medal}</div>
-                                    <div className="lb-col-user">
-                                      <div className="lb-username">
-                                        {item.userName} {isMe && <span className="lb-me-tag">तुम्ही</span>}
-                                      </div>
-                                      <div className="lb-user-meta">
-                                        {item.totalTests || 1} टेस्ट्स सोडवल्या • {item.accuracy}% अचूकता
-                                      </div>
-                                    </div>
-                                    <div className="lb-col-score">
-                                      <span className="lb-score-val">{item.totalScore !== undefined ? item.totalScore : item.netScore}</span>
-                                      <span className="lb-score-label">एकूण गुण</span>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="glass-card" style={{ marginTop: '16px', padding: '16px 20px', textAlign: 'left', border: '1px solid rgba(168, 85, 247, 0.3)', background: 'rgba(168, 85, 247, 0.08)', borderRadius: '14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <span style={{ fontSize: '1.6rem' }}>📖</span>
-                          <div>
-                            <h4 style={{ margin: 0, color: '#c084fc', fontSize: '0.95rem', fontWeight: 700 }}>मिस्टेक बुक रिव्हिजन पूर्ण (Mistake Book Drill)</h4>
-                            <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)', fontSize: '0.82rem', lineHeight: '1.4' }}>
-                              हा केवळ तुमच्या चुका सुधारण्यासाठीचा वैयक्तिक सराव आहे. यासाठी कोणताही रँक किंवा लीडरबोर्ड लागू होत नाही.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
-                );
-              })()}
+                )}
 
-              <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button onClick={() => navigate('/practice')} className="btn" style={{ padding: '12px 24px', fontSize: '1.1rem', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
-                   Take Another Test <FiArrowRight />
-                </button>
-                <button onClick={() => setShowAnswers(true)} className="btn btn-primary" style={{ padding: '12px 24px', fontSize: '1.1rem' }}>
-                   View Answers
-                </button>
+                {/* Leaderboard */}
+                {!isMistake && rankData.leaderboard && rankData.leaderboard.length > 0 && (
+                  <div className="test-leaderboard-box" style={{ width: '100%', maxWidth: '400px', marginBottom: '12px' }}>
+                    <div className="leaderboard-box-header">
+                      <span style={{ fontWeight: 700, fontSize: '0.88rem' }}><FiAward size={14} style={{ marginRight: '6px', color: 'var(--accent-primary)' }} />टॉप खेळाडू</span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{rankData.totalParticipants} रँकधारक</span>
+                    </div>
+                    <div className="leaderboard-box-list">
+                      {rankData.leaderboard.slice(0, 5).map((item, idx) => {
+                        const isMe = item.userId === auth.currentUser?.uid;
+                        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+                        return (
+                          <div key={idx} className={`leaderboard-item-row ${isMe ? 'leaderboard-item-row-me' : ''}`}>
+                            <div className="lb-col-rank">{medal}</div>
+                            <div className="lb-col-user">
+                              <div className="lb-username">{item.userName} {isMe && <span className="lb-me-tag">तुम्ही</span>}</div>
+                              <div className="lb-user-meta">{item.totalTests || 1} tests • {item.accuracy}%</div>
+                            </div>
+                            <div className="lb-col-score">
+                              <span className="lb-score-val">{item.totalScore !== undefined ? item.totalScore : item.netScore}</span>
+                              <span className="lb-score-label">pts</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '8px' }}>
+                  <button onClick={() => navigate('/practice')} className="btn" style={{ padding: '10px 20px', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
+                    ← दुसरी टेस्ट
+                  </button>
+                  <button onClick={() => setShowAnswers(true)} className="btn btn-primary" style={{ padding: '10px 24px' }}>
+                    उत्तरे पहा →
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
+
 
           {(!submitted || showAnswers) && test.questions.map((q, qIndex) => {
             const isCorrectAnswer = q.correctOption === answers[qIndex];
@@ -954,6 +873,57 @@ const TakeTest = () => {
                   </button>
                 </div>
               )}
+
+              {/* Fix Answer Button (shown only after submit in showAnswers mode) */}
+              {submitted && showAnswers && (
+                <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  {editingCorrectOption?.qIndex === qIndex ? (
+                    <>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 600 }}>✏️ नवीन बरोबर उत्तर:</span>
+                      <select
+                        value={editingCorrectOption.value}
+                        onChange={e => setEditingCorrectOption({ qIndex, value: parseInt(e.target.value) })}
+                        style={{ 
+                          background: 'var(--bg-secondary)', border: '1px solid var(--accent-primary)', color: 'var(--text-primary)',
+                          borderRadius: '8px', padding: '5px 10px', fontSize: '0.85rem', outline: 'none', cursor: 'pointer'
+                        }}
+                      >
+                        {q.options.map((opt, oi) => (
+                          <option key={oi} value={oi}>{String.fromCharCode(65 + oi)}: {opt.length > 35 ? opt.slice(0, 35) + '…' : opt}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={() => handleFixAnswer(qIndex)}
+                        className="btn btn-primary"
+                        style={{ padding: '5px 14px', fontSize: '0.82rem' }}
+                      >
+                        ✅ Save Fix
+                      </button>
+                      <button
+                        onClick={() => setEditingCorrectOption(null)}
+                        className="btn"
+                        style={{ padding: '5px 10px', fontSize: '0.82rem', background: 'var(--glass-bg)', color: 'var(--text-muted)' }}
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => setEditingCorrectOption({ qIndex, value: q.correctOption })}
+                      className="btn"
+                      style={{ 
+                        padding: '5px 12px', fontSize: '0.78rem',
+                        background: 'rgba(239,68,68,0.08)', color: 'var(--danger)',
+                        border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px',
+                        display: 'flex', alignItems: 'center', gap: '6px'
+                      }}
+                    >
+                      <FiEdit size={12} /> उत्तर चुकीचे आहे? दुरुस्त करा
+                    </button>
+                  )}
+                </div>
+              )}
+
             </div>
           )
         })}
