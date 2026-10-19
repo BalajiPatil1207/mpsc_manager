@@ -4,13 +4,20 @@ const webpush = require('web-push');
 
 exports.createTest = async (req, res, next) => {
   try {
-    const { title, subject, topic, timeLimit, questions, createdBy, creatorName } = req.body;
+    const { title, subject, topic, timeLimit, questions, createdBy, creatorName, markingScheme, examDate, totalMarks } = req.body;
+    const isGroupC = markingScheme === 'group_c';
+    const marksPerQ = isGroupC ? 1.0 : 2.0;
+    const calculatedMarks = totalMarks || ((questions?.length || 0) * marksPerQ);
+
     const newTest = { 
       title: title || 'Custom Mock Test', 
       subject: subject || 'General',
       topic: topic || '',
       timeLimit: parseInt(timeLimit) || 15, 
       questions, 
+      markingScheme: markingScheme || 'mpsc_rajyaseva',
+      totalMarks: calculatedMarks,
+      examDate: examDate || new Date().toLocaleDateString('mr-IN'),
       createdBy: createdBy || 'anonymous', 
       creatorName: creatorName || 'A Student',
       createdAt: new Date().toISOString() 
@@ -110,11 +117,13 @@ exports.generateMegaTest = async (req, res, next) => {
     }
 
     const newTest = {
-      title: `🔥 Automatic Mega Test (100 Qs) - ${new Date().toLocaleDateString('mr-IN')}`,
+      title: 'Automatic Mega Test (100 Qs)',
       subject: 'Mega Database Engine (GK, Math, Reasoning)',
+      topic: 'सर्वसमावेशक मेगा सराव परीक्षा (100 प्रश्न)',
       timeLimit: 90, 
       questions: shuffle(megaQuestions), 
       createdBy: 'System Engine',
+      examDate: new Date().toLocaleDateString('mr-IN'),
       createdAt: new Date().toISOString()
     };
 
@@ -156,9 +165,12 @@ exports.submitTest = async (req, res, next) => {
     });
 
     const totalAttempted = correctCount + wrongCount;
-    const rawScore = (correctCount * 1) - (wrongCount * 0.25);
+    const isGroupC = test.markingScheme === 'group_c';
+    const marksPerCorrect = isGroupC ? 1.0 : 2.0;
+    const penaltyPerWrong = isGroupC ? 0.25 : 0.66;
+    const rawScore = (correctCount * marksPerCorrect) - (wrongCount * penaltyPerWrong);
     const netScore = Math.max(0, parseFloat(rawScore.toFixed(2)));
-    const penalty = parseFloat((wrongCount * 0.25).toFixed(2));
+    const penalty = parseFloat((wrongCount * penaltyPerWrong).toFixed(2));
     const accuracy = totalAttempted > 0 ? parseFloat(((correctCount / totalAttempted) * 100).toFixed(1)) : 0;
     const scoreEarned = rawScore;
 

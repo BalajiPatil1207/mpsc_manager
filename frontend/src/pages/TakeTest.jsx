@@ -9,6 +9,8 @@ import { useWindowSize } from 'react-use';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { auth } from '../firebase';
+import OmrSheetView from '../components/OmrSheetView';
+import { MPSC_SEED_MOCKS } from '../data/mpscMockTestsSeed';
 
 const TakeTest = () => {
   const { testId } = useParams();
@@ -31,6 +33,8 @@ const TakeTest = () => {
   const [editingCorrectOption, setEditingCorrectOption] = useState(null); // { qIndex, value }
   const [activeQuestion, setActiveQuestion] = useState(0);
   const [showSuccessVideo, setShowSuccessVideo] = useState(false);
+  const [testViewMode, setTestViewMode] = useState('question'); // 'question' | 'omr'
+  const [markingScheme, setMarkingScheme] = useState('mpsc_rajyaseva'); // 'mpsc_rajyaseva' (+2/-0.66) | 'group_c' (+1/-0.25)
   const [allReels, setAllReels] = useState([]);
   const [aiExplanations, setAiExplanations] = useState({});
   const [loadingAi, setLoadingAi] = useState({});
@@ -127,9 +131,43 @@ const TakeTest = () => {
   useEffect(() => {
     const fetchTest = async () => {
       try {
-        const res = await axios.get(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}`);
-        if(res.data.success) {
-          const fetchedTest = res.data.data;
+        let fetchedTest = null;
+        const seedMatch = MPSC_SEED_MOCKS.find(m => (m._id || m.id) === testId);
+
+        if (seedMatch) {
+          fetchedTest = JSON.parse(JSON.stringify(seedMatch));
+        } else {
+          // 1. Check local cache first (instant response for dynamic tests)
+          try {
+            const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+            const cachedMatch = cachedMocks.find(m => (m._id || m.id) === testId);
+            if (cachedMatch) {
+              fetchedTest = JSON.parse(JSON.stringify(cachedMatch));
+            }
+          } catch (cacheErr) {
+            console.warn("Local mock cache read error:", cacheErr?.message);
+          }
+
+          // 2. Fetch from backend if not found locally or to sync updates
+          if (!fetchedTest) {
+            try {
+              const res = await axios.get(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}`, { timeout: 7000 });
+              if (res.data.success) {
+                fetchedTest = res.data.data;
+              }
+            } catch (netErr) {
+              console.warn("Backend test fetch fallback:", netErr?.message);
+              // Fallback to first seed mock test
+              fetchedTest = JSON.parse(JSON.stringify(MPSC_SEED_MOCKS[0]));
+            }
+          }
+        }
+
+        if (fetchedTest && fetchedTest.markingScheme) {
+          setMarkingScheme(fetchedTest.markingScheme);
+        }
+
+        if (fetchedTest) {
           const sessionKey = `mpsc_active_test_${testId}`;
           const savedSessionRaw = localStorage.getItem(sessionKey);
           let sessionRestored = false;
@@ -139,7 +177,6 @@ const TakeTest = () => {
             try {
               const session = JSON.parse(savedSessionRaw);
               if (session && Array.isArray(session.questions) && session.questions.length > 0) {
-                // Calculate elapsed time accurately (even if user was away / reloading)
                 const elapsedSeconds = Math.max(0, Math.floor((Date.now() - (session.lastSavedTimestamp || Date.now())) / 1000));
                 const remainingTime = Math.max(0, (session.timeLeft ?? (fetchedTest.timeLimit * 60)) - elapsedSeconds);
                 
@@ -150,6 +187,9 @@ const TakeTest = () => {
                 setTimeLeft(remainingTime);
                 if (typeof session.activeQuestion === 'number') {
                   setActiveQuestion(session.activeQuestion);
+                }
+                if (session.markingScheme) {
+                  setMarkingScheme(session.markingScheme);
                 }
                 sessionRestored = true;
                 toast.success("🔄 तुमची चालू टेस्ट पूर्ववत केली आहे! (Test Resumed)", { icon: '⚡', duration: 4000 });
@@ -162,9 +202,7 @@ const TakeTest = () => {
           if (!sessionRestored) {
             // Shuffle questions and options for anti-cheat
             if (fetchedTest.questions && Array.isArray(fetchedTest.questions)) {
-               // Map questions with their originalIndex
                const questionsWithIdx = fetchedTest.questions.map((q, qIndex) => ({ q, originalQIndex: qIndex }));
-               // Shuffle questions
                questionsWithIdx.sort(() => Math.random() - 0.5);
                
                fetchedTest.questions = questionsWithIdx.map(item => {
@@ -173,7 +211,6 @@ const TakeTest = () => {
                  
                  if (q.options && q.options.length > 0) {
                    const optionsWithIdx = q.options.map((opt, i) => ({ opt, originalIndex: i }));
-                   // Shuffle Options
                    optionsWithIdx.sort(() => Math.random() - 0.5);
                    
                    const newCorrectIndex = optionsWithIdx.findIndex(o => o.originalIndex === q.correctOption);
@@ -201,7 +238,8 @@ const TakeTest = () => {
                 reviews: {},
                 timeLeft: initialTime,
                 lastSavedTimestamp: Date.now(),
-                activeQuestion: 0
+                activeQuestion: 0,
+                markingScheme: fetchedTest.markingScheme || 'mpsc_rajyaseva'
               }));
             } catch (e) {}
           }
@@ -318,26 +356,36 @@ const TakeTest = () => {
   };
 
   const handleSubmit = async () => {
-    let currentScore = 0;
+    const marksPerCorrect = markingScheme === 'group_c' ? 1.0 : 2.0;
+    const penaltyPerWrong = markingScheme === 'group_c' ? 0.25 : 0.66;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let unattemptedCount = 0;
     
     // Create payload for backend with mapped original indexes
     const backendAnswers = {};
 
     test.questions.forEach((q, visualIdx) => {
-      // Frontend visual score calculation
-      if (answers[visualIdx] === q.correctOption) {
-        currentScore += 1;
-      } else if (answers[visualIdx] !== undefined) {
-        currentScore -= 0.25;
+      if (answers[visualIdx] === undefined) {
+        unattemptedCount++;
+      } else if (answers[visualIdx] === q.correctOption) {
+        correctCount++;
+      } else {
+        wrongCount++;
       }
       
       // Map to backend structure
       if (answers[visualIdx] !== undefined) {
-        const originalQIdx = q.originalQIndex;
+        const originalQIdx = q.originalQIndex !== undefined ? q.originalQIndex : visualIdx;
         const originalOIdx = q.optionMapping ? q.optionMapping[answers[visualIdx]] : answers[visualIdx];
         backendAnswers[originalQIdx] = originalOIdx;
       }
     });
+
+    const grossScore = correctCount * marksPerCorrect;
+    const penaltyScore = Number((wrongCount * penaltyPerWrong).toFixed(2));
+    const currentScore = Number((grossScore - penaltyScore).toFixed(2));
+    const maxScore = test.questions.length * marksPerCorrect;
 
     setScore(currentScore);
     setSubmitted(true);
@@ -380,7 +428,7 @@ const TakeTest = () => {
         }
         
         // Update Practice Accuracy
-        const testPercent = test.questions.length > 0 ? Math.max(0, (currentScore / test.questions.length) * 100) : 0;
+        const testPercent = maxScore > 0 ? Math.max(0, (currentScore / maxScore) * 100) : 0;
         const oldAccuracy = parseFloat(localStorage.getItem('practice_accuracy')) || 0;
         const testsTaken = parseInt(localStorage.getItem('tests_taken')) || 0;
         const newAccuracy = testsTaken === 0 ? testPercent : ((oldAccuracy * testsTaken) + testPercent) / (testsTaken + 1);
@@ -512,7 +560,13 @@ const TakeTest = () => {
                 <FiArrowLeft size={20} />
               </button>
               <div className="test-title-meta">
-                <h2 className="test-fixed-title" title={test.title}>{test.title}</h2>
+                <h2 className="test-fixed-title" title={test.title}>
+                  {(test.title || '')
+                    .replace(/🔥\s*/g, '')
+                    .replace(/\s*-\s*[\u0966-\u096F0-9]{1,2}[\/\-\.][\u0966-\u096F0-9]{1,2}[\/\-\.][\u0966-\u096F0-9]{2,4}/g, '')
+                    .replace(/\s*-\s*\d{1,2}\s+(जानेवारी|फेब्रुवारी|मार्च|एप्रिल|मे|जून|जुलै|ऑगस्ट|सप्टेंबर|ऑक्टोबर|नोव्हेंबर|डिसेंबर)\s+\d{2,4}/gi, '')
+                    .trim()}
+                </h2>
                 {test.questions && test.questions.length > 0 && (
                   <span className="test-q-badge">
                     प्रश्न {activeQuestion + 1} / {test.questions.length}
@@ -521,7 +575,86 @@ const TakeTest = () => {
               </div>
             </div>
 
-            <div className="test-top-right">
+            <div className="test-top-right" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {/* View Switcher Pill */}
+              {(!submitted || showAnswers) && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: 'rgba(0, 0, 0, 0.45)',
+                  padding: '3px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255, 255, 255, 0.12)'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setTestViewMode('question')}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: testViewMode === 'question' ? 'var(--accent-primary)' : 'transparent',
+                      color: testViewMode === 'question' ? '#fff' : 'var(--text-secondary)',
+                      transition: 'all 0.2s'
+                    }}
+                    title="प्रश्नपत्रिका दृश्य"
+                  >
+                    📝 प्रश्न
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTestViewMode('omr')}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: testViewMode === 'omr' ? 'var(--accent-primary)' : 'transparent',
+                      color: testViewMode === 'omr' ? '#fff' : 'var(--text-secondary)',
+                      transition: 'all 0.2s'
+                    }}
+                    title="MPSC OMR शीट सिम्युलेटर"
+                  >
+                    ⭕ OMR
+                  </button>
+                </div>
+              )}
+
+              {/* Marking Scheme Badge */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!submitted) {
+                    const next = markingScheme === 'mpsc_rajyaseva' ? 'group_c' : 'mpsc_rajyaseva';
+                    setMarkingScheme(next);
+                    toast.success(next === 'mpsc_rajyaseva' ? '⚡ MPSC अधिकृत मार्किंग: +२.०० / -०.६६' : '🎯 गट-क मार्किंग: +१.०० / -०.२५');
+                  }
+                }}
+                disabled={submitted}
+                title={submitted ? 'मार्किंग पद्धत' : 'क्लिक करून मार्किंग पद्धत बदला'}
+                style={{
+                  background: markingScheme === 'mpsc_rajyaseva' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                  color: markingScheme === 'mpsc_rajyaseva' ? '#fbbf24' : '#38bdf8',
+                  border: markingScheme === 'mpsc_rajyaseva' ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid rgba(56, 189, 248, 0.35)',
+                  padding: '5px 10px',
+                  borderRadius: '10px',
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  cursor: submitted ? 'default' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+              >
+                <span>⚡</span>
+                {markingScheme === 'mpsc_rajyaseva' ? '+२ / -०.६६' : '+१ / -०.२५'}
+              </button>
+
               {!submitted && (
                 <div className={`test-fixed-timer ${timeLeft < 60 ? 'timer-danger' : ''}`}>
                   <span>⏱</span>
@@ -565,12 +698,17 @@ const TakeTest = () => {
                       id={`palette-q-${idx}`}
                       type="button"
                       onClick={() => {
-                        const el = document.getElementById(`q-${idx}`);
-                        if (el) {
-                          const yOffset = -140;
-                          const y = el.getBoundingClientRect().top + window.scrollY + yOffset;
-                          window.scrollTo({ top: y, behavior: 'smooth' });
+                        if (testViewMode === 'omr') {
+                          setTestViewMode('question');
                         }
+                        setTimeout(() => {
+                          const el = document.getElementById(`q-${idx}`);
+                          if (el) {
+                            const yOffset = -140;
+                            const y = el.getBoundingClientRect().top + window.scrollY + yOffset;
+                            window.scrollTo({ top: y, behavior: 'smooth' });
+                          }
+                        }, 50);
                       }}
                       className={chipClass}
                       title={`प्रश्न #${idx + 1}`}
@@ -594,40 +732,128 @@ const TakeTest = () => {
       <div className="test-layout-container" style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
         
         {/* Main Content */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
+          {/* Main View Switcher Bar (Always accessible during exam and review) */}
+          {(!submitted || showAnswers) && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'var(--bg-secondary)',
+              padding: '10px 16px',
+              borderRadius: '16px',
+              border: '1px solid var(--border-color)',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setTestViewMode('question')}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: testViewMode === 'question' ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.05)',
+                    color: testViewMode === 'question' ? '#fff' : 'var(--text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  📝 प्रश्नपत्रिका दृश्य
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTestViewMode('omr')}
+                  style={{
+                    padding: '8px 18px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: testViewMode === 'omr' ? 'var(--accent-primary)' : 'rgba(255, 255, 255, 0.05)',
+                    color: testViewMode === 'omr' ? '#fff' : 'var(--text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  ⭕ MPSC OMR शीट सिम्युलेटर
+                </button>
+              </div>
+
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                {testViewMode === 'omr' 
+                  ? '💡 टीप: OMR वर्तुळे भरून उत्तर नोंदवा. प्रत्यक्ष परीक्षेचा अनुभव घ्या!'
+                  : '💡 टीप: वरील OMR बटनावर क्लिक करून तुम्ही वर्तुळ उत्तरपत्रिका उघडू शकता.'}
+              </div>
+            </div>
+          )}
+
+          {/* Results Summary Modal / Card */}
           {submitted && !showAnswers && (() => {
-            const percent = test.questions.length > 0 ? (score / test.questions.length) * 100 : 0;
-            let correctCount = 0, wrongCount = 0, unattemptedCount = 0, lost = 0;
+            const marksPerCorrect = markingScheme === 'group_c' ? 1.0 : 2.0;
+            const penaltyPerWrong = markingScheme === 'group_c' ? 0.25 : 0.66;
+            let correctCount = 0, wrongCount = 0, unattemptedCount = 0;
             test.questions.forEach((q, idx) => {
               if (answers[idx] === undefined) { unattemptedCount++; }
               else if (answers[idx] === q.correctOption) { correctCount++; }
-              else { wrongCount++; lost += 0.25; }
+              else { wrongCount++; }
             });
+            const gross = correctCount * marksPerCorrect;
+            const deducted = Number((wrongCount * penaltyPerWrong).toFixed(2));
+            const maxScore = test.questions.length * marksPerCorrect;
+            const finalFormattedScore = (score % 1 === 0) ? score : score.toFixed(2);
+            const percent = maxScore > 0 ? (score / maxScore) * 100 : 0;
             const attempted = correctCount + wrongCount;
             const accuracy = attempted > 0 ? ((correctCount / attempted) * 100).toFixed(1) : '0';
-            const deducted = lost.toFixed(2);
-            const finalFormattedScore = (score % 1 === 0) ? score : score.toFixed(2);
             const emoji = percent >= 80 ? '🏆' : percent >= 40 ? '👍' : '📚';
             const color = percent >= 80 ? 'var(--success)' : percent >= 40 ? 'var(--warning)' : 'var(--danger)';
-            const msg = percent >= 80 ? 'उत्कृष्ट कामगिरी!' : percent >= 40 ? 'छान प्रयत्न! आणखी सराव करा.' : 'अभ्यास वाढवा — तुम्ही करू शकता!';
+            const msg = percent >= 80 ? 'उत्कृष्ट कामगिरी! MPSC कट-ऑफच्या खूप पुढे आहात.' : percent >= 40 ? 'छान प्रयत्न! निगेटिव्ह मार्किंग कमी करून आणखी सराव करा.' : 'अभ्यास वाढवा — निगेटिव्ह मार्किंगवर नियंत्रण ठेवा!';
+            
             return (
-              <div className="glass-card flex-col align-center" style={{ padding: '32px 20px', textAlign: 'center', animation: 'fadeIn 0.5s', position: 'relative' }}>
+              <div className="glass-card flex-col align-center" style={{ padding: '36px 24px', textAlign: 'center', animation: 'fadeIn 0.5s', position: 'relative', borderRadius: '24px' }}>
                 {!isMistake && percent >= 80 && <Confetti width={width} height={height} recycle={false} numberOfPieces={500} gravity={0.15} />}
 
                 {/* Big Score */}
-                <div style={{ fontSize: '4.5rem', lineHeight: 1, marginBottom: '4px' }}>{emoji}</div>
-                <h1 style={{ fontSize: '4rem', margin: '8px 0 4px', color: 'var(--text-primary)', fontWeight: 900, letterSpacing: '-2px' }}>
+                <div style={{ fontSize: '4.5rem', lineHeight: 1, marginBottom: '6px' }}>{emoji}</div>
+                <h1 style={{ fontSize: '3.8rem', margin: '8px 0 4px', color: 'var(--text-primary)', fontWeight: 900, letterSpacing: '-2px' }}>
                   {finalFormattedScore}
-                  <span style={{ fontSize: '1.5rem', color: 'var(--text-muted)', fontWeight: 400 }}> / {test.questions.length}</span>
+                  <span style={{ fontSize: '1.5rem', color: 'var(--text-muted)', fontWeight: 400 }}> / {maxScore}</span>
                 </h1>
+
+                {/* Marking Scheme Badge */}
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: markingScheme === 'group_c' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                  color: markingScheme === 'group_c' ? '#38bdf8' : '#fbbf24',
+                  padding: '5px 16px',
+                  borderRadius: '20px',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  marginBottom: '10px',
+                  border: markingScheme === 'group_c' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)'
+                }}>
+                  ⚡ {markingScheme === 'group_c' ? 'गट-क / सरळसेवा मार्किंग (+१.०० / -०.२५, १/४ Negative)' : 'MPSC अधिकृत निगेटिव्ह मार्किंग (+२.०० / -०.६६, १/३ Negative)'}
+                </div>
+
                 <p style={{ color, fontWeight: 700, fontSize: '1.05rem', margin: '0 0 20px' }}>{msg}</p>
 
                 {/* 4 Stats */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', width: '100%', maxWidth: '400px', marginBottom: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', width: '100%', maxWidth: '440px', marginBottom: '16px' }}>
                   {[
-                    { label: '✅ बरोबर', val: `+${correctCount}`, c: 'rgba(34,197,94,0.12)', tc: 'var(--success)' },
-                    { label: '❌ चुकीचे', val: `-${deducted}`, c: 'rgba(239,68,68,0.1)', tc: 'var(--danger)' },
+                    { label: `✅ बरोबर (${correctCount})`, val: `+${gross.toFixed(2)}`, c: 'rgba(34,197,94,0.12)', tc: 'var(--success)' },
+                    { label: `❌ निगेटिव्ह (${wrongCount})`, val: `-${deducted}`, c: 'rgba(239,68,68,0.1)', tc: 'var(--danger)' },
                     { label: '⏭ सोडले', val: unattemptedCount, c: 'var(--glass-bg)', tc: 'var(--text-muted)' },
                     { label: '🎯 अचूकता', val: `${accuracy}%`, c: 'rgba(59,130,246,0.1)', tc: 'var(--info)' },
                   ].map(s => (
@@ -639,14 +865,16 @@ const TakeTest = () => {
                 </div>
 
                 {/* Net Score Row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '400px', background: 'var(--glass-bg)', borderRadius: '12px', padding: '10px 16px', border: '1px solid var(--border-color)', fontSize: '0.88rem', marginBottom: '16px' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Gross <strong style={{ color: 'var(--success)' }}>+{correctCount}</strong> &nbsp;—&nbsp; Penalty <strong style={{ color: 'var(--danger)' }}>-{deducted}</strong></span>
-                  <span style={{ fontWeight: 800, color: 'var(--accent-primary)', fontSize: '1rem' }}>Net: {finalFormattedScore}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '440px', background: 'var(--glass-bg)', borderRadius: '12px', padding: '10px 16px', border: '1px solid var(--border-color)', fontSize: '0.88rem', marginBottom: '16px' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>
+                    Gross <strong style={{ color: 'var(--success)' }}>+{gross.toFixed(2)}</strong> &nbsp;—&nbsp; {markingScheme === 'group_c' ? '१/४' : '१/३'} निगेटिव्ह <strong style={{ color: 'var(--danger)' }}>-{deducted}</strong>
+                  </span>
+                  <span style={{ fontWeight: 800, color: 'var(--accent-primary)', fontSize: '1.05rem' }}>Net: {finalFormattedScore}</span>
                 </div>
 
                 {/* Rank Banner */}
                 {!isMistake && rankData.userRank && (
-                  <div className="test-rank-banner" style={{ width: '100%', maxWidth: '400px', marginBottom: '12px' }}>
+                  <div className="test-rank-banner" style={{ width: '100%', maxWidth: '440px', marginBottom: '12px' }}>
                     <div className="rank-left-section">
                       <div className="rank-trophy-badge">
                         {rankData.userRank === 1 ? '🥇' : rankData.userRank === 2 ? '🥈' : rankData.userRank === 3 ? '🥉' : '🏆'}
@@ -659,50 +887,56 @@ const TakeTest = () => {
                   </div>
                 )}
 
-                {/* Leaderboard */}
-                {!isMistake && rankData.leaderboard && rankData.leaderboard.length > 0 && (
-                  <div className="test-leaderboard-box" style={{ width: '100%', maxWidth: '400px', marginBottom: '12px' }}>
-                    <div className="leaderboard-box-header">
-                      <span style={{ fontWeight: 700, fontSize: '0.88rem' }}><FiAward size={14} style={{ marginRight: '6px', color: 'var(--accent-primary)' }} />टॉप खेळाडू</span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{rankData.totalParticipants} रँकधारक</span>
-                    </div>
-                    <div className="leaderboard-box-list">
-                      {rankData.leaderboard.slice(0, 5).map((item, idx) => {
-                        const isMe = item.userId === auth.currentUser?.uid;
-                        const medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
-                        return (
-                          <div key={idx} className={`leaderboard-item-row ${isMe ? 'leaderboard-item-row-me' : ''}`}>
-                            <div className="lb-col-rank">{medal}</div>
-                            <div className="lb-col-user">
-                              <div className="lb-username">{item.userName} {isMe && <span className="lb-me-tag">तुम्ही</span>}</div>
-                              <div className="lb-user-meta">{item.totalTests || 1} tests • {item.accuracy}%</div>
-                            </div>
-                            <div className="lb-col-score">
-                              <span className="lb-score-val">{item.totalScore !== undefined ? item.totalScore : item.netScore}</span>
-                              <span className="lb-score-label">pts</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
                 {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '8px' }}>
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
                   <button onClick={() => navigate('/practice')} className="btn" style={{ padding: '10px 20px', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
                     ← दुसरी टेस्ट
                   </button>
-                  <button onClick={() => setShowAnswers(true)} className="btn btn-primary" style={{ padding: '10px 24px' }}>
-                    उत्तरे पहा →
+                  <button 
+                    onClick={() => { setShowAnswers(true); setTestViewMode('omr'); }} 
+                    className="btn" 
+                    style={{ padding: '10px 18px', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)', fontWeight: 700 }}
+                  >
+                    ⭕ OMR शीट पहा
+                  </button>
+                  <button onClick={() => { setShowAnswers(true); setTestViewMode('question'); }} className="btn btn-primary" style={{ padding: '10px 24px', fontWeight: 700 }}>
+                    📝 उत्तरे व स्पष्टीकरणे →
                   </button>
                 </div>
               </div>
             );
           })()}
 
+          {/* Render OMR View if active */}
+          {testViewMode === 'omr' && (!submitted || showAnswers) && (
+            <OmrSheetView
+              questions={test.questions}
+              answers={answers}
+              reviews={reviews}
+              onSelect={handleSelect}
+              onToggleReview={toggleReview}
+              onJumpToQuestion={(idx) => {
+                setTestViewMode('question');
+                setTimeout(() => {
+                  const el = document.getElementById(`q-${idx}`);
+                  if (el) {
+                    const y = el.getBoundingClientRect().top + window.scrollY - 140;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                  }
+                }, 100);
+              }}
+              submitted={submitted}
+              markingScheme={markingScheme}
+              onSchemeChange={(scheme) => {
+                if (!submitted) {
+                  setMarkingScheme(scheme);
+                }
+              }}
+            />
+          )}
 
-          {(!submitted || showAnswers) && test.questions.map((q, qIndex) => {
+          {/* Render Question Cards if question mode is active */}
+          {testViewMode === 'question' && (!submitted || showAnswers) && test.questions.map((q, qIndex) => {
             const isCorrectAnswer = q.correctOption === answers[qIndex];
             const isUnattempted = answers[qIndex] === undefined;
             

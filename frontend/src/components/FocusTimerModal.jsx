@@ -31,6 +31,7 @@ const FocusTimerModal = ({
   const [ambientSound, setAmbientSound] = useState('rain'); // 'off', 'rain', 'whitenoise'
   const [soundVolume, setSoundVolume] = useState(0.5);
   const [isTaskDropdownOpen, setIsTaskDropdownOpen] = useState(false);
+  const [isModeDropdownOpen, setIsModeDropdownOpen] = useState(false);
   const modalRef = useRef(null);
 
   // Set initial duration when preset changes
@@ -432,25 +433,6 @@ const FocusTimerModal = ({
               position: 'relative'
             }}
           >
-            {/* Mode Badge Pill */}
-            <div style={{ marginBottom: '12px' }}>
-              <span style={{
-                padding: '6px 16px',
-                borderRadius: '20px',
-                background: 'rgba(249, 115, 22, 0.14)',
-                border: '1px solid #f97316',
-                color: '#f97316',
-                fontSize: '0.85rem',
-                fontWeight: 800,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                letterSpacing: '0.5px'
-              }}>
-                🎯 दीप वर्क मोड
-              </span>
-            </div>
-
             {/* Task Subtitle & Name */}
             <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               चालू अभ्यास घटक
@@ -469,10 +451,22 @@ const FocusTimerModal = ({
             </h2>
 
             {/* Task Selector Dropdown Pill */}
-            <div style={{ position: 'relative', width: '100%', maxWidth: '300px' }}>
+            <div style={{ position: 'relative', width: '100%', maxWidth: '340px', marginBottom: '12px' }}>
+              {isTaskDropdownOpen && (
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsTaskDropdownOpen(false);
+                  }}
+                  style={{ position: 'fixed', inset: 0, zIndex: 15 }}
+                />
+              )}
               <button
                 type="button"
-                onClick={() => setIsTaskDropdownOpen(!isTaskDropdownOpen)}
+                onClick={() => {
+                  setIsTaskDropdownOpen(!isTaskDropdownOpen);
+                  setIsModeDropdownOpen(false);
+                }}
                 style={{
                   width: '100%',
                   padding: '8px 16px',
@@ -537,44 +531,149 @@ const FocusTimerModal = ({
               )}
             </div>
 
-            {/* Mode Presets 2x2 Grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '10px',
-              width: '100%',
-              marginTop: '16px'
-            }}>
-              {PRESETS.map(preset => {
-                const isActive = selectedPreset === preset.id;
-                return (
-                  <button 
-                    key={preset.id}
-                    onClick={() => applyPreset(preset.id)}
-                    style={{
-                      padding: '11px 14px',
-                      borderRadius: '16px',
-                      border: isActive ? 'none' : '1px solid rgba(255, 255, 255, 0.1)',
-                      background: isActive 
-                        ? 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)' 
-                        : 'rgba(255, 255, 255, 0.05)',
-                      boxShadow: isActive ? '0 8px 24px rgba(249, 115, 22, 0.45)' : 'none',
-                      color: isActive ? '#ffffff' : '#e2e8f0',
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                  >
-                    <span style={{ fontSize: '1rem' }}>{preset.icon}</span>
-                    <span>{preset.name}</span>
-                  </button>
-                );
-              })}
+            {/* ⏱️ Focus Mode Selector Dropdown */}
+            <div style={{ position: 'relative', width: '100%', maxWidth: '340px', zIndex: 30 }}>
+              {isModeDropdownOpen && (
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsModeDropdownOpen(false);
+                  }}
+                  style={{ position: 'fixed', inset: 0, zIndex: 40 }}
+                />
+              )}
+
+              {/* Main Dropdown Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModeDropdownOpen(!isModeDropdownOpen);
+                  setIsTaskDropdownOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '10px 16px',
+                  borderRadius: '18px',
+                  background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.2) 0%, rgba(15, 23, 42, 0.85) 100%)',
+                  border: '1.5px solid #f97316',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(249, 115, 22, 0.25)',
+                  transition: 'all 0.2s ease'
+                }}
+                title="फोकस मोड बदला (Change Focus Mode)"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '1.3rem' }}>{activePreset.icon}</span>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 800, fontSize: '0.92rem', color: '#f97316', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>{activePreset.name}</span>
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                      {activePreset.id === 'pomodoro' ? '२५ मि. अभ्यास + ५ मि. ब्रेक' :
+                       activePreset.id === 'deepwork' ? '५० मि. सखोल अभ्यास + १० मि. ब्रेक' :
+                       activePreset.id === 'powerhour' ? '६० मि. हाय-इंटेन्सिटी सराव' :
+                       'अमर्याद वेळेसाठी स्टॉपवॉच'}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    color: '#f97316',
+                    background: 'rgba(249, 115, 22, 0.2)',
+                    padding: '2px 8px',
+                    borderRadius: '8px',
+                    textTransform: 'uppercase'
+                  }}>
+                    मोड
+                  </span>
+                  <FiChevronDown 
+                    size={18} 
+                    color="#f97316"
+                    style={{ 
+                      transform: isModeDropdownOpen ? 'rotate(180deg)' : 'none', 
+                      transition: 'transform 0.2s ease' 
+                    }} 
+                  />
+                </div>
+              </button>
+
+              {/* Mode Dropdown Menu */}
+              {isModeDropdownOpen && (
+                <div 
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 6px)',
+                    left: 0,
+                    right: 0,
+                    borderRadius: '20px',
+                    background: 'linear-gradient(145deg, #0b1120 0%, #17233d 100%)',
+                    border: '1.5px solid rgba(249, 115, 22, 0.6)',
+                    boxShadow: '0 20px 45px rgba(0, 0, 0, 0.95), 0 0 30px rgba(249, 115, 22, 0.35)',
+                    padding: '8px',
+                    zIndex: 100,
+                    animation: 'fadeIn 0.15s ease-out'
+                  }}
+                >
+                  <div style={{ padding: '6px 12px 6px', fontSize: '0.7rem', color: '#94a3b8', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '6px' }}>
+                    🎯 खालीलपैकी मोड निवडा:
+                  </div>
+                  {PRESETS.map(p => {
+                    const isSelected = selectedPreset === p.id;
+                    return (
+                      <div
+                        key={p.id}
+                        onClick={() => {
+                          applyPreset(p.id);
+                          setIsModeDropdownOpen(false);
+                          toast.success(`🎯 ${p.name} निवडला!`, { icon: p.icon, duration: 2500 });
+                        }}
+                        style={{
+                          padding: '10px 14px',
+                          borderRadius: '14px',
+                          background: isSelected ? 'linear-gradient(135deg, rgba(249, 115, 22, 0.3) 0%, rgba(234, 88, 12, 0.15) 100%)' : 'transparent',
+                          border: isSelected ? '1px solid rgba(249, 115, 22, 0.5)' : '1px solid transparent',
+                          color: isSelected ? '#ffffff' : '#cbd5e1',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginBottom: '4px',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={e => {
+                          if (!isSelected) e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                        }}
+                        onMouseLeave={e => {
+                          if (!isSelected) e.currentTarget.style.background = 'transparent';
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ fontSize: '1.35rem' }}>{p.icon}</span>
+                          <div style={{ textAlign: 'left' }}>
+                            <div style={{ fontWeight: 800, fontSize: '0.9rem', color: isSelected ? '#f97316' : '#ffffff' }}>
+                              {p.name}
+                            </div>
+                            <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
+                              {p.id === 'pomodoro' ? '२५ मि. अभ्यास + ५ मि. ब्रेक' :
+                               p.id === 'deepwork' ? '५० मि. सखोल अभ्यास + १० मि. ब्रेक' :
+                               p.id === 'powerhour' ? '६० मि. हाय-इंटेन्सिटी सराव' :
+                               'अमर्याद वेळेसाठी स्टॉपवॉच'}
+                            </div>
+                          </div>
+                        </div>
+                        {isSelected && <FiCheck size={18} color="#f97316" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Circular Progress Gauge */}
