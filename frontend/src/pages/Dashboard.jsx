@@ -6,6 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ConfirmModal from '../components/ConfirmModal';
 import StudyDeficitModal from '../components/StudyDeficitModal';
+import FocusTimerModal from '../components/FocusTimerModal';
+// Spaced Repetition (SRS) Flashcard Active Recall Modal
+import SrsReviewModal from '../components/SrsReviewModal';
 import { 
   getDeficitState, 
   processDayRollover, 
@@ -14,6 +17,7 @@ import {
   TASK_XP_REWARD, 
   DAILY_COMPLETION_BONUS 
 } from '../utils/deficitTracker';
+import { getDueSrsItems, addTopicToSrs, getSrsStats } from '../utils/srsEngine';
 import { playSound } from '../utils/sound';
 
 const AnimatedNumber = ({ value }) => {
@@ -45,6 +49,15 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const navigate = useNavigate();
   const [deficitState, setDeficitState] = useState(() => getDeficitState());
   const [isDeficitModalOpen, setIsDeficitModalOpen] = useState(false);
+  const [isFocusModalOpen, setIsFocusModalOpen] = useState(false);
+  const [isSrsModalOpen, setIsSrsModalOpen] = useState(false);
+  const [activeFocusTask, setActiveFocusTask] = useState(null);
+
+  const handleStartFocus = (taskItem) => {
+    setActiveFocusTask(taskItem || dailyTasks.find(t => !t.completed) || dailyTasks[0]);
+    setIsFocusModalOpen(true);
+  };
+
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [isEditingTasks, setIsEditingTasks] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
@@ -187,6 +200,28 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
       newSubXp += TASK_XP_REWARD;
       playSound.playSuccess();
       toast.success(`🎉 टाॅपिक पूर्ण! +${TASK_XP_REWARD} XP मिळाले!`);
+
+      // Automatically queue completed topic into Spaced Repetition (SRS)
+      try {
+        const topicName = getTopicForTask(taskId) || targetTask?.title;
+        const subjectName = targetTask?.title?.includes('Polity') ? 'राज्यशास्त्र'
+          : targetTask?.title?.includes('Geography') ? 'महाराष्ट्र भूगोल'
+          : targetTask?.title?.includes('History') ? 'इतिहास'
+          : targetTask?.title?.includes('Economics') ? 'अर्थव्यवस्था'
+          : targetTask?.title?.includes('Science') ? 'सामान्य विज्ञान'
+          : targetTask?.title?.includes('Reasoning') ? 'Reasoning'
+          : targetTask?.title?.includes('Maths') ? 'Maths'
+          : 'General';
+
+        addTopicToSrs({
+          topicId: taskId,
+          title: topicName || targetTask?.title,
+          subject: subjectName
+        });
+        setDueRevisionCount(getDueSrsItems().length);
+      } catch (err) {
+        console.error("Error scheduling SRS card:", err);
+      }
 
       // 100% Completion Celebration!
       if (updated.length > 0 && updated.every(t => t.completed)) {
@@ -400,13 +435,10 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const currentWeeklyTotal = pastWeeklyTasks + completedTasks.length;
   const weeklySyllabusPercent = Math.min(100, Math.round((currentWeeklyTotal / 56) * 100)); // 8 tasks * 7 days = 56
 
-  const [dueRevisionCount, setDueRevisionCount] = useState(0);
+  const [dueRevisionCount, setDueRevisionCount] = useState(() => getDueSrsItems().length);
 
   useEffect(() => {
-    const existingQueue = JSON.parse(localStorage.getItem('revision_queue') || '[]');
-    const nowTime = new Date().getTime();
-    const dues = existingQueue.filter(item => item.dueAt <= nowTime);
-    setDueRevisionCount(dues.length);
+    setDueRevisionCount(getDueSrsItems().length);
   }, [dailyTasks]);
 
   const practiceAccuracy = parseFloat(localStorage.getItem('practice_accuracy')) || (currentWeeklyTotal > 0 ? 85 : 0);
@@ -499,6 +531,47 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
               </span>
               <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                 {deficitState.deficitHours > 0 ? 'अभ्यास तूट' : 'वेळेवर'}
+              </span>
+            </div>
+          </div>
+
+          {/* Deep Focus Timer Launcher Card */}
+          <div 
+            onClick={() => handleStartFocus(dailyTasks.find(t => !t.completed) || dailyTasks[0])}
+            className="glass-card flex-col justify-center align-center" 
+            style={{ 
+              padding: '16px', 
+              animation: 'slideUp 0.88s ease-out', 
+              flex: 1, 
+              minWidth: '130px', 
+              gap: '8px', 
+              textAlign: 'center',
+              cursor: 'pointer',
+              border: '1px solid rgba(249, 115, 22, 0.35)',
+              background: 'linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, transparent 100%)'
+            }}
+            title="लाईव्ह पोमोडोरो व डीप वर्क सुरू करा"
+          >
+            <div style={{ 
+              width: '40px', 
+              height: '40px', 
+              borderRadius: '50%', 
+              background: 'var(--accent-glow)', 
+              color: 'var(--accent-primary)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              fontSize: '1.25rem', 
+              margin: '0 auto' 
+            }}>
+              ⏱️
+            </div>
+            <div className="flex-col" style={{ alignItems: 'center' }}>
+              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-primary)' }}>
+                Focus
+              </span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                लाईव्ह टाईमर
               </span>
             </div>
           </div>
@@ -703,10 +776,32 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
                           <FiRotateCcw className="mobile-icon" size={18} />
                         </button>
                       ) : (
-                        <button onClick={() => toggleTask(task.id, false)} className="btn btn-primary task-action-btn">
-                          <span className="desktop-text">Complete</span>
-                          <FiCheck className="mobile-icon" size={18} />
-                        </button>
+                        <div className="flex-row gap-2" style={{ alignItems: 'center' }}>
+                          <button 
+                            onClick={() => handleStartFocus(task)} 
+                            className="btn" 
+                            style={{ 
+                              background: 'var(--accent-glow)', 
+                              border: '1px solid var(--accent-primary)', 
+                              color: 'var(--accent-primary)', 
+                              padding: '6px 12px', 
+                              fontSize: '0.8rem', 
+                              fontWeight: 700, 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '4px',
+                              borderRadius: '8px',
+                              cursor: 'pointer'
+                            }} 
+                            title="या विषयासाठी डीप वर्क फोकस सुरू करा"
+                          >
+                            <FiPlay size={12} /> <span className="desktop-text">Focus</span>
+                          </button>
+                          <button onClick={() => toggleTask(task.id, false)} className="btn btn-primary task-action-btn">
+                            <span className="desktop-text">Complete</span>
+                            <FiCheck className="mobile-icon" size={18} />
+                          </button>
+                        </div>
                       )
                     )}
                   </div>
@@ -764,13 +859,22 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <h3 style={{ fontSize: '1.125rem' }}>Action Items</h3>
             
-            <div className="glass-card p-4" onClick={() => navigate('/practice')} title="Go to Practice Engine to revise" style={{ padding: '16px', borderLeft: dueRevisionCount > 0 ? '4px solid var(--warning)' : '4px solid var(--success)', cursor: 'pointer', transition: 'all 0.3s' }}>
+            <div 
+              className="glass-card p-4" 
+              onClick={() => setIsSrsModalOpen(true)} 
+              title="Spaced Repetition Active Recall रिव्हिजन सुरू करा" 
+              style={{ padding: '16px', borderLeft: dueRevisionCount > 0 ? '4px solid var(--warning)' : '4px solid var(--success)', cursor: 'pointer', transition: 'all 0.3s' }}
+            >
               <div className="flex-row justify-between">
                 <div className="flex-col gap-1">
-                  <span style={{ fontWeight: 600 }}>🔄 Revision Due</span>
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>{dueRevisionCount} Topics waiting</span>
+                  <span style={{ fontWeight: 600 }}>🔄 Spaced Revision Due</span>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                    {dueRevisionCount > 0 ? `${dueRevisionCount} Topics Ebbinghaus नियमानुसार बाकी` : 'सर्व रिव्हिजन पूर्ण आहेत!'}
+                  </span>
                 </div>
-                <span style={{ background: dueRevisionCount > 0 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(34, 197, 94, 0.1)', color: dueRevisionCount > 0 ? 'var(--warning)' : 'var(--success)', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold' }}>{dueRevisionCount}</span>
+                <span style={{ background: dueRevisionCount > 0 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(34, 197, 94, 0.1)', color: dueRevisionCount > 0 ? 'var(--warning)' : 'var(--success)', padding: '4px 12px', borderRadius: '8px', fontWeight: 'bold' }}>
+                  {dueRevisionCount > 0 ? `${dueRevisionCount} Due` : '✓ 100%'}
+                </span>
               </div>
             </div>
 
@@ -829,6 +933,30 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
         deficitState={deficitState}
         onStateUpdate={setDeficitState}
         todayProgress={todayProgress}
+      />
+
+      <FocusTimerModal 
+        isOpen={isFocusModalOpen}
+        onClose={() => setIsFocusModalOpen(false)}
+        task={activeFocusTask}
+        dailyTasks={dailyTasks}
+        onSelectTask={(selected) => setActiveFocusTask(selected)}
+        onCompleteTask={(taskId) => {
+          toggleTask(taskId, false);
+          setIsFocusModalOpen(false);
+        }}
+      />
+
+      <SrsReviewModal 
+        isOpen={isSrsModalOpen}
+        onClose={() => {
+          setIsSrsModalOpen(false);
+          setDueRevisionCount(getDueSrsItems().length);
+        }}
+        onXpChange={(xpEarned) => {
+          const currentXp = parseFloat(localStorage.getItem('xp_total')) || 0;
+          setDeficitState(prev => ({ ...prev, xpTotal: currentXp }));
+        }}
       />
     </div>
   );

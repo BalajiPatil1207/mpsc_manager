@@ -1601,5 +1601,50 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 10px;
 }
 
+/* ========================================================
+   ⏱️ FOCUS TIMER & ZEN MODE STYLES
+   ======================================================== */
+.focus-timer-overlay {
+  animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
+.focus-pulse-glow {
+  animation: timerGlow 2s infinite ease-in-out;
+}
 
+@keyframes timerGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 15px rgba(249, 115, 22, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 30px rgba(249, 115, 22, 0.6));
+  }
+}
+
+/* Custom range slider knob for Focus Timer Ambient Volume */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.8), 0 2px 4px rgba(0, 0, 0, 0.4);
+  border: 2px solid #f97316;
+  transition: transform 0.1s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(249, 115, 22, 0.8), 0 2px 4px rgba(0, 0, 0, 0.4);
+  border: 2px solid #f97316;
+}

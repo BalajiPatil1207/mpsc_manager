@@ -66,6 +66,65 @@ class SoundEngine {
     setTimeout(() => this.playBeep(293, 'sawtooth', 0.14), 100);
     setTimeout(() => this.playBeep(220, 'sawtooth', 0.25), 220);
   }
+
+  startNoise(type = 'rain', volume = 0.5) {
+    if (!this.enabled) return;
+    this.stopNoise();
+    try {
+      this.init();
+      const bufferSize = 2 * this.audioCtx.sampleRate;
+      const noiseBuffer = this.audioCtx.createBuffer(1, bufferSize, this.audioCtx.sampleRate);
+      const output = noiseBuffer.getChannelData(0);
+      let b0 = 0, b1 = 0, b2 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        if (type === 'rain') {
+          b0 = 0.99886 * b0 + white * 0.0555179;
+          b1 = 0.99332 * b1 + white * 0.0750759;
+          b2 = 0.96900 * b2 + white * 0.1538520;
+          output[i] = (b0 + b1 + b2) * 0.11;
+        } else {
+          b0 = (b0 + (0.02 * white)) / 1.02;
+          output[i] = b0 * 1.5;
+        }
+      }
+      this.noiseSource = this.audioCtx.createBufferSource();
+      this.noiseSource.buffer = noiseBuffer;
+      this.noiseSource.loop = true;
+
+      this.noiseGain = this.audioCtx.createGain();
+      const initialGain = Math.max(0, Math.min(1, volume)) * 0.12;
+      this.noiseGain.gain.setValueAtTime(initialGain, this.audioCtx.currentTime);
+
+      this.noiseFilter = this.audioCtx.createBiquadFilter();
+      this.noiseFilter.type = 'lowpass';
+      this.noiseFilter.frequency.setValueAtTime(type === 'rain' ? 1200 : 800, this.audioCtx.currentTime);
+
+      this.noiseSource.connect(this.noiseFilter);
+      this.noiseFilter.connect(this.noiseGain);
+      this.noiseGain.connect(this.audioCtx.destination);
+      this.noiseSource.start();
+    } catch(e) {
+      console.error("Ambient noise error:", e);
+    }
+  }
+
+  setNoiseVolume(volume = 0.5) {
+    if (this.noiseGain && this.audioCtx) {
+      const targetGain = Math.max(0, Math.min(1, volume)) * 0.12;
+      this.noiseGain.gain.setValueAtTime(targetGain, this.audioCtx.currentTime);
+    }
+  }
+
+  stopNoise() {
+    try {
+      if (this.noiseSource) {
+        this.noiseSource.stop();
+        this.noiseSource.disconnect();
+        this.noiseSource = null;
+      }
+    } catch(e) {}
+  }
 }
 
 export const playSound = new SoundEngine();

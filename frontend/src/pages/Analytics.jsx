@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FiTrendingUp, FiPieChart, FiTrendingDown, FiAlertTriangle, FiCheckCircle, FiClock } from 'react-icons/fi';
+import { FiTrendingUp, FiPieChart, FiTrendingDown, FiAlertTriangle, FiCheckCircle, FiClock, FiRotateCcw, FiAward } from 'react-icons/fi';
 import { getDeficitState } from '../utils/deficitTracker';
+import { getSrsStats } from '../utils/srsEngine';
 
 const Analytics = () => {
   const [metrics, setMetrics] = useState({
@@ -23,11 +24,9 @@ const Analytics = () => {
     const pyqCount = pyqs.filter(p => p.completed).length;
     const syllabus = Math.min(100, prep + (pyqCount * 2)); 
     
-    // Revision Health based on dynamically tracked queue
-    const revisionQueue = JSON.parse(localStorage.getItem('revision_queue') || '[]');
-    const nowTime = new Date().getTime();
-    const dues = revisionQueue.filter(item => item.dueAt <= nowTime);
-    const revision = Math.max(0, 100 - (dues.length * 10)); 
+    // Spaced Repetition (SRS) Engine metrics
+    const srs = getSrsStats();
+    const revision = srs.retentionIndex; 
     
     const subjectXP = {};
     for (let i = 0; i < localStorage.length; i++) {
@@ -67,6 +66,7 @@ const Analytics = () => {
       prepScore: prep,
       syllabusCovered: syllabus,
       revisionHealth: revision,
+      srsStats: srs,
       strong: strongTopics.length > 0 ? strongTopics : ['No robust data yet'],
       weak: weakTopics,
       deficitHours: deficit.deficitHours,
@@ -222,6 +222,57 @@ const Analytics = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Spaced Repetition (SRS) Retention Engine Report */}
+      <div className="glass-panel" style={{ padding: '24px', borderLeft: '4px solid var(--accent-primary)' }}>
+        <div className="flex-row justify-between align-center" style={{ marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h2 style={{ fontSize: '1.25rem', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FiRotateCcw color="var(--accent-primary)" />
+              स्मरण व रिव्हिजन चक्र (Spaced Repetition Retention Engine)
+            </h2>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              Hermann Ebbinghaus [1, 3, 7, 15, 30 दिवस] नियमानुसार स्मरण क्षमता व प्रभुत्व पातळी
+            </span>
+          </div>
+          <span style={{
+            padding: '6px 14px',
+            borderRadius: '20px',
+            background: 'var(--accent-glow)',
+            color: 'var(--accent-primary)',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            border: '1px solid var(--accent-primary)'
+          }}>
+            Retention Index: {metrics.revisionHealth || 0}%
+          </span>
+        </div>
+
+        {/* Stage Distribution Cards */}
+        <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+          {[
+            { stage: 1, title: 'Stage 1 (Day 1)', count: metrics.srsStats?.stageCounts?.[1] || 0, color: '#ef4444', desc: 'प्राथमिक स्मरण' },
+            { stage: 2, title: 'Stage 2 (Day 3)', count: metrics.srsStats?.stageCounts?.[2] || 0, color: '#f59e0b', desc: 'दृढीकरण' },
+            { stage: 3, title: 'Stage 3 (Day 7)', count: metrics.srsStats?.stageCounts?.[3] || 0, color: '#3b82f6', desc: 'मध्यम मुदत' },
+            { stage: 4, title: 'Stage 4 (Day 15)', count: metrics.srsStats?.stageCounts?.[4] || 0, color: '#8b5cf6', desc: 'दीर्घ स्मरण' },
+            { stage: 5, title: 'Stage 5 (Mastered)', count: metrics.srsStats?.stageCounts?.[5] || 0, color: '#22c55e', desc: 'तोंडपाठ' },
+          ].map(s => (
+            <div key={s.stage} className="glass-card" style={{ padding: '14px', textAlign: 'center', borderTop: `3px solid ${s.color}` }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{s.title}</span>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: s.color, margin: '4px 0' }}>
+                {s.count}
+              </div>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{s.desc}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ padding: '14px 18px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            डेकमध्ये एकूण: <strong>{metrics.srsStats?.totalTopics || 0} विषय</strong> | आज रिव्हिजन बाकी: <strong style={{ color: 'var(--warning)' }}>{metrics.srsStats?.dueCount || 0} घटक</strong> | पूर्ण तोंडपाठ: <strong style={{ color: 'var(--success)' }}>{metrics.srsStats?.masteredCount || 0} घटक</strong>
+          </span>
+        </div>
       </div>
 
       <div className="dashboard-grid">
