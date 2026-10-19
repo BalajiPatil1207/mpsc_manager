@@ -1,10 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FiClock, FiCheckCircle, FiPlay, FiAlertTriangle, FiBell, FiMoon, FiSun, FiCheck, FiRotateCcw, FiDownload, FiPlus } from 'react-icons/fi';
+import { FiClock, FiCheckCircle, FiPlay, FiAlertTriangle, FiBell, FiMoon, FiSun, FiCheck, FiRotateCcw, FiDownload, FiPlus, FiTrendingDown, FiShield, FiAward } from 'react-icons/fi';
 import { requestNotificationPermission, sendPushNotification } from '../utils/notify';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ConfirmModal from '../components/ConfirmModal';
+import StudyDeficitModal from '../components/StudyDeficitModal';
+import { 
+  getDeficitState, 
+  processDayRollover, 
+  calculateTodayProgress, 
+  getLogicalDateString, 
+  TASK_XP_REWARD, 
+  DAILY_COMPLETION_BONUS 
+} from '../utils/deficitTracker';
+import { playSound } from '../utils/sound';
 
 const AnimatedNumber = ({ value }) => {
   const [display, setDisplay] = useState(0);
@@ -33,6 +43,8 @@ const AnimatedNumber = ({ value }) => {
 
 const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const navigate = useNavigate();
+  const [deficitState, setDeficitState] = useState(() => getDeficitState());
+  const [isDeficitModalOpen, setIsDeficitModalOpen] = useState(false);
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [isEditingTasks, setIsEditingTasks] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
@@ -160,17 +172,46 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     });
 
     setDailyTasks(updated);
-    import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', updated));
-    
+
+    // XP calculation
+    const targetTask = dailyTasks.find(t => t.id === taskId);
+    const subKey = targetTask?.id?.startsWith('gk_') ? targetTask.id.replace('gk_', '') : (targetTask?.id || 'General');
+    const oldXpTotal = parseFloat(localStorage.getItem('xp_total')) || 0;
+    const oldSubXp = parseFloat(localStorage.getItem(`xp_${subKey}`)) || 0;
+
+    let newXpTotal = oldXpTotal;
+    let newSubXp = oldSubXp;
+
     if (!isUndo) {
-      import('../utils/sound').then(({ playSound }) => playSound.playSuccess());
-      toast.success('Task marked as completed! 🎉');
+      newXpTotal += TASK_XP_REWARD;
+      newSubXp += TASK_XP_REWARD;
+      playSound.playSuccess();
+      toast.success(`🎉 टाॅपिक पूर्ण! +${TASK_XP_REWARD} XP मिळाले!`);
 
       // 100% Completion Celebration!
       if (updated.length > 0 && updated.every(t => t.completed)) {
+        newXpTotal += DAILY_COMPLETION_BONUS;
+        toast.success(`👑 १००% टास्क्स पूर्ण! +${DAILY_COMPLETION_BONUS} XP दैनंदिन बोनस मिळाला! 🚀`, { duration: 5000 });
         setShowTaskVideo(true);
       }
+    } else {
+      newXpTotal = Math.max(0, newXpTotal - TASK_XP_REWARD);
+      newSubXp = Math.max(0, newSubXp - TASK_XP_REWARD);
+      toast('टास्क पूर्ववत केला (-15 XP)', { icon: '↩️' });
     }
+
+    const batchUpdates = {
+      user_daily_tasks: updated,
+      xp_total: newXpTotal.toFixed(2),
+      [`xp_${subKey}`]: newSubXp.toFixed(2)
+    };
+
+    import('../utils/dbStore').then(({ saveMultipleToDB }) => saveMultipleToDB(batchUpdates));
+
+    setDeficitState(prev => ({
+      ...prev,
+      xpTotal: newXpTotal
+    }));
   };
 
   const handleDeleteTask = (taskId) => {
@@ -207,7 +248,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     setNewTaskDuration('30 min');
   };
 
-  const advanceToNextDay = async () => {
+  const advanceToNextDay = async (isManualSimulation = false) => {
     let savedTasks = [];
     try {
        savedTasks = JSON.parse(localStorage.getItem('user_daily_tasks') || '[]');
@@ -218,59 +259,82 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
        savedTasks = initialDailyTasks;
     }
     const oldIndexes = getTopicIndexes();
-    let newIndexes = { ...oldIndexes };
-    
+    const lastDate = localStorage.getItem('last_task_date') || getLogicalDateString();
+    const logicalToday = getLogicalDateString();
+
+    const rolloverResult = processDayRollover({
+      savedTasks,
+      lastDateStr: lastDate,
+      todayDateStr: logicalToday,
+      currentIndexes: oldIndexes,
+      getTitleForTask,
+      topicsMap
+    });
+
     // Add completed tasks to weekly tally
     const completedCount = savedTasks.filter(t => t.completed).length;
     let pastWeekly = parseInt(localStorage.getItem('weekly_completed')) || 0;
     if (new Date().getDay() === 1) pastWeekly = 0; // Reset on Monday
     pastWeekly += completedCount;
-    localStorage.setItem('weekly_completed', pastWeekly);
 
-    // Add completed tasks to Revision Queue
-    const existingQueue = JSON.parse(localStorage.getItem('revision_queue') || '[]');
-    const nowTime = new Date().getTime();
-
-    // Create next set of tasks
-    const resetTasks = savedTasks.map(t => {
-      // Only increment index if the task was completed!
-      if (t.completed) {
-        newIndexes[t.id] = (newIndexes[t.id] || 0) + 1;
-        existingQueue.push({
-           topicId: t.id,
-           title: t.title,
-           dueAt: nowTime + (7 * 24 * 60 * 60 * 1000) // due in 7 days
-        });
-      }
-      return {
-        id: t.id,
-        title: getTitleForTask(t.id, newIndexes[t.id] || 0) || t.title,
-        duration: t.duration,
-        completed: false
-      };
-    });
     const now = new Date();
-    
-    import('../utils/dbStore').then(({ saveMultipleToDB }) => {
-      saveMultipleToDB({
-         weekly_completed: pastWeekly,
-         revision_queue: existingQueue,
-         task_indexes: newIndexes,
-         user_daily_tasks: resetTasks,
-         last_task_date: getLogicalDateString(),
-         last_task_time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase()
-      });
+    const nowTimeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase();
+
+    // Persist all rollover and deficit updates to DB
+    const dbUpdates = {
+      weekly_completed: pastWeekly,
+      revision_queue: rolloverResult.existingQueue,
+      task_indexes: rolloverResult.newIndexes,
+      user_daily_tasks: rolloverResult.resetTasks,
+      last_task_date: logicalToday,
+      last_task_time: nowTimeStr,
+      xp_total: rolloverResult.updatedXpTotal,
+      study_deficit_hours: rolloverResult.updatedDeficitHours,
+      total_xp_penalties: rolloverResult.updatedTotalPenalties,
+      study_penalty_history: rolloverResult.updatedPenaltyHistory,
+      study_backlog_tasks: rolloverResult.updatedBacklogTasks
+    };
+
+    import('../utils/dbStore').then(({ saveMultipleToDB }) => saveMultipleToDB(dbUpdates));
+
+    setDailyTasks(rolloverResult.resetTasks);
+    setDeficitState({
+      deficitHours: rolloverResult.updatedDeficitHours,
+      totalPenalties: rolloverResult.updatedTotalPenalties,
+      penaltyHistory: rolloverResult.updatedPenaltyHistory,
+      backlogTasks: rolloverResult.updatedBacklogTasks,
+      xpTotal: rolloverResult.updatedXpTotal
     });
-    
-    setDailyTasks(resetTasks);
-    toast.success("Advanced to the next study session! 🚀");
+
+    if (rolloverResult.totalXpDeducted > 0) {
+      playSound.playPenalty();
+      toast((t) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <strong style={{ color: 'var(--danger)', fontSize: '1rem' }}>
+            ⚠️ काल अभ्यास न झाल्यामुळे -{rolloverResult.totalXpDeducted} XP वजा झाले!
+          </strong>
+          <span style={{ fontSize: '0.85rem' }}>
+            तुमचा अभ्यास {rolloverResult.totalMissedHours} तास मागे पडला आहे (एकूण तूट: {rolloverResult.updatedDeficitHours} तास).
+          </span>
+        </div>
+      ), { 
+        duration: 7000, 
+        icon: '📉',
+        style: { borderRadius: '16px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid rgba(239, 68, 68, 0.4)' }
+      });
+    } else if (rolloverResult.isBonusEarned) {
+      playSound.playXpGain();
+      toast.success("🌟 १००% अभ्यास पूर्ण केल्यामुळे +५० XP बोनस मिळाला! दिवस संपला 🚀", { duration: 6000 });
+    } else {
+      toast.success("पुढील दिवसाचे टास्क्स तयार आहेत! 🚀");
+    }
     
     // Generate daily 6 AM Mega Test automatically (Max once a day per user)
     const megaDate = localStorage.getItem('last_mega_test_date');
-    if (megaDate !== getLogicalDateString()) {
+    if (megaDate !== logicalToday) {
       try {
         await axios.post('https://mpsc-manager.onrender.com/api/custom-tests/mega-generate');
-        localStorage.setItem('last_mega_test_date', getLogicalDateString());
+        localStorage.setItem('last_mega_test_date', logicalToday);
       } catch(err) {
         console.error("Mega Test error:", err);
       }
@@ -316,6 +380,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   };
 
   const completedTasks = dailyTasks.filter(t => t.completed);
+  const todayProgress = calculateTodayProgress(dailyTasks);
   
   let completedMinutes = 0;
   completedTasks.forEach(t => {
@@ -390,7 +455,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
         
         <div className="dashboard-header-actions flex-row gap-4" style={{ height: 'fit-content', flexWrap: 'wrap' }}>
           {/* Days Left Card */}
-          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.8s ease-out', flex: 1, minWidth: '140px', gap: '8px', textAlign: 'center' }}>
+          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.8s ease-out', flex: 1, minWidth: '130px', gap: '8px', textAlign: 'center' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', margin: '0 auto' }}>⏳</div>
             <div className="flex-col" style={{ alignItems: 'center' }}>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--danger)' }}><AnimatedNumber value={calculateDaysLeft()} /> <span style={{fontSize:'1rem'}}>Days</span></span>
@@ -398,13 +463,136 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
             </div>
           </div>
           
-          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.9s ease-out', flex: 1, minWidth: '140px', gap: '8px', textAlign: 'center' }}>
+          {/* Study Deficit & Backlog Status Header Card */}
+          <div 
+            onClick={() => setIsDeficitModalOpen(true)}
+            className="glass-card flex-col justify-center align-center" 
+            style={{ 
+              padding: '16px', 
+              animation: 'slideUp 0.85s ease-out', 
+              flex: 1, 
+              minWidth: '130px', 
+              gap: '8px', 
+              textAlign: 'center',
+              cursor: 'pointer',
+              border: deficitState.deficitHours > 0 ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(34, 197, 94, 0.3)'
+            }}
+            title="अभ्यास तूट व बॅकलॉग पाहण्यासाठी क्लिक करा"
+          >
+            <div style={{ 
+              width: '40px', 
+              height: '40px', 
+              borderRadius: '50%', 
+              background: deficitState.deficitHours > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)', 
+              color: deficitState.deficitHours > 0 ? 'var(--danger)' : 'var(--success)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              fontSize: '1.25rem', 
+              margin: '0 auto' 
+            }}>
+              {deficitState.deficitHours > 0 ? '⚠️' : '🎯'}
+            </div>
+            <div className="flex-col" style={{ alignItems: 'center' }}>
+              <span style={{ fontSize: '1.5rem', fontWeight: 800, color: deficitState.deficitHours > 0 ? 'var(--danger)' : 'var(--success)' }}>
+                {deficitState.deficitHours > 0 ? `-${deficitState.deficitHours}h` : '0h'}
+              </span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
+                {deficitState.deficitHours > 0 ? 'अभ्यास तूट' : 'वेळेवर'}
+              </span>
+            </div>
+          </div>
+
+          {/* Total XP Card */}
+          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.9s ease-out', flex: 1, minWidth: '130px', gap: '8px', textAlign: 'center' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '4px solid var(--accent-primary)', borderLeftColor: 'rgba(255,255,255,0.1)', transform: 'rotate(45deg)', margin: '0 auto' }}></div>
             <div className="flex-col" style={{ alignItems: 'center', marginTop: '4px' }}>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-secondary)' }}><AnimatedNumber value={parseFloat(localStorage.getItem('xp_total')) || 0} /></span>
               <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Total XP</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Interactive Study Deficit & Backlog Banner */}
+      <div 
+        className="glass-card" 
+        style={{ 
+          padding: '20px 24px', 
+          background: deficitState.deficitHours > 0 
+            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(245, 158, 11, 0.05) 100%)' 
+            : 'linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%)',
+          border: deficitState.deficitHours > 0 ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(34, 197, 94, 0.3)',
+          borderRadius: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '16px',
+          flexWrap: 'wrap'
+        }}
+      >
+        <div className="flex-row gap-4 align-center" style={{ flex: 1, minWidth: '280px' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '14px',
+            background: deficitState.deficitHours > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '1.5rem',
+            color: deficitState.deficitHours > 0 ? 'var(--danger)' : 'var(--success)',
+            flexShrink: 0
+          }}>
+            {deficitState.deficitHours > 0 ? <FiAlertTriangle /> : <FiShield />}
+          </div>
+          <div className="flex-col gap-1">
+            <div className="flex-row gap-2 align-center" style={{ flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>
+                {deficitState.deficitHours > 0 ? '⚠️ अभ्यास तूट व बॅकलॉग ट्रॅकर' : '🎯 अभ्यास नियोजनानुसार सुरू आहे'}
+              </span>
+              <span style={{
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: '6px',
+                background: deficitState.deficitHours > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)',
+                color: deficitState.deficitHours > 0 ? 'var(--danger)' : 'var(--success)'
+              }}>
+                {deficitState.deficitHours > 0 ? `${deficitState.deficitHours} तास मागे` : '० तास तूट'}
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+              {deficitState.deficitHours > 0 ? (
+                <>
+                  मागील अभ्यास न झाल्यामुळे <strong style={{ color: 'var(--danger)' }}>-{deficitState.totalPenalties} XP</strong> कापले आहेत. बॅकलॉगमध्ये <strong>{deficitState.backlogTasks.length} टास्क्स</strong> शिल्लक आहेत.
+                </>
+              ) : (
+                <>अभिनंदन! कोणताही बॅकलॉग शिल्लक नाही. आजचे सर्व टास्क्स पूर्ण करा आणि <strong>+५० XP दैनंदिन बोनस</strong> मिळवा!</>
+              )}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex-row gap-2 align-center">
+          <button 
+            onClick={() => setIsDeficitModalOpen(true)}
+            className="btn"
+            style={{ 
+              background: deficitState.deficitHours > 0 ? 'var(--danger)' : 'var(--accent-primary)', 
+              color: '#fff', 
+              border: 'none',
+              padding: '10px 18px',
+              fontSize: '0.875rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            {deficitState.deficitHours > 0 ? 'तूट विश्लेषण व बॅकलॉग भरून काढा ➔' : 'तूट विश्लेषण पहा ➔'}
+          </button>
         </div>
       </div>
 
@@ -426,6 +614,15 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           <span className="stat-label">Study Time</span>
           <span className="stat-value"><AnimatedNumber value={displayHours} />h <AnimatedNumber value={displayMins} />m</span>
           <span style={{ fontSize: '0.875rem', color: 'var(--success)' }}>Active Learning</span>
+        </div>
+        <div className="glass-card stat-card" onClick={() => setIsDeficitModalOpen(true)} style={{ cursor: 'pointer' }}>
+          <span className="stat-label">Study Deficit (तूट)</span>
+          <span className="stat-value" style={{ color: deficitState.deficitHours > 0 ? 'var(--danger)' : 'var(--success)' }}>
+            {deficitState.deficitHours > 0 ? `-${deficitState.deficitHours}h` : '0h'}
+          </span>
+          <span style={{ fontSize: '0.875rem', color: deficitState.deficitHours > 0 ? 'var(--danger)' : 'var(--text-secondary)' }}>
+            {deficitState.deficitHours > 0 ? `${deficitState.backlogTasks.length} टास्क्स मागे` : 'वेळेवर सुरू आहे'}
+          </span>
         </div>
         <div className="glass-card stat-card">
           <span className="stat-label">Syllabus</span>
@@ -453,7 +650,17 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
                 <button onClick={() => setIsEditingTasks(!isEditingTasks)} className="btn" style={{ padding: '8px', background: isEditingTasks ? 'var(--warning)' : 'rgba(255,255,255,0.05)', color: isEditingTasks ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={isEditingTasks ? "Done Editing" : "Edit Tasks"}>
                   {isEditingTasks ? <FiCheck size={16} /> : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>}
                 </button>
-                {!isEditingTasks && <button onClick={advanceToNextDay} className="btn" style={{ padding: '6px 12px', background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-glow)', outline: 'none', fontSize: '0.75rem' }}>Wrap Up Day 🚀</button>}
+                {isEditingTasks && (
+                  <button 
+                    onClick={() => advanceToNextDay(true)} 
+                    className="btn" 
+                    style={{ padding: '6px 12px', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', border: '1px dashed var(--danger)', outline: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                    title="अभ्यास न झाल्याची XP पेनल्टी व तूट तपासा"
+                  >
+                    🧪 चाचणी: दिवस संपवा व पेनल्टी तपासा
+                  </button>
+                )}
+                {!isEditingTasks && <button onClick={() => advanceToNextDay(false)} className="btn" style={{ padding: '6px 12px', background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-glow)', outline: 'none', fontSize: '0.75rem' }}>Wrap Up Day 🚀</button>}
                 <button onClick={() => setShowAllTasks(!showAllTasks)} className="btn" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none' }}>{showAllTasks ? 'View Less' : 'View All'}</button>
               </div>
             </div>
@@ -614,6 +821,14 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
         isDanger={true}
         onConfirm={confirmDeleteTask}
         onCancel={() => setTaskToDelete(null)}
+      />
+
+      <StudyDeficitModal 
+        isOpen={isDeficitModalOpen}
+        onClose={() => setIsDeficitModalOpen(false)}
+        deficitState={deficitState}
+        onStateUpdate={setDeficitState}
+        todayProgress={todayProgress}
       />
     </div>
   );

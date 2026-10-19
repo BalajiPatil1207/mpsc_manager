@@ -58,6 +58,28 @@ const Register = () => {
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ padding: '12px', fontSize: '1rem', marginTop: '8px' }}>
             {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
+
+          <button 
+            type="button" 
+            onClick={() => {
+              localStorage.setItem('guest_user', 'true');
+              window.location.href = '/';
+            }} 
+            className="btn" 
+            style={{ 
+              padding: '12px', 
+              fontSize: '0.95rem', 
+              background: 'rgba(255, 255, 255, 0.06)', 
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+          >
+            ⚡ Demo Mode / तात्काळ सुरू करा
+          </button>
         </form>
         
         <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>

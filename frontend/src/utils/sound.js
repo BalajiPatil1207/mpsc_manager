@@ -59,6 +59,13 @@ class SoundEngine {
     setTimeout(() => this.playBeep(784, 'sine', 0.1), 100);
     setTimeout(() => this.playBeep(1046, 'sine', 0.4), 150);
   }
+
+  playPenalty() {
+    // 3-tone descending low alert for XP deduction / missed study
+    setTimeout(() => this.playBeep(370, 'sawtooth', 0.12), 0);
+    setTimeout(() => this.playBeep(293, 'sawtooth', 0.14), 100);
+    setTimeout(() => this.playBeep(220, 'sawtooth', 0.25), 220);
+  }
 }
 
 export const playSound = new SoundEngine();

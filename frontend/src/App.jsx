@@ -67,7 +67,7 @@ function App() {
       const backupData = {};
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key && (key.startsWith('xp_') || key.includes('accuracy') || key.includes('task') || key.includes('queue'))) {
+        if (key && (key.startsWith('xp_') || key.includes('accuracy') || key.includes('task') || key.includes('queue') || key.includes('deficit') || key.includes('penalty') || key.includes('backlog'))) {
            backupData[key] = localStorage.getItem(key);
         }
       }
@@ -150,7 +150,12 @@ function App() {
         setUser(usr); // Set user after loading DB cache!
         registerPush(usr.uid);
       } else {
-        setUser(null);
+        const isGuest = localStorage.getItem('guest_user') === 'true';
+        if (isGuest) {
+          setUser({ uid: 'guest_user_101', displayName: 'MPSC Aspirant', email: 'aspirant@mpsc.local' });
+        } else {
+          setUser(null);
+        }
       }
       setLoading(false);
     });
