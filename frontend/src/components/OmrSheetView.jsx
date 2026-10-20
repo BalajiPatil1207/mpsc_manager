@@ -8,6 +8,7 @@ const OmrSheetView = ({
   onSelect,
   onToggleReview,
   onJumpToQuestion,
+  onSubmitTest,
   submitted = false,
   markingScheme = 'mpsc_rajyaseva',
   onSchemeChange
@@ -293,6 +294,71 @@ const OmrSheetView = ({
           })}
         </div>
       </div>
+
+      {/* 🚀 OMR Bottom Submit Action Card */}
+      {!submitted && (
+        <div 
+          className="glass-card"
+          style={{
+            marginTop: '8px',
+            padding: '20px 24px',
+            borderRadius: '20px',
+            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+            border: '1.5px solid rgba(34, 197, 94, 0.4)',
+            boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 197, 94, 0.15)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '16px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <span style={{
+              fontSize: '1.8rem',
+              background: 'rgba(34, 197, 94, 0.15)',
+              padding: '10px',
+              borderRadius: '12px',
+              border: '1px solid rgba(34, 197, 94, 0.3)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              ⭕
+            </span>
+            <div>
+              <h4 style={{ margin: '0 0 4px 0', color: '#f8fafc', fontSize: '1.1rem', fontWeight: 800 }}>
+                OMR उत्तरपत्रिका पूर्ण झाली आहे? निकाल पहा
+              </h4>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                एकूण {questions.length} पैकी <strong style={{ color: '#4ade80' }}>{attemptedCount}</strong> वर्तुळे भरली आहेत. (<strong style={{ color: '#f87171' }}>{unattemptedCount}</strong> अनुत्तरित)
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onSubmitTest}
+            className="btn btn-primary"
+            style={{
+              padding: '14px 32px',
+              fontSize: '1.05rem',
+              fontWeight: 800,
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              boxShadow: '0 4px 20px rgba(16, 185, 129, 0.45)',
+              borderRadius: '14px',
+              border: 'none',
+              color: '#ffffff',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
+            ✅ OMR उत्तरपत्रिका सबमिट करा
+          </button>
+        </div>
+      )}
 
     </div>
   );

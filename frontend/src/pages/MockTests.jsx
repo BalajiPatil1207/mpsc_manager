@@ -215,16 +215,60 @@ const MockTests = () => {
           const cachedRaw = localStorage.getItem('mpsc_cached_mocks');
           const localMocks = cachedRaw ? JSON.parse(cachedRaw) : [];
           
+          const localMocksMap = new Map();
+          localMocks.forEach(l => localMocksMap.set(l._id || l.id, l));
+
+          const solvedList = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
+          const hist = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
+          const solvedSetInternal = new Set([
+            ...solvedList,
+            ...hist.map(h => h.testId).filter(Boolean)
+          ]);
+
           const combinedMap = new Map();
-          MPSC_SEED_MOCKS.forEach(s => combinedMap.set(s._id || s.id, s));
+          
+          // 1. Seed Mocks (Base)
+          MPSC_SEED_MOCKS.forEach(s => {
+            const id = s._id || s.id;
+            const local = localMocksMap.get(id);
+            const inHist = hist.some(h => (h.testId === id) || (h.title && s.title && h.title.trim().toLowerCase() === s.title.trim().toLowerCase()));
+            const isSolved = Boolean(local?.isSolved || solvedSetInternal.has(id) || inHist);
+            combinedMap.set(id, { ...s, ...local, isSolved });
+          });
+
+          // 2. Remote Mocks from Backend
           remoteMocks.forEach(m => {
             const id = m._id || m.id;
-            if (!combinedMap.has(id)) combinedMap.set(id, m);
+            const existing = combinedMap.get(id);
+            const local = localMocksMap.get(id);
+            const inHist = hist.some(h => (h.testId === id) || (h.title && m.title && h.title.trim().toLowerCase() === m.title.trim().toLowerCase()));
+            const isSolved = Boolean(existing?.isSolved || local?.isSolved || m.isSolved || solvedSetInternal.has(id) || inHist);
+            combinedMap.set(id, {
+              ...m,
+              ...existing,
+              ...local,
+              isSolved,
+              attemptedBy: Array.from(new Set([
+                ...(Array.isArray(m.attemptedBy) ? m.attemptedBy : []),
+                ...(Array.isArray(existing?.attemptedBy) ? existing.attemptedBy : []),
+                ...(Array.isArray(local?.attemptedBy) ? local.attemptedBy : []),
+                ...(isSolved ? ['anonymous'] : [])
+              ]))
+            });
           });
+
+          // 3. Local Dynamic Mocks
           localMocks.forEach(l => {
             const id = l._id || l.id;
-            if (!combinedMap.has(id)) combinedMap.set(id, l);
+            if (!combinedMap.has(id)) {
+              const inHist = hist.some(h => (h.testId === id) || (h.title && l.title && h.title.trim().toLowerCase() === l.title.trim().toLowerCase()));
+              combinedMap.set(id, {
+                ...l,
+                isSolved: Boolean(l.isSolved || solvedSetInternal.has(id) || inHist)
+              });
+            }
           });
+
           const combined = Array.from(combinedMap.values());
           setHistory(combined);
           try {
@@ -251,16 +295,107 @@ const MockTests = () => {
     const tId = test._id || test.id;
     if (test.isSolved) return true;
     if (tId && solvedSet.has(tId)) return true;
+    if (test.id && solvedSet.has(test.id)) return true;
+    if (test._id && solvedSet.has(test._id)) return true;
+
     if (test.attemptedBy && Array.isArray(test.attemptedBy)) {
       if (currentUser && test.attemptedBy.includes(currentUser)) return true;
       if (test.attemptedBy.includes('anonymous') || test.attemptedBy.length > 0) return true;
     }
+
+    try {
+      const solvedList = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
+      if (tId && solvedList.includes(tId)) return true;
+      if (test.id && solvedList.includes(test.id)) return true;
+      if (test._id && solvedList.includes(test._id)) return true;
+    } catch(e) {}
+
+    try {
+      const hist = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
+      const inHist = hist.some(h => 
+        (h.testId && (h.testId === tId || h.testId === test.id || h.testId === test._id)) ||
+        (h.title && test.title && h.title.trim().toLowerCase() === test.title.trim().toLowerCase())
+      );
+      if (inHist) return true;
+    } catch(e) {}
+
     return false;
   };
 
-  // Flat filtered + sorted list
-  const filteredHistory = history
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'unsolved' | 'solved'
+
+  const normalizeDateKey = (test) => {
+    if (!test) return '';
+    if (test.formattedDate) return test.formattedDate;
+    if (test.createdAt) {
+      try {
+        const d = new Date(test.createdAt);
+        if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+      } catch (e) {}
+    }
+    if (test.examDate) {
+      const raw = String(test.examDate).trim();
+      const converted = raw.replace(/[०-९]/g, d => '०१२३४५६७८९'.indexOf(d));
+      const match = converted.match(/(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/);
+      if (match) {
+        const d = match[1].padStart(2, '0');
+        const m = match[2].padStart(2, '0');
+        let y = match[3];
+        if (y.length === 2) y = '20' + y;
+        return `${y}-${m}-${d}`;
+      }
+    }
+    return '';
+  };
+
+  // 🌟 DAILY 1 MOCK TEST RULE:
+  // Deduplicates multiple tests on the same date so there is STRICTLY 1 Official Mock Test per day!
+  const todayIso = new Date().toISOString().split('T')[0];
+  const dailyMocksMap = new Map();
+
+  history.forEach(test => {
+    const dateKey = normalizeDateKey(test) || 'unknown';
+    if (!dailyMocksMap.has(dateKey)) {
+      dailyMocksMap.set(dateKey, test);
+    } else {
+      const existing = dailyMocksMap.get(dateKey);
+      const existingSolved = isTestSolved(existing);
+      const currentSolved = isTestSolved(test);
+
+      // Prioritize solved test so user progress is never lost
+      if (currentSolved && !existingSolved) {
+        dailyMocksMap.set(dateKey, test);
+      } else if (!existingSolved && !currentSolved) {
+        // Pick the test with more questions (Full Syllabus Mega Mock)
+        const exQ = existing.questions?.length || 0;
+        const curQ = test.questions?.length || 0;
+        if (curQ > exQ) {
+          dailyMocksMap.set(dateKey, test);
+        }
+      }
+    }
+  });
+
+  // Sort daily tests descending by date (Today first, then previous days)
+  const dailyList = Array.from(dailyMocksMap.values()).sort((a, b) => {
+    const dateA = normalizeDateKey(a) || '';
+    const dateB = normalizeDateKey(b) || '';
+    return dateB.localeCompare(dateA);
+  });
+
+  // Number the daily tests sequentially (Mock Test 1 = Today, Mock Test 2 = Yesterday, etc.)
+  const indexedHistory = dailyList.map((item, index) => ({
+    ...item,
+    permanentIndex: index + 1,
+    isTodayMock: normalizeDateKey(item) === todayIso
+  }));
+
+  // Flat filtered list with stable numbering
+  const filteredHistory = indexedHistory
     .filter(h => {
+      const solved = isTestSolved(h);
+      if (statusFilter === 'unsolved' && solved) return false;
+      if (statusFilter === 'solved' && !solved) return false;
       if (selectedSchemeFilter === 'rajyaseva' && h.markingScheme === 'group_c') return false;
       if (selectedSchemeFilter === 'group_c' && h.markingScheme !== 'group_c') return false;
       if (!searchQuery.trim()) return true;
@@ -268,13 +403,9 @@ const MockTests = () => {
       return (
         (h.title || '').toLowerCase().includes(q) ||
         (h.subject || '').toLowerCase().includes(q) ||
-        (h.topic || '').toLowerCase().includes(q)
+        (h.topic || '').toLowerCase().includes(q) ||
+        `mock test ${h.permanentIndex}`.includes(q)
       );
-    })
-    .sort((a, b) => {
-      const aSolved = isTestSolved(a) ? 1 : 0;
-      const bSolved = isTestSolved(b) ? 1 : 0;
-      return aSolved - bSolved;
     });
 
   return (
@@ -426,7 +557,62 @@ const MockTests = () => {
           )}
         </div>
 
-        {/* Filter Pills */}
+        {/* Status Filter Tabs (All / Remaining / Completed) */}
+        <div style={{ display: 'flex', gap: '6px', background: 'var(--bg-secondary)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('all')}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '9px',
+              border: 'none',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              background: statusFilter === 'all' ? 'var(--accent-primary)' : 'transparent',
+              color: statusFilter === 'all' ? '#fff' : 'var(--text-secondary)',
+              transition: 'all 0.2s'
+            }}
+          >
+            सर्व ({indexedHistory.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('unsolved')}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '9px',
+              border: 'none',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              background: statusFilter === 'unsolved' ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'transparent',
+              color: statusFilter === 'unsolved' ? '#fff' : 'var(--text-secondary)',
+              transition: 'all 0.2s'
+            }}
+          >
+            ⚡ बाकी ({indexedHistory.filter(h => !isTestSolved(h)).length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('solved')}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '9px',
+              border: 'none',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              background: statusFilter === 'solved' ? 'linear-gradient(135deg, #10b981, #059669)' : 'transparent',
+              color: statusFilter === 'solved' ? '#fff' : 'var(--text-secondary)',
+              transition: 'all 0.2s'
+            }}
+          >
+            ✅ सोडवलेल्या ({indexedHistory.filter(h => isTestSolved(h)).length})
+          </button>
+        </div>
+
+        {/* Filter Pills for Marking Scheme */}
         <div style={{ display: 'flex', gap: '8px', background: 'var(--bg-secondary)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
           <button
             type="button"
@@ -443,7 +629,7 @@ const MockTests = () => {
               transition: 'all 0.2s'
             }}
           >
-            सर्व टेस्ट्स ({history.length})
+            सर्व पॅटर्न
           </button>
           <button
             type="button"
@@ -503,7 +689,7 @@ const MockTests = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           <div className="flex-row justify-between align-center" style={{ padding: '0 4px' }}>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.88rem', fontWeight: 600 }}>
-              {filteredHistory.length} उच्च-गुणवत्ता मॉक परीक्षा उपलब्ध
+              📅 {filteredHistory.length} दैनिक मॉक परीक्षा (दररोज फक्त १ परीक्षा)
             </span>
           </div>
 
@@ -518,7 +704,8 @@ const MockTests = () => {
               // Extract date if present in title (e.g. "१२/१०/२०२६" or "12/10/2026")
               const dateInTitleMatch = test.title?.match(/[\u0966-\u096F0-9]{1,2}[\/\-\.][\u0966-\u096F0-9]{1,2}[\/\-\.][\u0966-\u096F0-9]{2,4}/);
               const extractedDate = dateInTitleMatch ? dateInTitleMatch[0] : null;
-              const displayDate = test.examDate || extractedDate || (test.createdAt ? new Date(test.createdAt).toLocaleDateString('mr-IN') : '19 ऑक्टोबर 2026');
+              const baseDate = test.examDate || extractedDate || (test.createdAt ? new Date(test.createdAt).toLocaleDateString('mr-IN') : '19 ऑक्टोबर 2026');
+              const displayDate = test.isTodayMock ? `${baseDate} (आज)` : baseDate;
 
               // Clean topic / subtitle by removing dates completely
               const rawTitle = test.title || '';
@@ -536,13 +723,17 @@ const MockTests = () => {
                   style={{
                     padding: '20px 22px',
                     borderRadius: '18px',
-                    border: isSolved ? '1.5px solid rgba(34, 197, 94, 0.45)' : '1px solid rgba(255, 255, 255, 0.1)',
-                    background: isSolved ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(15, 23, 42, 0.85))' : 'var(--bg-secondary)',
+                    border: isSolved 
+                      ? '1.5px solid rgba(34, 197, 94, 0.45)' 
+                      : (test.isTodayMock ? '1.5px solid rgba(245, 158, 11, 0.5)' : '1px solid rgba(255, 255, 255, 0.1)'),
+                    background: isSolved 
+                      ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(15, 23, 42, 0.85))' 
+                      : (test.isTodayMock ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(15, 23, 42, 0.9))' : 'var(--bg-secondary)'),
                     display: 'flex', 
                     flexDirection: 'column', 
                     gap: '14px',
                     transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)'
+                    boxShadow: test.isTodayMock ? '0 10px 30px rgba(245, 158, 11, 0.15)' : '0 8px 24px rgba(0, 0, 0, 0.2)'
                   }}
                 >
                   {/* Top Bar: Subject Badge + Dynamic Badge + Solved Badge + Exam Date */}
@@ -560,6 +751,22 @@ const MockTests = () => {
                       }}>
                         {test.subject || 'MPSC General Studies'}
                       </span>
+                      {test.isTodayMock && (
+                        <span style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          color: '#f59e0b',
+                          background: 'rgba(245, 158, 11, 0.2)',
+                          border: '1px solid rgba(245, 158, 11, 0.45)',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px'
+                        }}>
+                          🔥 आजची दैनिक परीक्षा
+                        </span>
+                      )}
                       {test.isDynamic && (
                         <span style={{
                           fontSize: '0.68rem',
@@ -592,6 +799,34 @@ const MockTests = () => {
                           <FiCheckCircle size={11} /> सोडवली (Done)
                         </span>
                       )}
+                      {(() => {
+                        const sRaw = localStorage.getItem(`mpsc_active_test_${test._id || test.id}`);
+                        if (sRaw && !isSolved) {
+                          try {
+                            const parsedSession = JSON.parse(sRaw);
+                            const ansCount = Object.keys(parsedSession.answers || {}).length;
+                            if (ansCount > 0) {
+                              return (
+                                <span style={{
+                                  fontSize: '0.68rem',
+                                  fontWeight: 800,
+                                  color: '#f59e0b',
+                                  background: 'rgba(245, 158, 11, 0.2)',
+                                  border: '1px solid rgba(245, 158, 11, 0.45)',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '3px'
+                                }}>
+                                  ⚡ चालू सराव ({ansCount} उत्तरे)
+                                </span>
+                              );
+                            }
+                          } catch(e) {}
+                        }
+                        return null;
+                      })()}
                     </div>
 
                     <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#94a3b8' }}>
@@ -599,17 +834,16 @@ const MockTests = () => {
                     </span>
                   </div>
 
-                  {/* Title: ONLY Mock Test 1, 2, 3... date is separate in badge */}
+                  {/* Title: Stable Mock Test {test.permanentIndex} */}
                   <div>
                     <h3 style={{
                       fontSize: '1.2rem', 
                       margin: 0, 
-                      color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)',
+                      color: isSolved ? '#10b981' : (test.isTodayMock ? '#fbbf24' : 'var(--text-primary)'),
                       fontWeight: 800,
-                      lineHeight: 1.3,
-                      textDecoration: isSolved ? 'line-through' : 'none'
+                      lineHeight: 1.3
                     }}>
-                      Mock Test {idx + 1}
+                      Mock Test {test.permanentIndex} {test.isTodayMock ? '• आजची परीक्षा' : ''}
                     </h3>
                     {cleanSubtitle && (
                       <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
@@ -694,7 +928,17 @@ const MockTests = () => {
                         boxShadow: isSolved ? '0 4px 15px rgba(16, 185, 129, 0.3)' : '0 4px 15px rgba(245, 158, 11, 0.35)'
                       }}
                     >
-                      <FiPlay size={14} /> {isSolved ? 'पुन्हा सोडवा (Retake)' : 'मॉक टेस्ट द्या / OMR'}
+                      <FiPlay size={14} /> {isSolved ? 'पुन्हा सोडवा (Retake)' : (() => {
+                        const sRaw = localStorage.getItem(`mpsc_active_test_${test._id || test.id}`);
+                        if (sRaw) {
+                          try {
+                            const p = JSON.parse(sRaw);
+                            const c = Object.keys(p.answers || {}).length;
+                            if (c > 0) return `चालू ठेवा (${c} उत्तरे)`;
+                          } catch(e) {}
+                        }
+                        return 'मॉक टेस्ट द्या / OMR';
+                      })()}
                     </button>
                   </div>
                 </div>

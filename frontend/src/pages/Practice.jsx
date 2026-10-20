@@ -6,6 +6,7 @@ import { auth } from '../firebase';
 import { toast } from 'react-hot-toast';
 import { generateDynamicMpscTest } from '../utils/dynamicMockGenerator';
 import { normalizeTopicName } from '../utils/textUtils';
+import { CORE_MPSC_SUBJECTS, getSubjectXp } from '../utils/xpTracker';
 
 // Master catalog of MPSC PYQ Drills across core subjects
 const MPSC_PYQ_CATALOG = [
@@ -157,21 +158,39 @@ const Practice = () => {
     }
   });
 
+  const [xpMap, setXpMap] = useState(() => {
+    const initial = {};
+    CORE_MPSC_SUBJECTS.forEach(s => {
+      initial[s] = getSubjectXp(s);
+    });
+    return initial;
+  });
+
   useEffect(() => {
-    const updateSolved = () => {
+    const updateSolvedAndXp = () => {
       try {
         const solved = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
         const hist = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
         setSolvedSet(new Set([...solved, ...hist.map(h => h.testId).filter(Boolean)]));
+
+        const updatedXp = {};
+        CORE_MPSC_SUBJECTS.forEach(s => {
+          updatedXp[s] = getSubjectXp(s);
+        });
+        setXpMap(updatedXp);
       } catch (e) {}
     };
-    window.addEventListener('focus', updateSolved);
-    window.addEventListener('storage', updateSolved);
-    window.addEventListener('mpsc_test_submitted', updateSolved);
+
+    updateSolvedAndXp();
+    window.addEventListener('focus', updateSolvedAndXp);
+    window.addEventListener('storage', updateSolvedAndXp);
+    window.addEventListener('mpsc_test_submitted', updateSolvedAndXp);
+    window.addEventListener('mpsc_xp_updated', updateSolvedAndXp);
     return () => {
-      window.removeEventListener('focus', updateSolved);
-      window.removeEventListener('storage', updateSolved);
-      window.removeEventListener('mpsc_test_submitted', updateSolved);
+      window.removeEventListener('focus', updateSolvedAndXp);
+      window.removeEventListener('storage', updateSolvedAndXp);
+      window.removeEventListener('mpsc_test_submitted', updateSolvedAndXp);
+      window.removeEventListener('mpsc_xp_updated', updateSolvedAndXp);
     };
   }, []);
 
@@ -373,10 +392,14 @@ const Practice = () => {
       });
       newTest.title = pyq.title || 'MPSC PYQ Drill';
 
-      // Save into mpsc_cached_mocks immediately for 0ms latency in TakeTest
-      const cached = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
-      const updated = [newTest, ...cached.filter(t => (t.id || t._id) !== newTest.id)];
-      localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updated));
+      // Save into both caches for 0ms latency in TakeTest
+      const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+      const updatedMocks = [newTest, ...cachedMocks.filter(t => (t.id || t._id) !== newTest.id)];
+      localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updatedMocks));
+
+      const cachedPractice = JSON.parse(localStorage.getItem('mpsc_cached_practice') || '[]');
+      const updatedPractice = [newTest, ...cachedPractice.filter(t => (t.id || t._id) !== newTest.id)];
+      localStorage.setItem('mpsc_cached_practice', JSON.stringify(updatedPractice));
 
       // Asynchronously sync to backend
       const usr = auth.currentUser;
@@ -412,9 +435,13 @@ const Practice = () => {
       });
       newTest.title = `${subject} Rapid Drill`;
 
-      const cached = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
-      const updated = [newTest, ...cached.filter(t => (t.id || t._id) !== newTest.id)];
-      localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updated));
+      const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+      const updatedMocks = [newTest, ...cachedMocks.filter(t => (t.id || t._id) !== newTest.id)];
+      localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updatedMocks));
+
+      const cachedPractice = JSON.parse(localStorage.getItem('mpsc_cached_practice') || '[]');
+      const updatedPractice = [newTest, ...cachedPractice.filter(t => (t.id || t._id) !== newTest.id)];
+      localStorage.setItem('mpsc_cached_practice', JSON.stringify(updatedPractice));
 
       const usr = auth.currentUser;
       axios.post('https://mpsc-manager.onrender.com/api/custom-tests', {
@@ -497,10 +524,30 @@ const Practice = () => {
     const tId = test._id || test.id;
     if (test.isSolved) return true;
     if (tId && solvedSet.has(tId)) return true;
+    if (test.id && solvedSet.has(test.id)) return true;
+    if (test._id && solvedSet.has(test._id)) return true;
+
     if (test.attemptedBy && Array.isArray(test.attemptedBy)) {
       if (currentUser && test.attemptedBy.includes(currentUser)) return true;
       if (test.attemptedBy.includes('anonymous') || test.attemptedBy.length > 0) return true;
     }
+
+    try {
+      const solvedList = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
+      if (tId && solvedList.includes(tId)) return true;
+      if (test.id && solvedList.includes(test.id)) return true;
+      if (test._id && solvedList.includes(test._id)) return true;
+    } catch(e) {}
+
+    try {
+      const hist = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
+      const found = hist.some(h => 
+        (h.testId && (h.testId === tId || h.testId === test.id || h.testId === test._id)) ||
+        (h.title && test.title && h.title.trim().toLowerCase() === test.title.trim().toLowerCase())
+      );
+      if (found) return true;
+    } catch(e) {}
+
     return false;
   };
 
@@ -907,14 +954,16 @@ const Practice = () => {
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
             क्लिक करा आणि थेट १५ प्रश्नांची रॅपिड सराव ड्रिल सोडवा
           </p>
-          <div className="flex-col gap-0" style={{ maxHeight: '200px', overflowY: 'auto', paddingRight: '8px' }}>
-            {['भारतीय राज्यव्यवस्था', 'भूगोल', 'इतिहास', 'अर्थव्यवस्था', 'सामान्य विज्ञान', 'चालू घडामोडी'].map((subject) => {
-               const xp = parseFloat(localStorage.getItem(`xp_${subject}`)) || 0;
+          <div className="flex-col gap-0" style={{ maxHeight: '240px', overflowY: 'auto', paddingRight: '8px' }}>
+            {CORE_MPSC_SUBJECTS.map((subject) => {
+               const xp = xpMap[subject] || 0;
                return (
                <div key={subject} className="flex-row justify-between" style={{ alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-color)' }}>
                  <div style={{ display: 'flex', flexDirection: 'column' }}>
                    <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>{subject}</span>
-                   <span style={{ color: 'var(--accent-secondary)', fontSize: '0.75rem', fontWeight: 'bold' }}>{xp} XP Earned</span>
+                   <span style={{ color: xp > 0 ? '#10b981' : 'var(--accent-secondary)', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                     {xp > 0 ? `⚡ ${xp} XP Earned` : '0 XP Earned'}
+                   </span>
                  </div>
                  <button 
                    className="btn" 

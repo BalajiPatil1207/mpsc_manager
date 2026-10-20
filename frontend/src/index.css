@@ -489,6 +489,90 @@ h1, h2, h3, h4, h5, h6 {
 .mobile-submit-btn { display: none; }
 .bottom-nav { display: none; }
 
+/* 🌟 Universal Docked Submit Bar for TakeTest (Desktop + Mobile) */
+.test-docked-submit-bar {
+  margin-top: 32px;
+  margin-bottom: 24px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%);
+  border: 1.5px solid rgba(34, 197, 94, 0.35);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 197, 94, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.test-docked-submit-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.test-docked-submit-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.test-docked-status-icon {
+  font-size: 2rem;
+  background: rgba(34, 197, 94, 0.15);
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.test-docked-submit-info strong {
+  display: block;
+  font-size: 1.15rem;
+  color: #f8fafc;
+  margin-bottom: 4px;
+}
+
+.test-docked-submit-info p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #94a3b8;
+}
+
+.test-docked-submit-btn {
+  padding: 14px 32px !important;
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  border-radius: 14px !important;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.45) !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff !important;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.test-docked-submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(16, 185, 129, 0.6) !important;
+}
+
+@media (max-width: 768px) {
+  .test-docked-submit-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .test-docked-submit-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .test-palette-container { 
   width: 320px; 
   padding: 24px; 

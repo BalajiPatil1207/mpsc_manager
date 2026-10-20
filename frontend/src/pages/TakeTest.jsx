@@ -11,6 +11,7 @@ import { toast } from 'react-hot-toast';
 import { auth } from '../firebase';
 import OmrSheetView from '../components/OmrSheetView';
 import { MPSC_SEED_MOCKS } from '../data/mpscMockTestsSeed';
+import { recordTestXp } from '../utils/xpTracker';
 
 const TakeTest = () => {
   const { testId } = useParams();
@@ -35,6 +36,7 @@ const TakeTest = () => {
   const [showSuccessVideo, setShowSuccessVideo] = useState(false);
   const [testViewMode, setTestViewMode] = useState('question'); // 'question' | 'omr'
   const [markingScheme, setMarkingScheme] = useState('mpsc_rajyaseva'); // 'mpsc_rajyaseva' (+2/-0.66) | 'group_c' (+1/-0.25)
+  const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
   const [allReels, setAllReels] = useState([]);
   const [aiExplanations, setAiExplanations] = useState({});
   const [loadingAi, setLoadingAi] = useState({});
@@ -429,10 +431,10 @@ const TakeTest = () => {
     // 1. Mark test as SOLVED / DONE immediately in localStorage
     try {
       const solvedList = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
-      if (!solvedList.includes(testId)) {
-        solvedList.push(testId);
-        localStorage.setItem('mpsc_solved_tests', JSON.stringify(solvedList));
-      }
+      if (testId && !solvedList.includes(testId)) solvedList.push(testId);
+      if (test?._id && !solvedList.includes(test._id)) solvedList.push(test._id);
+      if (test?.id && !solvedList.includes(test.id)) solvedList.push(test.id);
+      localStorage.setItem('mpsc_solved_tests', JSON.stringify(solvedList));
     } catch(e) {}
 
     // 2. Mark in mpsc_cached_mocks so MockTests.jsx shows isSolved = true
@@ -617,25 +619,33 @@ const TakeTest = () => {
       } catch (err) {}
     }
 
-    // 6. Add XP Points
+    // 6. ⚡ ADD XP POINTS ACROSS CORE SUBJECTS WITH 0ms SYNCHRONOUS PERSISTENCE
     let batchUpdates = {
       practice_accuracy: newAccuracy.toFixed(1),
       tests_taken: testsTaken + 1
     };
 
-    if (currentScore > 0 && !isMistake) {
-      const sub = test.subject || 'General';
-      const oldPoints = parseFloat(localStorage.getItem(`xp_${sub}`)) || 0;
-      batchUpdates[`xp_${sub}`] = (oldPoints + currentScore).toFixed(2);
-      
-      const totalOld = parseFloat(localStorage.getItem('xp_total')) || 0;
-      batchUpdates['xp_total'] = (totalOld + currentScore).toFixed(2);
-      
-      import('../utils/sound').then(({ playSound }) => playSound.playXpGain());
-      toast.success(`🎉 Earned +${currentScore} XP for ${sub}!`);
+    if (!isMistake) {
+      const { totalGained, subjectGains, batchUpdates: xpBatch } = recordTestXp({
+        testSubject: test.subject,
+        testTitle: test.title,
+        questions: test.questions,
+        answers: answers,
+        netScore: currentScore,
+        marksPerCorrect
+      });
+
+      batchUpdates = { ...batchUpdates, ...xpBatch };
+
+      if (totalGained > 0) {
+        import('../utils/sound').then(({ playSound }) => playSound.playXpGain()).catch(() => {});
+        const subList = Object.keys(subjectGains).filter(k => subjectGains[k] > 0);
+        const subNames = subList.join(', ');
+        toast.success(`🎉 +${totalGained} XP प्राप्त झाले! (${subNames})`, { icon: '⚡', duration: 4000 });
+      }
     }
     
-    import('../utils/dbStore').then(({ saveMultipleToDB }) => saveMultipleToDB(batchUpdates));
+    import('../utils/dbStore').then(({ saveMultipleToDB }) => saveMultipleToDB(batchUpdates)).catch(() => {});
 
     // 7. Sync with server in background
     try {
@@ -766,7 +776,17 @@ const TakeTest = () => {
         <div className="test-top-inner-wrap">
           <div className="test-top-main-row">
             <div className="test-top-left">
-              <button onClick={() => navigate(-1)} className="test-back-btn" title="Go Back">
+              <button 
+                onClick={() => {
+                  if (!submitted && Object.keys(answers).length > 0) {
+                    setShowExitConfirmModal(true);
+                  } else {
+                    navigate(-1);
+                  }
+                }} 
+                className="test-back-btn" 
+                title="Go Back"
+              >
                 <FiArrowLeft size={20} />
               </button>
               <div className="test-title-meta">
@@ -1136,6 +1156,7 @@ const TakeTest = () => {
                 }, 100);
               }}
               submitted={submitted}
+              onSubmitTest={handleSubmit}
               markingScheme={markingScheme}
               onSchemeChange={(scheme) => {
                 if (!submitted) {
@@ -1372,11 +1393,70 @@ const TakeTest = () => {
         </div>
       </div>
       
-      {/* Mobile Sticky Submit Button */}
+      {/* 🌟 Universal Docked Submit Bar for All Devices */}
       {!submitted && (
-         <button onClick={handleSubmit} className="btn btn-primary mobile-submit-btn">
-           Submit Test
-         </button>
+        <div className="test-docked-submit-bar">
+          <div className="test-docked-submit-inner">
+            <div className="test-docked-submit-info">
+              <span className="test-docked-status-icon">🎯</span>
+              <div>
+                <strong>चाचणी पूर्ण झाली? निकाल पाहण्यासाठी येथे सबमिट करा</strong>
+                <p>
+                  एकूण {test.questions?.length || 0} पैकी <strong style={{ color: '#4ade80' }}>{Object.keys(answers).length}</strong> प्रश्न सोडवले आहेत. 
+                  ({Math.max(0, (test.questions?.length || 0) - Object.keys(answers).length)} अनुत्तरित)
+                </p>
+              </div>
+            </div>
+            <button 
+              type="button"
+              onClick={handleSubmit} 
+              className="btn btn-primary test-docked-submit-btn"
+            >
+              ✅ परीक्षा सबमिट करा व निकाल पहा
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ⚠️ Exit Confirmation Modal */}
+      {showExitConfirmModal && (
+        <div className="modal-overlay" onClick={() => setShowExitConfirmModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', maxWidth: '440px', textAlign: 'center', borderRadius: '20px' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>⚠️</div>
+            <h3 style={{ fontSize: '1.25rem', margin: '0 0 8px 0', color: 'var(--text-primary)', fontWeight: 800 }}>
+              चाचणी सबमिट करायची आहे का?
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '20px', lineHeight: 1.5 }}>
+              तुम्ही एकूण <strong>{Object.keys(answers).length}</strong> प्रश्नांची उत्तरे नोंदवली आहेत. निकाल पाहून प्रगती आणि XP सेव्ह करायचे आहे की नंतर सुरू ठेवायचे?
+            </p>
+            <div className="flex-col gap-2">
+              <button 
+                type="button"
+                onClick={() => { setShowExitConfirmModal(false); handleSubmit(); }} 
+                className="btn btn-primary" 
+                style={{ padding: '12px', fontSize: '0.95rem', fontWeight: 800, background: 'linear-gradient(135deg, #10b981, #059669)', borderRadius: '12px' }}
+              >
+                ✅ होय, निकाल पहा व सबमिट करा
+              </button>
+              <button 
+                type="button"
+                onClick={() => { setShowExitConfirmModal(false); navigate(-1); }} 
+                className="btn" 
+                style={{ padding: '10px', background: 'var(--glass-bg)', color: 'var(--text-secondary)', fontSize: '0.9rem', borderRadius: '12px' }}
+              >
+                💾 नंतर सुरू ठेवा (Save & Exit)
+              </button>
+              <button 
+                type="button"
+                onClick={() => setShowExitConfirmModal(false)} 
+                className="btn" 
+                style={{ padding: '8px', background: 'transparent', color: 'var(--text-muted)', fontSize: '0.85rem' }}
+              >
+                रद्द करा (Continue Test)
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
