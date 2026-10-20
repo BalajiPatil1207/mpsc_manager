@@ -1,30 +1,75 @@
 import React, { useState, useEffect } from 'react';
-import { FiTrendingUp, FiPieChart, FiTrendingDown, FiAlertTriangle, FiCheckCircle, FiClock, FiRotateCcw, FiAward } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
+import { 
+  FiTrendingUp, 
+  FiPieChart, 
+  FiTrendingDown, 
+  FiAlertTriangle, 
+  FiCheckCircle, 
+  FiClock, 
+  FiRotateCcw, 
+  FiAward, 
+  FiTarget, 
+  FiBarChart2, 
+  FiCheck, 
+  FiX, 
+  FiPlayCircle 
+} from 'react-icons/fi';
 import { getDeficitState } from '../utils/deficitTracker';
 import { getSrsStats } from '../utils/srsEngine';
 
 const Analytics = () => {
+  const navigate = useNavigate();
   const [metrics, setMetrics] = useState({
     prepScore: 0,
     syllabusCovered: 0,
     revisionHealth: 0,
     strong: [],
-    weak: []
+    weak: [],
+    testHistory: [],
+    totalTestsTaken: 0,
+    avgAccuracy: 0,
+    totalGrossScore: 0,
+    totalPenaltyDeductions: 0,
+    totalCorrect: 0,
+    totalWrong: 0,
+    totalUnattempted: 0
   });
 
   useEffect(() => {
     const daily = JSON.parse(localStorage.getItem('user_daily_tasks') || '[]');
     const pyqs = JSON.parse(localStorage.getItem('practice_pyqs') || '[]');
     const weeklyCompleted = parseInt(localStorage.getItem('weekly_completed')) || 0;
+    const testHistory = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
+    const storedTestsTaken = parseInt(localStorage.getItem('tests_taken')) || 0;
+    const storedAccuracy = parseFloat(localStorage.getItem('practice_accuracy')) || 0;
     
     const totalDailyCompleted = daily.filter(t => t.completed).length;
     const currentWeekly = weeklyCompleted + totalDailyCompleted;
     
-    const prep = Math.min(100, Math.round((currentWeekly / 56) * 100));
-    const pyqCount = pyqs.filter(p => p.completed).length;
-    const syllabus = Math.min(100, prep + (pyqCount * 2)); 
-    
-    // Spaced Repetition (SRS) Engine metrics
+    // Calculate aggregate metrics from test history
+    let totalGrossScore = 0;
+    let totalPenaltyDeductions = 0;
+    let totalCorrect = 0;
+    let totalWrong = 0;
+    let totalUnattempted = 0;
+    let totalAccuracySum = 0;
+
+    testHistory.forEach(t => {
+      totalGrossScore += (t.grossScore || 0);
+      totalPenaltyDeductions += (t.penaltyScore || 0);
+      totalCorrect += (t.correctCount || 0);
+      totalWrong += (t.wrongCount || 0);
+      totalUnattempted += (t.unattemptedCount || 0);
+      totalAccuracySum += (t.accuracy || 0);
+    });
+
+    const totalTestsTaken = Math.max(testHistory.length, storedTestsTaken);
+    const calculatedAvgAccuracy = testHistory.length > 0 
+      ? Math.round(totalAccuracySum / testHistory.length) 
+      : (storedAccuracy || 0);
+
+    // Dynamic Spaced Repetition (SRS) Engine metrics
     const srs = getSrsStats();
     const revision = srs.retentionIndex; 
     
@@ -40,7 +85,7 @@ const Analytics = () => {
     const sortedSubjects = Object.entries(subjectXP).sort((a,b) => b[1] - a[1]);
     const strongTopics = sortedSubjects.length > 0 ? sortedSubjects.slice(0, 3).map(s => `${s[0]} (${Math.floor(s[1])} XP)`) : [];
     
-    const allKnownSubs = ['History', 'Geography', 'Polity', 'Economics', 'Science', 'Maths', 'Reasoning', 'Current Affairs'];
+    const allKnownSubs = ['भारतीय राज्यव्यवस्था', 'भूगोल', 'इतिहास', 'अर्थव्यवस्था', 'सामान्य विज्ञान', 'गणित', 'बुद्धिमत्ता', 'चालू घडामोडी'];
     const weakTopics = [];
     
     if (sortedSubjects.length > 3) {
@@ -49,9 +94,23 @@ const Analytics = () => {
     
     allKnownSubs.forEach(sub => {
        if (weakTopics.length < 3 && !subjectXP[sub]) {
-          weakTopics.push(`${sub} (Needs Practice)`);
+          weakTopics.push(`${sub} (सराव आवश्यक)`);
        }
     });
+
+    // Dynamic Preparation Momentum (0-100%):
+    // Balanced across Tests taken, Subject XP, and Daily/Weekly tasks
+    const testScoreWeight = Math.min(35, totalTestsTaken * 7);
+    const xpTotal = parseFloat(localStorage.getItem('xp_total')) || 0;
+    const xpWeight = Math.min(25, Math.round(xpTotal / 12));
+    const taskWeight = Math.min(40, Math.round((currentWeekly / 25) * 40));
+    const basePrep = testScoreWeight + xpWeight + taskWeight;
+    const prep = Math.min(100, Math.max(basePrep, totalTestsTaken > 0 ? 25 : 10));
+
+    // Dynamic Syllabus Covered (0-100%):
+    const pyqCount = pyqs.filter(p => p.completed).length;
+    const subjectsWithXP = Object.keys(subjectXP).filter(k => subjectXP[k] > 0).length;
+    const syllabus = Math.min(100, Math.round((subjectsWithXP / 8) * 45 + (totalTestsTaken * 5) + (pyqCount * 3) + (prep * 0.15)));
     
     const deficit = getDeficitState();
     
@@ -67,28 +126,51 @@ const Analytics = () => {
       syllabusCovered: syllabus,
       revisionHealth: revision,
       srsStats: srs,
-      strong: strongTopics.length > 0 ? strongTopics : ['No robust data yet'],
+      strong: strongTopics.length > 0 ? strongTopics : ['अजून पुरेसा डेटा उपलब्ध नाही'],
       weak: weakTopics,
       deficitHours: deficit.deficitHours,
       totalPenalties: deficit.totalPenalties,
       backlogCount: deficit.backlogTasks.length,
       backlogBySubject,
       penaltyHistory: deficit.penaltyHistory.slice(0, 5),
-      disciplineScore: Math.max(0, Math.round(100 - (deficit.deficitHours * 4)))
+      disciplineScore: Math.max(0, Math.round(100 - (deficit.deficitHours * 4))),
+      testHistory,
+      totalTestsTaken,
+      avgAccuracy: calculatedAvgAccuracy,
+      totalGrossScore,
+      totalPenaltyDeductions,
+      totalCorrect,
+      totalWrong,
+      totalUnattempted
     });
   }, []);
 
   return (
     <div className="flex-col gap-6" style={{ paddingBottom: '40px' }}>
-      <h1 className="heading-gradient" style={{ fontSize: '2.5rem' }}>Analytics Dashboard</h1>
+      <div className="flex-row justify-between align-center" style={{ flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>Analytics Dashboard</h1>
+          <p style={{ margin: '4px 0 0 0', color: 'var(--text-secondary)' }}>
+            सर्वसमावेशक अभ्यास गती, टेस्ट विश्लेषण आणि पेनल्टी रिपोर्ट
+          </p>
+        </div>
+        <button 
+          onClick={() => navigate('/mock')} 
+          className="btn btn-primary"
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 18px' }}
+        >
+          <FiTarget />
+          <span>नवीन मॉक टेस्ट सोडवा</span>
+        </button>
+      </div>
       
       {/* Overall Performance */}
       <div className="glass-panel" style={{ padding: '24px' }}>
-        <h2 style={{ fontSize: '1.25rem', marginBottom: '24px' }}>Overall Performance</h2>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '24px' }}>🎯 Overall Performance (अभ्यास प्रगती)</h2>
         <div className="flex-col gap-6">
           <div>
             <div className="flex-row justify-between mb-2" style={{ marginBottom: '8px' }}>
-              <span>Preparation Momentum</span>
+              <span>Preparation Momentum (तयारीचा वेग)</span>
               <span style={{ fontWeight: 600 }}>{metrics.prepScore}%</span>
             </div>
             <div className="progress-container" style={{ height: '12px' }}>
@@ -98,7 +180,7 @@ const Analytics = () => {
           
           <div>
             <div className="flex-row justify-between mb-2" style={{ marginBottom: '8px' }}>
-              <span>Syllabus Covered</span>
+              <span>Syllabus Covered (पूर्ण अभ्यासक्रम)</span>
               <span style={{ fontWeight: 600 }}>{metrics.syllabusCovered}%</span>
             </div>
             <div className="progress-container" style={{ height: '12px' }}>
@@ -108,13 +190,240 @@ const Analytics = () => {
           
           <div>
             <div className="flex-row justify-between mb-2" style={{ marginBottom: '8px' }}>
-              <span>Revision Health</span>
+              <span>Revision Health (पुनरावलोकन क्षमता)</span>
               <span style={{ fontWeight: 600 }}>{metrics.revisionHealth}%</span>
             </div>
             <div className="progress-container" style={{ height: '12px' }}>
               <div className="progress-bar" style={{ width: `${metrics.revisionHealth}%`, background: 'var(--warning)' }}></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* 🎯 MPSC चाचणी व सराव विश्लेषण (MPSC Mock Test & PYQ Performance Audit) */}
+      <div className="glass-panel" style={{ padding: '24px', borderLeft: '4px solid var(--accent-primary)' }}>
+        <div className="flex-row justify-between align-center" style={{ marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h2 style={{ fontSize: '1.25rem', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FiTarget color="var(--accent-primary)" />
+              MPSC सराव चाचणी व अचूकता विश्लेषण (Mock Test & PYQ Audit)
+            </h2>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              तुम्ही सोडवलेल्या सर्व मॉक टेस्ट्स, PYQs, गुण आणि नकारात्मक वजावटीचे अधिकृत विश्लेषण
+            </span>
+          </div>
+          <span style={{
+            padding: '6px 14px',
+            borderRadius: '20px',
+            background: 'var(--accent-glow)',
+            color: 'var(--accent-primary)',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            border: '1px solid var(--accent-primary)'
+          }}>
+            {metrics.totalTestsTaken > 0 ? `${metrics.totalTestsTaken} चाचण्या पूर्ण` : 'पहिली चाचणी बाकी'}
+          </span>
+        </div>
+
+        {/* 4 Performance Metric Cards */}
+        <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div className="glass-card" style={{ padding: '16px', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>एकूण सोडवलेल्या चाचण्या</span>
+            <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--text-primary)', margin: '4px 0' }}>
+              {metrics.totalTestsTaken}
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              मॉक टेस्ट्स व PYQ सराव
+            </span>
+          </div>
+
+          <div className="glass-card" style={{ padding: '16px', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>सरासरी अचूकता (Accuracy)</span>
+            <div style={{ 
+              fontSize: '1.85rem', 
+              fontWeight: 800, 
+              color: metrics.avgAccuracy >= 70 ? 'var(--success)' : metrics.avgAccuracy >= 50 ? 'var(--warning)' : 'var(--danger)', 
+              margin: '4px 0' 
+            }}>
+              {metrics.avgAccuracy}%
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              {metrics.avgAccuracy >= 70 ? 'उत्कृष्ट स्ट्राइक रेट 🎯' : metrics.avgAccuracy >= 50 ? 'मध्यम पातळी' : 'सुधारणेची गरज'}
+            </span>
+          </div>
+
+          <div className="glass-card" style={{ padding: '16px', textAlign: 'center' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>बरोबर उत्तरांचे गुण (Gross)</span>
+            <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--success)', margin: '4px 0' }}>
+              +{metrics.totalGrossScore.toFixed(1)}
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              एकूण अचूक उत्तरांचे गुण
+            </span>
+          </div>
+
+          <div className="glass-card" style={{ padding: '16px', textAlign: 'center', borderTop: '3px solid var(--danger)' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>नकारात्मक गुण वजावट</span>
+            <div style={{ fontSize: '1.85rem', fontWeight: 800, color: 'var(--danger)', margin: '4px 0' }}>
+              -{metrics.totalPenaltyDeductions.toFixed(2)}
+            </div>
+            <span style={{ fontSize: '0.75rem', color: 'var(--danger)', fontWeight: 600 }}>
+              -0.66 / -0.25 मुळे कापलेले गुण
+            </span>
+          </div>
+        </div>
+
+        {/* Negative Marking Impact Bar */}
+        {(metrics.totalCorrect > 0 || metrics.totalWrong > 0) && (
+          <div style={{ 
+            padding: '16px 20px', 
+            background: 'rgba(239, 68, 68, 0.05)', 
+            border: '1px solid rgba(239, 68, 68, 0.2)', 
+            borderRadius: '14px', 
+            marginBottom: '24px' 
+          }}>
+            <div className="flex-row justify-between align-center" style={{ marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                ⚖️ MPSC निगेटिव्ह मार्किंग प्रभाव (Answer Accuracy Ratio)
+              </span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                अचूक: {metrics.totalCorrect} | चुकीचे: {metrics.totalWrong} | न सोडवलेले: {metrics.totalUnattempted}
+              </span>
+            </div>
+            <div style={{ display: 'flex', height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'rgba(255,255,255,0.08)', marginBottom: '8px' }}>
+              <div style={{ 
+                width: `${(metrics.totalCorrect / Math.max(1, metrics.totalCorrect + metrics.totalWrong + metrics.totalUnattempted)) * 100}%`, 
+                background: 'var(--success)' 
+              }} title={`बरोबर: ${metrics.totalCorrect}`} />
+              <div style={{ 
+                width: `${(metrics.totalWrong / Math.max(1, metrics.totalCorrect + metrics.totalWrong + metrics.totalUnattempted)) * 100}%`, 
+                background: 'var(--danger)' 
+              }} title={`चुकीचे: ${metrics.totalWrong}`} />
+              <div style={{ 
+                width: `${(metrics.totalUnattempted / Math.max(1, metrics.totalCorrect + metrics.totalWrong + metrics.totalUnattempted)) * 100}%`, 
+                background: 'rgba(255,255,255,0.2)' 
+              }} title={`न सोडवलेले: ${metrics.totalUnattempted}`} />
+            </div>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              💡 <strong style={{ color: 'var(--text-primary)' }}>MPSC परीक्षेचा नियम:</strong> राज्यसेवेत प्रत्येक चुकीच्या उत्तराला -०.६६ आणि संयुक्त गट ब व क मध्ये -०.२५ वजा होतात. खात्री नसलेले प्रश्न सोडवणे टाळल्यास तुमचा कटऑफ रँक वाढेल!
+            </p>
+          </div>
+        )}
+
+        {/* Recent Test Attempts List */}
+        <div>
+          <div className="flex-row justify-between align-center" style={{ marginBottom: '14px' }}>
+            <h3 style={{ fontSize: '1.05rem', margin: 0, color: 'var(--text-primary)' }}>
+              📋 मागील चाचण्यांची कामगिरी (Recent Test Results)
+            </h3>
+            <button 
+              onClick={() => navigate('/practice')} 
+              className="btn" 
+              style={{ fontSize: '0.8rem', padding: '4px 12px', background: 'var(--glass-bg)', color: 'var(--accent-primary)', border: '1px solid var(--border-color)' }}
+            >
+              सराव दालन →
+            </button>
+          </div>
+
+          {metrics.testHistory && metrics.testHistory.length > 0 ? (
+            <div className="flex-col gap-3">
+              {metrics.testHistory.slice(0, 6).map((t, idx) => (
+                <div 
+                  key={idx} 
+                  className="glass-card" 
+                  style={{ 
+                    padding: '14px 18px', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    flexWrap: 'wrap', 
+                    gap: '12px',
+                    borderLeft: `4px solid ${t.accuracy >= 65 ? 'var(--success)' : t.accuracy >= 45 ? 'var(--warning)' : 'var(--danger)'}`
+                  }}
+                >
+                  <div className="flex-col gap-1" style={{ flex: '1 1 200px' }}>
+                    <div className="flex-row align-center gap-2">
+                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {t.title || 'MPSC Test'}
+                      </span>
+                      <span style={{ 
+                        fontSize: '0.7rem', 
+                        padding: '2px 8px', 
+                        borderRadius: '6px', 
+                        background: t.markingScheme === 'group_c' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                        color: t.markingScheme === 'group_c' ? '#60a5fa' : '#f59e0b',
+                        fontWeight: 700
+                      }}>
+                        {t.markingScheme === 'group_c' ? 'गट क +1/-0.25' : 'राज्यसेवा +2/-0.66'}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      {t.subject || 'सामान्य अध्ययन'} • {t.date}
+                    </span>
+                  </div>
+
+                  <div className="flex-row align-center gap-4" style={{ flexWrap: 'wrap' }}>
+                    <div style={{ textAlign: 'right' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>मिळालेले गुण</span>
+                      <strong style={{ fontSize: '1.15rem', color: t.score > 0 ? 'var(--success)' : 'var(--text-primary)' }}>
+                        {t.score !== undefined ? t.score : 0} <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/ {t.maxScore || 0}</span>
+                      </strong>
+                    </div>
+
+                    <div style={{ 
+                      padding: '6px 12px', 
+                      borderRadius: '8px', 
+                      background: t.accuracy >= 65 ? 'rgba(34, 197, 94, 0.15)' : t.accuracy >= 45 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      color: t.accuracy >= 65 ? 'var(--success)' : t.accuracy >= 45 ? 'var(--warning)' : 'var(--danger)',
+                      fontWeight: 800,
+                      fontSize: '0.9rem',
+                      textAlign: 'center'
+                    }}>
+                      {t.accuracy || 0}%
+                      <span style={{ display: 'block', fontSize: '0.65rem', fontWeight: 600 }}>अचूकता</span>
+                    </div>
+
+                    <button 
+                      onClick={() => navigate(t.testId ? `/test/${t.testId}` : '/mock')} 
+                      className="btn" 
+                      style={{ 
+                        padding: '6px 12px', 
+                        fontSize: '0.75rem', 
+                        background: 'var(--glass-bg)', 
+                        color: 'var(--text-primary)', 
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px'
+                      }}
+                    >
+                      पुन्हा सोडवा
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ 
+              textAlign: 'center', 
+              padding: '30px 20px', 
+              background: 'rgba(255, 255, 255, 0.02)', 
+              borderRadius: '12px',
+              border: '1px dashed var(--border-color)'
+            }}>
+              <span style={{ fontSize: '2.2rem', display: 'block', marginBottom: '8px' }}>📝</span>
+              <h4 style={{ margin: '0 0 4px 0', color: 'var(--text-primary)', fontSize: '1.05rem' }}>अजून कोणतीही टेस्ट सोडवलेली नाही</h4>
+              <p style={{ margin: '0 0 16px 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                मॉक टेस्ट किंवा आजचा Assigned PYQ संच सोडवा, तुमचे अचूकता विश्लेषण येथे आपोआप दिसेल!
+              </p>
+              <div className="flex-row gap-3 justify-center">
+                <button onClick={() => navigate('/practice')} className="btn btn-primary" style={{ fontSize: '0.85rem', padding: '8px 16px' }}>
+                  🔥 आजचे PYQs सोडवा
+                </button>
+                <button onClick={() => navigate('/mock')} className="btn" style={{ fontSize: '0.85rem', padding: '8px 16px', background: 'var(--glass-bg)' }}>
+                  🎯 मॉक टेस्ट्स पहा
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -142,7 +451,7 @@ const Analytics = () => {
           </span>
         </div>
 
-        {/* 3 Deficit Metric Cards */}
+        {/* 4 Deficit Metric Cards */}
         <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
           <div className="glass-card" style={{ padding: '16px', textAlign: 'center' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>एकूण अभ्यास तूट</span>
@@ -277,7 +586,7 @@ const Analytics = () => {
 
       <div className="dashboard-grid">
         <div className="glass-panel" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '1.125rem', marginBottom: '16px', color: 'var(--danger)' }}>🔴 Priority Areas (Weak)</h3>
+          <h3 style={{ fontSize: '1.125rem', marginBottom: '16px', color: 'var(--danger)' }}>🔴 Priority Areas (Weak Topics)</h3>
           <div className="flex-col gap-3">
              {metrics.weak.map((topic, i) => (
                 <div key={i} style={{ padding: '12px 16px', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '8px', borderLeft: '3px solid var(--danger)' }}>
@@ -288,7 +597,7 @@ const Analytics = () => {
         </div>
         
         <div className="glass-panel" style={{ padding: '24px' }}>
-          <h3 style={{ fontSize: '1.125rem', marginBottom: '16px', color: 'var(--success)' }}>🟢 Strong Topics</h3>
+          <h3 style={{ fontSize: '1.125rem', marginBottom: '16px', color: 'var(--success)' }}>🟢 Strong Topics (प्रभुत्व असलेले विषय)</h3>
           <div className="flex-col gap-3">
              {metrics.strong.map((topic, i) => (
                 <div key={i} style={{ padding: '12px 16px', background: 'rgba(34, 197, 94, 0.05)', borderRadius: '8px', borderLeft: '3px solid var(--success)' }}>

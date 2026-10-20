@@ -4,6 +4,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { FiFilm, FiPlay, FiPlayCircle, FiCopy, FiTrash2 } from 'react-icons/fi';
 import ConfirmModal from '../components/ConfirmModal';
+import { normalizeTopicName } from '../utils/textUtils';
 
 const NoteReels = () => {
   const [jsonInput, setJsonInput] = useState('[\n  {\n    "topic": "महाराष्ट्राचा भूगोल",\n    "subtopic": "परीक्षेसाठी महत्त्वाचे मुद्दे",\n    "points": [\n      "राज्यप्राणी: शेकरू.",\n      "राज्यपक्षी: हरियाल.",\n      "राज्यवृक्ष: आंबा.",\n      "राज्यफूल: ताम्हण."\n    ]\n  },\n  {\n    "topic": "History",\n    "subtopic": "Ancient India",\n    "content": "Indus Valley Civilization is one of the oldest civilizations..."\n  }\n]');
@@ -145,7 +146,7 @@ const NoteReels = () => {
     }
 
     const groupedReels = reelsForSubject.reduce((acc, reel) => {
-      const topic = reel.topic ? reel.topic.trim() : 'General Notes';
+      const topic = normalizeTopicName(reel.topic, 'General Notes');
       if(!acc[topic]) acc[topic] = [];
       acc[topic].push(reel);
       return acc;
@@ -206,8 +207,8 @@ const NoteReels = () => {
       const subj = (h.subject || '').toLowerCase();
       const activeId = activeSubjectData.id.toLowerCase();
       const isSubjMatch = activeId === 'history' ? (subj.includes('history') || subj.includes('gk')) : subj.includes(activeId);
-      const testTopic = h.topic ? h.topic.trim() : 'General Notes';
-      return isSubjMatch && testTopic === filterTopic;
+      const testTopic = normalizeTopicName(h.topic, 'General Notes');
+      return isSubjMatch && testTopic === normalizeTopicName(filterTopic, 'General Notes');
     });
 
     return (

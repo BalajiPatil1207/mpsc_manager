@@ -1,18 +1,129 @@
 import React, { useState, useEffect } from 'react';
-import { FiBookOpen, FiZap, FiPlayCircle, FiCheckCircle, FiShare2, FiEdit, FiTrash2, FiAward } from 'react-icons/fi';
+import { FiBookOpen, FiZap, FiPlayCircle, FiCheckCircle, FiShare2, FiEdit, FiTrash2, FiAward, FiRefreshCw } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { auth } from '../firebase';
 import { toast } from 'react-hot-toast';
+import { generateDynamicMpscTest } from '../utils/dynamicMockGenerator';
+import { normalizeTopicName } from '../utils/textUtils';
+
+// Master catalog of MPSC PYQ Drills across core subjects
+const MPSC_PYQ_CATALOG = [
+  {
+    id: 'polity_const_drill',
+    title: 'MPSC राज्यघटना: घटनादुरुस्ती व मूलभूत हक्क',
+    subject: 'भारतीय राज्यव्यवस्था',
+    questionCount: 15,
+    timeLimit: 15,
+    markingScheme: 'mpsc_rajyaseva',
+    meta: '15 प्रश्न • MPSC राज्यघटना PYQs',
+    badge: 'राज्यसेवा +2/-0.66'
+  },
+  {
+    id: 'geo_mh_rivers',
+    title: 'महाराष्ट्र भूगोल: सह्याद्री, नद्या व हवामान',
+    subject: 'भूगोल',
+    questionCount: 15,
+    timeLimit: 15,
+    markingScheme: 'group_c',
+    meta: '15 प्रश्न • महाराष्ट्र प्राकृतिक भूगोल',
+    badge: 'गट क +1/-0.25'
+  },
+  {
+    id: 'his_reformers',
+    title: 'आधुनिक इतिहास: १८५७ चा उठाव व समाजसुधारक',
+    subject: 'इतिहास',
+    questionCount: 15,
+    timeLimit: 15,
+    markingScheme: 'mpsc_rajyaseva',
+    meta: '15 प्रश्न • आधुनिक भारताचा इतिहास',
+    badge: 'राज्यसेवा +2/-0.66'
+  },
+  {
+    id: 'econ_rbi_budget',
+    title: 'अर्थव्यवस्था: RBI धोरणे, दारिद्र्य व पंचवार्षिक योजना',
+    subject: 'अर्थव्यवस्था',
+    questionCount: 15,
+    timeLimit: 15,
+    markingScheme: 'group_c',
+    meta: '15 प्रश्न • भारतीय अर्थव्यवस्था PYQs',
+    badge: 'गट क +1/-0.25'
+  },
+  {
+    id: 'sci_physics_bio',
+    title: 'सामान्य विज्ञान: भौतिकशास्त्र व जीवशास्त्र संकल्पना',
+    subject: 'सामान्य विज्ञान',
+    questionCount: 15,
+    timeLimit: 15,
+    markingScheme: 'mpsc_rajyaseva',
+    meta: '15 प्रश्न • सामान्य विज्ञान सराव संच',
+    badge: 'राज्यसेवा +2/-0.66'
+  },
+  {
+    id: 'csat_reasoning',
+    title: 'CSAT बुद्धिमत्ता: तर्कक्षमता व वेन आकृत्या संच',
+    subject: 'बुद्धिमत्ता',
+    questionCount: 15,
+    timeLimit: 15,
+    markingScheme: 'group_c',
+    meta: '15 प्रश्न • CSAT Reasoning Practice',
+    badge: 'गट क +1/-0.25'
+  },
+  {
+    id: 'polity_panchayat',
+    title: 'पंचायत राज: ७३ व ७४ वी घटनादुरुस्ती संच',
+    subject: 'भारतीय राज्यव्यवस्था',
+    questionCount: 15,
+    timeLimit: 15,
+    markingScheme: 'mpsc_rajyaseva',
+    meta: '15 प्रश्न • पंचायत राज व स्थानिक प्रशासन',
+    badge: 'राज्यसेवा +2/-0.66'
+  },
+  {
+    id: 'geo_agri_mineral',
+    title: 'महाराष्ट्र कृषी व खनिजे: वारंवार विचारलेले प्रश्न',
+    subject: 'भूगोल',
+    questionCount: 15,
+    timeLimit: 15,
+    markingScheme: 'group_c',
+    meta: '15 प्रश्न • खनिजे, उद्योग व वाहतूक',
+    badge: 'गट क +1/-0.25'
+  }
+];
+
+// Helper to get or dynamically rotate daily PYQ sets
+const getDailyPyqs = (forceRefresh = false) => {
+  const today = new Date().toISOString().split('T')[0];
+  const savedDate = localStorage.getItem('practice_pyqs_date');
+  const saved = localStorage.getItem('practice_pyqs');
+
+  if (!forceRefresh && savedDate === today && saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch (e) {}
+  }
+
+  // Generate dynamic set rotating by date or randomized
+  const shuffled = [...MPSC_PYQ_CATALOG].sort(() => Math.random() - 0.5);
+  // Pick 3-4 distinct topics
+  const selected = shuffled.slice(0, 3).map(item => ({
+    ...item,
+    id: `${item.id}_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    completed: false,
+    assignedDate: today
+  }));
+
+  try {
+    localStorage.setItem('practice_pyqs', JSON.stringify(selected));
+    localStorage.setItem('practice_pyqs_date', today);
+  } catch (e) {}
+
+  return selected;
+};
 
 const Practice = () => {
-  const initialPyqs = [
-    { id: 'his_foundation', title: 'Phase 1 Foundation', meta: '15 Questions • MPSC History', completed: false },
-    { id: 'geo_basics', title: 'Geography Basics', meta: '20 Questions • Maharashtra Geo', completed: false },
-    { id: 'polity_drill', title: 'Panchayat Raj Drill', meta: '30 Questions • Polity', completed: false }
-  ];
-
-  const [hasPlan, setHasPlan] = useState(false);
+  const [hasPlan, setHasPlan] = useState(true);
   const [history, setHistory] = useState(() => {
     try {
       const cached = localStorage.getItem('mpsc_cached_practice');
@@ -56,7 +167,8 @@ const Practice = () => {
   
   const handleEditSubmit = async (e) => {
     e.preventDefault();
-    const updatedTest = { ...editingTest };
+    const cleanTopic = normalizeTopicName(editingTest.topic);
+    const updatedTest = { ...editingTest, topic: cleanTopic };
     const targetId = updatedTest._id || updatedTest.id;
     
     // Optimistic UI Update
@@ -68,7 +180,7 @@ const Practice = () => {
         title: updatedTest.title,
         subject: updatedTest.subject,
         timeLimit: updatedTest.timeLimit,
-        topic: updatedTest.topic
+        topic: cleanTopic
       });
       if(res.data.success) {
         toast.success("Test updated successfully!");
@@ -202,11 +314,14 @@ const Practice = () => {
     </>
   );
 
-  const [pyqs, setPyqs] = useState(() => {
-    const saved = localStorage.getItem('practice_pyqs');
-    return saved ? JSON.parse(saved) : initialPyqs;
-  });
+  const [pyqs, setPyqs] = useState(() => getDailyPyqs(false));
   const navigate = useNavigate();
+
+  const handleRefreshPyqs = () => {
+    const refreshed = getDailyPyqs(true);
+    setPyqs(refreshed);
+    toast.success("आजचे नवीन MPSC सराव प्रश्न लोड झाले! 🔄");
+  };
 
   const togglePyq = (id) => {
     const updated = pyqs.map(p => {
@@ -214,13 +329,85 @@ const Practice = () => {
       return p;
     });
     setPyqs(updated);
-    localStorage.setItem('practice_pyqs', JSON.stringify(updated));
+    try {
+      localStorage.setItem('practice_pyqs', JSON.stringify(updated));
+    } catch (e) {}
   };
 
-  const startTest = async (title, subject) => {
-    // Navigate to Custom Maker since AI API generation requires detailed input
-    toast.success("Ready to create your targeted Drill!");
-    navigate('/test-maker');
+  const startPyqDrill = async (pyq) => {
+    const toastId = toast.loading(`${pyq.title || 'सराव संच'} सुरू करत आहे...`);
+    try {
+      const newTest = generateDynamicMpscTest({
+        subject: pyq.subject || 'all',
+        questionCount: pyq.questionCount || 15,
+        markingScheme: pyq.markingScheme || 'mpsc_rajyaseva',
+        timeLimit: pyq.timeLimit || 15,
+        topic: pyq.title
+      });
+      newTest.title = pyq.title || 'MPSC PYQ Drill';
+
+      // Save into mpsc_cached_mocks immediately for 0ms latency in TakeTest
+      const cached = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+      const updated = [newTest, ...cached.filter(t => (t.id || t._id) !== newTest.id)];
+      localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updated));
+
+      // Asynchronously sync to backend
+      const usr = auth.currentUser;
+      axios.post('https://mpsc-manager.onrender.com/api/custom-tests', {
+        title: newTest.title,
+        subject: newTest.subject,
+        topic: newTest.topic,
+        timeLimit: newTest.timeLimit,
+        questions: newTest.questions,
+        markingScheme: newTest.markingScheme,
+        totalMarks: newTest.totalMarks,
+        examDate: newTest.examDate,
+        createdBy: usr?.uid || 'pyq_engine',
+        creatorName: usr?.displayName ? usr.displayName.split(' ')[0] : 'PYQ Drill'
+      }).catch(err => console.warn("Backend pyq sync notice:", err?.message));
+
+      toast.success(`${pyq.title} सज्ज आहे! 🎯`, { id: toastId });
+      navigate(`/test/${newTest.id}`);
+    } catch (err) {
+      toast.error('चाचणी सुरू करताना त्रुटी: ' + err.message, { id: toastId });
+    }
+  };
+
+  const startSubjectDrill = async (subject) => {
+    const toastId = toast.loading(`${subject} ड्रिल तयार करत आहे...`);
+    try {
+      const newTest = generateDynamicMpscTest({
+        subject: subject,
+        questionCount: 15,
+        markingScheme: 'mpsc_rajyaseva',
+        timeLimit: 15,
+        topic: `${subject} Rapid Mastery Drill`
+      });
+      newTest.title = `${subject} Rapid Drill`;
+
+      const cached = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+      const updated = [newTest, ...cached.filter(t => (t.id || t._id) !== newTest.id)];
+      localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updated));
+
+      const usr = auth.currentUser;
+      axios.post('https://mpsc-manager.onrender.com/api/custom-tests', {
+        title: newTest.title,
+        subject: newTest.subject,
+        topic: newTest.topic,
+        timeLimit: newTest.timeLimit,
+        questions: newTest.questions,
+        markingScheme: newTest.markingScheme,
+        totalMarks: newTest.totalMarks,
+        examDate: newTest.examDate,
+        createdBy: usr?.uid || 'drill_engine',
+        creatorName: usr?.displayName ? usr.displayName.split(' ')[0] : 'Subject Drill'
+      }).catch(err => console.warn("Backend drill sync notice:", err?.message));
+
+      toast.success(`${subject} ड्रिल सुरू झाली! 🚀`, { id: toastId });
+      navigate(`/test/${newTest.id}`);
+    } catch (err) {
+      toast.error('ड्रिल तयार करताना त्रुटी: ' + err.message, { id: toastId });
+    }
   };
 
   const copyShareLink = (testId) => {
@@ -355,9 +542,13 @@ const Practice = () => {
     }
 
     const groupedTests = testsForSubject.reduce((acc, test) => {
-      const topic = test.topic ? test.topic.trim() : 'General Practice';
+      const topic = normalizeTopicName(test.topic);
       if(!acc[topic]) acc[topic] = [];
-      acc[topic].push(test);
+      const testId = test._id || test.id;
+      const alreadyHas = testId && acc[topic].some(existing => (existing._id || existing.id) === testId);
+      if (!alreadyHas) {
+        acc[topic].push(test);
+      }
       return acc;
     }, {});
 
@@ -412,12 +603,21 @@ const Practice = () => {
   }
 
   if (filterSubject && activeSubjectData && filterTopic) {
-    const testsForTopic = filteredHistory.filter(h => {
+    const targetCanonical = normalizeTopicName(filterTopic);
+    const rawTestsForTopic = filteredHistory.filter(h => {
       const subj = (h.subject || '').toLowerCase();
       const activeId = activeSubjectData.id.toLowerCase();
       const isSubjMatch = activeId === 'history' ? (subj.includes('history') || subj.includes('gk')) : subj.includes(activeId);
-      const testTopic = h.topic ? h.topic.trim() : 'General Practice';
-      return isSubjMatch && testTopic === filterTopic;
+      const testTopic = normalizeTopicName(h.topic);
+      return isSubjMatch && testTopic === targetCanonical;
+    });
+
+    const seenTopicTestIds = new Set();
+    const testsForTopic = rawTestsForTopic.filter(t => {
+      const uid = t._id || t.id;
+      if (uid && seenTopicTestIds.has(uid)) return false;
+      if (uid) seenTopicTestIds.add(uid);
+      return true;
     });
 
     return (
@@ -441,7 +641,7 @@ const Practice = () => {
           {testsForTopic.map(test => {
             const isSolved = test.attemptedBy?.includes(currentUser);
             return (
-            <div key={test.id} className="glass-card" style={{ padding: '16px', borderTop: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--bg-primary)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div key={test._id || test.id} className="glass-card" style={{ padding: '16px', borderTop: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--bg-primary)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="flex-col gap-2">
                 <div className="flex-row gap-2 align-center justify-between">
                   <h3 style={{ fontSize: '1.125rem', margin: 0, textDecoration: isSolved ? 'line-through' : 'none', color: isSolved ? 'var(--text-muted)' : 'var(--text-primary)' }}>{test.title}</h3>
@@ -507,58 +707,196 @@ const Practice = () => {
       </div>
       <p style={{ color: 'var(--text-secondary)' }}>Targeted daily practice based on your active study plan.</p>
 
-      {!hasPlan ? (
-        <div className="glass-panel" style={{ padding: '40px', textAlign: 'center' }}>
-          <FiZap size={48} color="var(--text-muted)" style={{ marginBottom: '16px' }} />
-          <h2 style={{ fontSize: '1.25rem', color: 'var(--text-secondary)' }}>No Active Practice Sets</h2>
-          <p style={{ color: 'var(--text-muted)' }}>Generate a Study Plan in the planner to unlock personalized PYQs and daily MCQ drills.</p>
-          <button onClick={() => navigate('/planner')} className="btn btn-primary" style={{ marginTop: '16px' }}>Go to Study Planner</button>
-        </div>
-      ) : (
-        <div className="dashboard-grid">
-          <div className="glass-panel" style={{ padding: '24px', maxWidth: '100%', overflowX: 'hidden' }}>
-             <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Today's Assigned PYQs</h2>
-             <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollPadding: '0', width: '100%' }}>
-               {pyqs.map(p => (
-                 <div key={p.id} className="glass-card" style={{ minWidth: '280px', flex: '0 0 auto', scrollSnapAlign: 'start', padding: '16px', borderLeft: `4px solid ${p.completed ? 'var(--success)' : 'var(--accent-primary)'}`, transition: 'all 0.3s ease' }}>
-                    <div className="flex-row justify-between" style={{ alignItems: 'center' }}>
-                      <div className="flex-col gap-1">
-                        <h3 style={{ fontSize: '1.125rem', color: p.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: p.completed ? 'line-through' : 'none' }}>{p.title}</h3>
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>{p.completed ? 'Completed Today' : p.meta}</p>
-                      </div>
-                      {p.completed ? (
-                        <button className="btn" onClick={() => togglePyq(p.id)} title="Undo" style={{ padding: '8px' }}>
-                          <FiCheckCircle size={24} color="var(--success)" />
-                        </button>
-                      ) : (
-                        <div className="flex-col gap-2">
-                          <button onClick={() => startTest(p.title, p.title.includes('History') ? 'History' : 'Geography')} className="btn btn-primary" style={{ background: 'var(--accent-glow)', color: 'var(--accent-primary)', border: '1px solid var(--accent-primary)', padding: '6px 12px', fontSize: '0.75rem' }}>Start</button>
-                          <button onClick={() => togglePyq(p.id)} className="btn" style={{ padding: '6px 12px', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)', fontSize: '0.75rem' }}>Done</button>
-                        </div>
-                      )}
-                    </div>
-                 </div>
-               ))}
+      <div className="dashboard-grid">
+        <div className="glass-panel" style={{ padding: '24px', maxWidth: '100%', overflowX: 'hidden' }}>
+           <div className="flex-row justify-between align-center" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+             <div>
+               <h2 style={{ fontSize: '1.25rem', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                 🔥 Today's Assigned PYQs (आजचा सराव संच)
+               </h2>
+               <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                 MPSC आयोगाचे अधिकृत प्रश्न • दररोज नवीन विषयांचे संच
+               </span>
              </div>
-          </div>
-          
-          <div className="glass-panel" style={{ padding: '24px' }}>
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>Topic Wise Mastery</h2>
-            <div className="flex-col gap-0" style={{ maxHeight: '180px', overflowY: 'auto', paddingRight: '8px' }}>
-              {['Polity', 'Economics', 'Science', 'Current Affairs', 'History', 'Geography'].map((subject) => {
-                 const xp = parseFloat(localStorage.getItem(`xp_${subject}`)) || 0;
-                 return (
-                 <div key={subject} className="flex-row justify-between" style={{ alignItems: 'center', padding: '12px 0', borderBottom: '1px solid var(--border-color)' }}>
-                   <div style={{ display: 'flex', flexDirection: 'column' }}>
-                     <span style={{ color: 'var(--text-primary)' }}>{subject}</span>
-                     <span style={{ color: 'var(--accent-secondary)', fontSize: '0.75rem', fontWeight: 'bold' }}>{xp} XP Earned</span>
+             <button 
+               onClick={handleRefreshPyqs}
+               className="btn"
+               style={{ 
+                 fontSize: '0.8rem', 
+                 display: 'flex', 
+                 alignItems: 'center', 
+                 gap: '6px', 
+                 background: 'rgba(59, 130, 246, 0.1)', 
+                 color: '#60a5fa', 
+                 border: '1px solid rgba(59, 130, 246, 0.3)',
+                 padding: '6px 12px',
+                 borderRadius: '10px',
+                 cursor: 'pointer'
+               }}
+               title="आजचे नवीन सराव प्रश्न लोड करा"
+             >
+               <FiRefreshCw size={13} />
+               <span>नवीन PYQs लोड करा</span>
+             </button>
+           </div>
+
+           <div className="flex-row gap-4 horizontal-scroll" style={{ overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '8px', scrollPadding: '0', width: '100%' }}>
+             {pyqs.map(p => (
+               <div 
+                 key={p.id} 
+                 className="glass-card" 
+                 style={{ 
+                   minWidth: '300px', 
+                   maxWidth: '340px',
+                   flex: '0 0 auto', 
+                   scrollSnapAlign: 'start', 
+                   padding: '18px', 
+                   borderLeft: `4px solid ${p.completed ? 'var(--success)' : 'var(--accent-primary)'}`, 
+                   background: p.completed ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)',
+                   transition: 'all 0.3s ease',
+                   display: 'flex',
+                   flexDirection: 'column',
+                   justifyContent: 'space-between',
+                   gap: '12px'
+                 }}
+               >
+                 <div>
+                   <div className="flex-row justify-between align-center" style={{ marginBottom: '6px' }}>
+                     <span style={{ 
+                       fontSize: '0.7rem', 
+                       padding: '2px 8px', 
+                       borderRadius: '6px', 
+                       background: 'rgba(255, 255, 255, 0.08)',
+                       color: 'var(--text-secondary)',
+                       fontWeight: 600
+                     }}>
+                       {p.subject || 'MPSC GS'}
+                     </span>
+                     {p.badge && (
+                       <span style={{ 
+                         fontSize: '0.7rem', 
+                         padding: '2px 8px', 
+                         borderRadius: '6px', 
+                         background: p.badge.includes('राज्यसेवा') ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
+                         color: p.badge.includes('राज्यसेवा') ? '#f59e0b' : '#60a5fa',
+                         fontWeight: 700
+                       }}>
+                         {p.badge}
+                       </span>
+                     )}
                    </div>
-                   <button className="btn" onClick={() => startTest(`${subject} Drill`, subject)} style={{ padding: '6px 16px', fontSize: '0.75rem', background: 'var(--glass-bg)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>Drill</button>
+                   <h3 style={{ 
+                     fontSize: '1rem', 
+                     lineHeight: '1.4', 
+                     margin: '0 0 4px 0',
+                     color: p.completed ? 'var(--text-muted)' : 'var(--text-primary)', 
+                     textDecoration: p.completed ? 'line-through' : 'none' 
+                   }}>
+                     {p.title}
+                   </h3>
+                   <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: 0 }}>
+                     {p.completed ? '✅ आज सोडवून पूर्ण झाले' : p.meta}
+                   </p>
                  </div>
-                 );
-              })}
-            </div>
+
+                 <div className="flex-row gap-2" style={{ marginTop: 'auto', paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                   {p.completed ? (
+                     <button 
+                       className="btn" 
+                       onClick={() => togglePyq(p.id)} 
+                       title="Undo" 
+                       style={{ 
+                         width: '100%', 
+                         padding: '8px', 
+                         fontSize: '0.8rem', 
+                         background: 'rgba(34, 197, 94, 0.12)', 
+                         color: 'var(--success)', 
+                         border: '1px solid rgba(34, 197, 94, 0.3)',
+                         borderRadius: '8px',
+                         display: 'flex',
+                         alignItems: 'center',
+                         justifyContent: 'center',
+                         gap: '6px'
+                       }}
+                     >
+                       <FiCheckCircle size={16} color="var(--success)" />
+                       <span>पूर्ण झाले (बदला)</span>
+                     </button>
+                   ) : (
+                     <>
+                       <button 
+                         onClick={() => startPyqDrill(p)} 
+                         className="btn btn-primary" 
+                         style={{ 
+                           flex: 2, 
+                           padding: '8px 12px', 
+                           fontSize: '0.8rem', 
+                           display: 'flex', 
+                           alignItems: 'center', 
+                           justifyContent: 'center', 
+                           gap: '6px' 
+                         }}
+                       >
+                         <span>🚀 सोडवा (Start)</span>
+                       </button>
+                       <button 
+                         onClick={() => togglePyq(p.id)} 
+                         className="btn" 
+                         style={{ 
+                           flex: 1, 
+                           padding: '8px 10px', 
+                           background: 'var(--glass-bg)', 
+                           color: 'var(--text-secondary)', 
+                           border: '1px solid var(--border-color)', 
+                           fontSize: '0.8rem',
+                           borderRadius: '8px'
+                         }}
+                         title="Mark as complete"
+                       >
+                         ✓ पूर्ण
+                       </button>
+                     </>
+                   )}
+                 </div>
+               </div>
+             ))}
+           </div>
+        </div>
+        
+        <div className="glass-panel" style={{ padding: '24px' }}>
+          <h2 style={{ fontSize: '1.25rem', marginBottom: '8px' }}>🎯 Topic Wise Mastery</h2>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '14px' }}>
+            क्लिक करा आणि थेट १५ प्रश्नांची रॅपिड सराव ड्रिल सोडवा
+          </p>
+          <div className="flex-col gap-0" style={{ maxHeight: '200px', overflowY: 'auto', paddingRight: '8px' }}>
+            {['भारतीय राज्यव्यवस्था', 'भूगोल', 'इतिहास', 'अर्थव्यवस्था', 'सामान्य विज्ञान', 'चालू घडामोडी'].map((subject) => {
+               const xp = parseFloat(localStorage.getItem(`xp_${subject}`)) || 0;
+               return (
+               <div key={subject} className="flex-row justify-between" style={{ alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border-color)' }}>
+                 <div style={{ display: 'flex', flexDirection: 'column' }}>
+                   <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>{subject}</span>
+                   <span style={{ color: 'var(--accent-secondary)', fontSize: '0.75rem', fontWeight: 'bold' }}>{xp} XP Earned</span>
+                 </div>
+                 <button 
+                   className="btn" 
+                   onClick={() => startSubjectDrill(subject)} 
+                   style={{ 
+                     padding: '6px 14px', 
+                     fontSize: '0.75rem', 
+                     background: 'var(--glass-bg)', 
+                     color: 'var(--accent-primary)', 
+                     border: '1px solid var(--accent-primary)',
+                     borderRadius: '8px',
+                     cursor: 'pointer'
+                   }}
+                 >
+                   ⚡ Drill
+                 </button>
+               </div>
+               );
+            })}
           </div>
+        </div>
           
           <div className="glass-panel" style={{ padding: '24px', gridColumn: '1 / -1' }}>
              <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>📚 Subject Wise Practice</h2>
@@ -603,7 +941,6 @@ const Practice = () => {
           </div>
 
         </div>
-      )}
       {renderModals()}
     </div>
   );

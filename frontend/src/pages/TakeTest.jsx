@@ -438,6 +438,30 @@ const TakeTest = () => {
           tests_taken: testsTaken + 1
         };
 
+        // Save completed test log for Analytics
+        try {
+          const testHistory = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
+          testHistory.unshift({
+            testId,
+            title: test.title || 'MPSC Test',
+            subject: test.subject || 'General Studies',
+            grossScore,
+            penaltyScore,
+            score: currentScore,
+            maxScore,
+            accuracy: Number(testPercent.toFixed(1)),
+            correctCount,
+            wrongCount,
+            unattemptedCount,
+            markingScheme,
+            date: new Date().toLocaleDateString('mr-IN'),
+            timestamp: Date.now()
+          });
+          localStorage.setItem('mpsc_test_history', JSON.stringify(testHistory.slice(0, 30)));
+        } catch (histErr) {
+          console.warn("Failed to store test history", histErr);
+        }
+
         // Add Points!
         if (res.data.scoreEarned > 0) {
            const sub = res.data.subject || 'General';
