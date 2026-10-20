@@ -50,6 +50,9 @@ function App() {
     const initialTheme = document.body.getAttribute('data-theme') || 'light';
     setTheme(initialTheme);
     document.body.setAttribute('data-theme', initialTheme);
+
+    // 🚀 Background Pre-warm Render Server immediately on frontend load
+    axios.get('https://mpsc-manager.onrender.com/api/health', { timeout: 8000 }).catch(() => {});
   }, []);
 
   const toggleTheme = () => {

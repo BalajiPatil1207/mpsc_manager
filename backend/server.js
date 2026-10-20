@@ -28,6 +28,15 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.send('MPSC Study OS API is running 🚀');
 });
+
+// 💓 Health Check & Keep-Alive Route for Render & External Monitors
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'online',
+    uptime: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
 app.use('/api/exams', examRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/ai', aiRoutes);
@@ -80,4 +89,28 @@ app.use(errorHandler);
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+
+  // 🚀 Render Keep-Alive: Ping itself every 10 minutes to prevent 15-min idle spin-down
+  const RENDER_EXTERNAL_URL = process.env.RENDER_EXTERNAL_URL || 'https://mpsc-manager.onrender.com';
+  const https = require('https');
+  const http = require('http');
+
+  const pingSelf = () => {
+    try {
+      const targetUrl = `${RENDER_EXTERNAL_URL}/api/health`;
+      const client = targetUrl.startsWith('https') ? https : http;
+      client.get(targetUrl, (res) => {
+        console.log(`[Render Keep-Alive] Ping sent to ${targetUrl} (Status: ${res.statusCode})`);
+      }).on('error', (err) => {
+        console.warn(`[Render Keep-Alive] Notice: ${err.message}`);
+      });
+    } catch (e) {
+      console.warn(`[Render Keep-Alive] Exception:`, e.message);
+    }
+  };
+
+  // Run ping every 10 minutes (600,000 ms) - safely before Render's 15-minute idle limit
+  setInterval(pingSelf, 10 * 60 * 1000);
+  // Initial ping 45 seconds after startup
+  setTimeout(pingSelf, 45 * 1000);
 });
