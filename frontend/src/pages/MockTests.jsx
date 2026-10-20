@@ -28,6 +28,33 @@ const MockTests = () => {
   const [selectedSchemeFilter, setSelectedSchemeFilter] = useState('all');
   const [editingTest, setEditingTest] = useState(null);
   const [deletingTest, setDeletingTest] = useState(null);
+  const [solvedSet, setSolvedSet] = useState(() => {
+    try {
+      const solved = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
+      const hist = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
+      return new Set([...solved, ...hist.map(h => h.testId).filter(Boolean)]);
+    } catch (e) {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    const updateSolved = () => {
+      try {
+        const solved = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
+        const hist = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
+        setSolvedSet(new Set([...solved, ...hist.map(h => h.testId).filter(Boolean)]));
+      } catch (e) {}
+    };
+    window.addEventListener('focus', updateSolved);
+    window.addEventListener('storage', updateSolved);
+    window.addEventListener('mpsc_test_submitted', updateSolved);
+    return () => {
+      window.removeEventListener('focus', updateSolved);
+      window.removeEventListener('storage', updateSolved);
+      window.removeEventListener('mpsc_test_submitted', updateSolved);
+    };
+  }, []);
 
   // Dynamic Test Generator State
   const [showDynamicModal, setShowDynamicModal] = useState(false);
@@ -185,7 +212,20 @@ const MockTests = () => {
           });
           
           const seedIds = new Set(MPSC_SEED_MOCKS.map(s => s._id || s.id));
-          const combined = [...MPSC_SEED_MOCKS, ...remoteMocks.filter(m => !seedIds.has(m._id || m.id))];
+          const cachedRaw = localStorage.getItem('mpsc_cached_mocks');
+          const localMocks = cachedRaw ? JSON.parse(cachedRaw) : [];
+          
+          const combinedMap = new Map();
+          MPSC_SEED_MOCKS.forEach(s => combinedMap.set(s._id || s.id, s));
+          remoteMocks.forEach(m => {
+            const id = m._id || m.id;
+            if (!combinedMap.has(id)) combinedMap.set(id, m);
+          });
+          localMocks.forEach(l => {
+            const id = l._id || l.id;
+            if (!combinedMap.has(id)) combinedMap.set(id, l);
+          });
+          const combined = Array.from(combinedMap.values());
           setHistory(combined);
           try {
             localStorage.setItem('mpsc_cached_mocks', JSON.stringify(combined));
@@ -206,6 +246,18 @@ const MockTests = () => {
 
   const currentUser = auth.currentUser?.uid || 'anonymous';
 
+  const isTestSolved = (test) => {
+    if (!test) return false;
+    const tId = test._id || test.id;
+    if (test.isSolved) return true;
+    if (tId && solvedSet.has(tId)) return true;
+    if (test.attemptedBy && Array.isArray(test.attemptedBy)) {
+      if (currentUser && test.attemptedBy.includes(currentUser)) return true;
+      if (test.attemptedBy.includes('anonymous') || test.attemptedBy.length > 0) return true;
+    }
+    return false;
+  };
+
   // Flat filtered + sorted list
   const filteredHistory = history
     .filter(h => {
@@ -220,8 +272,8 @@ const MockTests = () => {
       );
     })
     .sort((a, b) => {
-      const aSolved = a.attemptedBy?.includes(currentUser) ? 1 : 0;
-      const bSolved = b.attemptedBy?.includes(currentUser) ? 1 : 0;
+      const aSolved = isTestSolved(a) ? 1 : 0;
+      const bSolved = isTestSolved(b) ? 1 : 0;
       return aSolved - bSolved;
     });
 
@@ -457,7 +509,7 @@ const MockTests = () => {
 
           <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))', gap: '18px' }}>
             {filteredHistory.map((test, idx) => {
-              const isSolved = test.attemptedBy?.includes(currentUser);
+              const isSolved = isTestSolved(test);
               const qCount = test.questions?.length || 0;
               const isGroupC = test.markingScheme === 'group_c';
               const marksPerQ = isGroupC ? 1.0 : 2.0;
@@ -484,8 +536,8 @@ const MockTests = () => {
                   style={{
                     padding: '20px 22px',
                     borderRadius: '18px',
-                    border: isSolved ? '1.5px solid rgba(34, 197, 94, 0.4)' : '1px solid rgba(255, 255, 255, 0.1)',
-                    background: isSolved ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.06), rgba(15, 23, 42, 0.8))' : 'var(--bg-secondary)',
+                    border: isSolved ? '1.5px solid rgba(34, 197, 94, 0.45)' : '1px solid rgba(255, 255, 255, 0.1)',
+                    background: isSolved ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(15, 23, 42, 0.85))' : 'var(--bg-secondary)',
                     display: 'flex', 
                     flexDirection: 'column', 
                     gap: '14px',
@@ -493,7 +545,7 @@ const MockTests = () => {
                     boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)'
                   }}
                 >
-                  {/* Top Bar: Subject Badge + Dynamic Badge + Exam Date */}
+                  {/* Top Bar: Subject Badge + Dynamic Badge + Solved Badge + Exam Date */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <span style={{
@@ -522,6 +574,22 @@ const MockTests = () => {
                           gap: '3px'
                         }}>
                           ⚡ डायनॅमिक
+                        </span>
+                      )}
+                      {isSolved && (
+                        <span style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          color: '#10b981',
+                          background: 'rgba(16, 185, 129, 0.2)',
+                          border: '1px solid rgba(16, 185, 129, 0.45)',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px'
+                        }}>
+                          <FiCheckCircle size={11} /> सोडवली (Done)
                         </span>
                       )}
                     </div>

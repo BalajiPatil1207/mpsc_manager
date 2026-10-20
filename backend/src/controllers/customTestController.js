@@ -137,15 +137,31 @@ exports.generateMegaTest = async (req, res, next) => {
 exports.submitTest = async (req, res, next) => {
   try {
     const { testId } = req.params;
-    const { answers, userId, userName, timeTaken } = req.body;
+    const { answers, userId, userName, timeTaken, testTitle, subject, markingScheme, wrongQuestions: clientWrongQuestions } = req.body;
     
-    const doc = await db.collection('customTests').doc(testId).get();
-    if (!doc.exists) return res.status(404).json({ success: false, message: "Test not found" });
-    const test = doc.data();
+    const docRef = db.collection('customTests').doc(testId);
+    const doc = await docRef.get();
+    
+    let test;
+    if (!doc.exists) {
+      test = {
+        title: testTitle || 'MPSC Mock Test',
+        subject: subject || 'General Studies',
+        markingScheme: markingScheme || 'mpsc_rajyaseva',
+        questions: clientWrongQuestions || [],
+        attemptedBy: userId ? [userId] : ['anonymous'],
+        createdAt: new Date().toISOString()
+      };
+    } else {
+      test = doc.data();
+    }
 
     let attemptedBy = test.attemptedBy || [];
     if (userId && userId !== 'anonymous' && !attemptedBy.includes(userId)) {
       attemptedBy.push(userId);
+    }
+    if (!attemptedBy.includes('anonymous')) {
+      attemptedBy.push('anonymous');
     }
 
     let wrongQuestions = [];
@@ -153,16 +169,23 @@ exports.submitTest = async (req, res, next) => {
     let wrongCount = 0;
     let unattemptedCount = 0;
     
-    test.questions.forEach((q, idx) => {
-      if (answers[idx] === q.correctOption) {
-        correctCount += 1;
-      } else if (answers[idx] !== undefined && answers[idx] !== null) {
-        wrongQuestions.push(q);
-        wrongCount += 1;
-      } else {
-        unattemptedCount += 1;
-      }
-    });
+    if (Array.isArray(test.questions) && test.questions.length > 0 && answers) {
+      test.questions.forEach((q, idx) => {
+        if (answers[idx] === q.correctOption) {
+          correctCount += 1;
+        } else if (answers[idx] !== undefined && answers[idx] !== null) {
+          wrongQuestions.push(q);
+          wrongCount += 1;
+        } else {
+          unattemptedCount += 1;
+        }
+      });
+    }
+
+    if (wrongQuestions.length === 0 && Array.isArray(clientWrongQuestions) && clientWrongQuestions.length > 0) {
+      wrongQuestions = clientWrongQuestions;
+      if (wrongCount === 0) wrongCount = clientWrongQuestions.length;
+    }
 
     const totalAttempted = correctCount + wrongCount;
     const isGroupC = test.markingScheme === 'group_c';
@@ -279,7 +302,11 @@ exports.submitTest = async (req, res, next) => {
     }
 
     // Update test document with participant info
-    await db.collection('customTests').doc(testId).update({ attemptedBy });
+    if (doc.exists) {
+      await docRef.update({ attemptedBy });
+    } else {
+      await docRef.set({ ...test, attemptedBy }, { merge: true });
+    }
 
     // Mistake Mock Generation & Update logic
     let returnMessage = "Test submitted successfully!";
@@ -293,7 +320,7 @@ exports.submitTest = async (req, res, next) => {
       if (!existingMistakeDocs.empty) {
          const existingDoc = existingMistakeDocs.docs[0];
          const existingData = existingDoc.data();
-         const mergedQuestions = [...existingData.questions];
+         const mergedQuestions = [...(existingData.questions || [])];
          wrongQuestions.forEach(wq => {
             if (!mergedQuestions.find(q => q.question === wq.question)) {
                mergedQuestions.push(wq);
@@ -308,8 +335,8 @@ exports.submitTest = async (req, res, next) => {
          returnMessage = `Updated Mistake Mock with ${wrongQuestions.length} new mistakes!`;
       } else {
         const newTest = {
-          title: `Mistakes: ${test.title}`,
-          subject: `${test.subject || 'General'}`,
+          title: `Mistakes: ${test.title || testTitle || 'MPSC Test'}`,
+          subject: `${test.subject || subject || 'General'}`,
           timeLimit: Math.max(wrongQuestions.length, 5),
           questions: wrongQuestions,
           createdBy: userId || 'anonymous',
@@ -321,14 +348,18 @@ exports.submitTest = async (req, res, next) => {
         returnMessage = `Generated Mistake Mock for revision!`;
       }
     } else if (wrongQuestions.length > 0 && test.isMistakeMock) {
-        await db.collection('customTests').doc(testId).update({
-            questions: wrongQuestions,
-            timeLimit: Math.max(wrongQuestions.length, 5),
-            updatedAt: new Date().toISOString()
-        });
+        if (doc.exists) {
+          await docRef.update({
+              questions: wrongQuestions,
+              timeLimit: Math.max(wrongQuestions.length, 5),
+              updatedAt: new Date().toISOString()
+          });
+        }
         returnMessage = `Progress! Only ${wrongQuestions.length} mistakes remain to revise.`;
     } else if (wrongQuestions.length === 0 && test.isMistakeMock) {
-        await db.collection('customTests').doc(testId).delete();
+        if (doc.exists) {
+          await docRef.delete();
+        }
         returnMessage = "Perfect Revision! Mistake Mock deleted automatically.";
     }
 

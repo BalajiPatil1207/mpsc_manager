@@ -147,6 +147,33 @@ const Practice = () => {
   const [viewingLeaderboard, setViewingLeaderboard] = useState(null);
   const [lbLoading, setLbLoading] = useState(false);
   const [lbData, setLbData] = useState([]);
+  const [solvedSet, setSolvedSet] = useState(() => {
+    try {
+      const solved = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
+      const hist = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
+      return new Set([...solved, ...hist.map(h => h.testId).filter(Boolean)]);
+    } catch (e) {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    const updateSolved = () => {
+      try {
+        const solved = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
+        const hist = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
+        setSolvedSet(new Set([...solved, ...hist.map(h => h.testId).filter(Boolean)]));
+      } catch (e) {}
+    };
+    window.addEventListener('focus', updateSolved);
+    window.addEventListener('storage', updateSolved);
+    window.addEventListener('mpsc_test_submitted', updateSolved);
+    return () => {
+      window.removeEventListener('focus', updateSolved);
+      window.removeEventListener('storage', updateSolved);
+      window.removeEventListener('mpsc_test_submitted', updateSolved);
+    };
+  }, []);
 
   const openGlobalLeaderboard = async () => {
     setViewingLeaderboard(true);
@@ -465,6 +492,18 @@ const Practice = () => {
   }, []);
 
   const currentUser = auth.currentUser?.uid || 'anonymous';
+  const isTestSolved = (test) => {
+    if (!test) return false;
+    const tId = test._id || test.id;
+    if (test.isSolved) return true;
+    if (tId && solvedSet.has(tId)) return true;
+    if (test.attemptedBy && Array.isArray(test.attemptedBy)) {
+      if (currentUser && test.attemptedBy.includes(currentUser)) return true;
+      if (test.attemptedBy.includes('anonymous') || test.attemptedBy.length > 0) return true;
+    }
+    return false;
+  };
+
   const filteredHistory = history.filter(h => {
     if (!filterSubject) return true;
     const subj = (h.subject || '').toLowerCase();
@@ -472,8 +511,8 @@ const Practice = () => {
     if (filterId === 'history') return subj.includes('history') || subj.includes('gk');
     return subj.includes(filterId);
   }).sort((a, b) => {
-    const aSolved = a.attemptedBy?.includes(currentUser) ? 1 : 0;
-    const bSolved = b.attemptedBy?.includes(currentUser) ? 1 : 0;
+    const aSolved = isTestSolved(a) ? 1 : 0;
+    const bSolved = isTestSolved(b) ? 1 : 0;
     return aSolved - bSolved;
   });
 
@@ -639,7 +678,7 @@ const Practice = () => {
         
         <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))' }}>
           {testsForTopic.map(test => {
-            const isSolved = test.attemptedBy?.includes(currentUser);
+            const isSolved = isTestSolved(test);
             return (
             <div key={test._id || test.id} className="glass-card" style={{ padding: '16px', borderTop: isSolved ? '4px solid var(--success)' : '4px solid var(--accent-primary)', background: isSolved ? 'rgba(34, 197, 94, 0.05)' : 'var(--bg-primary)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="flex-col gap-2">

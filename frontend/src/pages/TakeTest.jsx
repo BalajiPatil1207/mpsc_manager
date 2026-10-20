@@ -137,12 +137,24 @@ const TakeTest = () => {
         if (seedMatch) {
           fetchedTest = JSON.parse(JSON.stringify(seedMatch));
         } else {
-          // 1. Check local cache first (instant response for dynamic tests)
+          // 1. Check local cache first (instant response for dynamic tests & mistakes)
           try {
             const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
             const cachedMatch = cachedMocks.find(m => (m._id || m.id) === testId);
             if (cachedMatch) {
               fetchedTest = JSON.parse(JSON.stringify(cachedMatch));
+            } else {
+              const cachedMistakes = JSON.parse(localStorage.getItem('mpsc_cached_mistakes') || '[]');
+              const mistakeMatch = cachedMistakes.find(m => (m._id || m.id) === testId);
+              if (mistakeMatch) {
+                fetchedTest = JSON.parse(JSON.stringify(mistakeMatch));
+              } else {
+                const cachedPractice = JSON.parse(localStorage.getItem('mpsc_cached_practice') || '[]');
+                const practiceMatch = cachedPractice.find(m => (m._id || m.id) === testId);
+                if (practiceMatch) {
+                  fetchedTest = JSON.parse(JSON.stringify(practiceMatch));
+                }
+              }
             }
           } catch (cacheErr) {
             console.warn("Local mock cache read error:", cacheErr?.message);
@@ -362,8 +374,9 @@ const TakeTest = () => {
     let wrongCount = 0;
     let unattemptedCount = 0;
     
-    // Create payload for backend with mapped original indexes
+    // Create payload for backend with mapped original indexes and collect wrong questions for Mistake Book
     const backendAnswers = {};
+    const wrongQuestionsList = [];
 
     test.questions.forEach((q, visualIdx) => {
       if (answers[visualIdx] === undefined) {
@@ -372,6 +385,16 @@ const TakeTest = () => {
         correctCount++;
       } else {
         wrongCount++;
+        wrongQuestionsList.push({
+          question: q.question,
+          options: q.options,
+          correctOption: q.correctOption,
+          userSelectedOption: answers[visualIdx],
+          explanation: q.explanation || '',
+          subject: q.subject || test.subject || 'General',
+          topic: q.topic || test.topic || test.title || 'General Practice',
+          markingScheme: markingScheme
+        });
       }
       
       // Map to backend structure
@@ -399,19 +422,238 @@ const TakeTest = () => {
       setShowSuccessVideo(true);
     }
 
+    const usr = auth.currentUser;
+    const currentUserId = usr?.uid || 'anonymous';
+    const userName = usr?.displayName ? usr.displayName.split(' ')[0] : 'परीक्षार्थी';
+
+    // 1. Mark test as SOLVED / DONE immediately in localStorage
+    try {
+      const solvedList = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
+      if (!solvedList.includes(testId)) {
+        solvedList.push(testId);
+        localStorage.setItem('mpsc_solved_tests', JSON.stringify(solvedList));
+      }
+    } catch(e) {}
+
+    // 2. Mark in mpsc_cached_mocks so MockTests.jsx shows isSolved = true
+    try {
+      const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+      let mockFound = false;
+      const updatedMocks = cachedMocks.map(m => {
+        if ((m._id || m.id) === testId) {
+          mockFound = true;
+          const attempted = Array.isArray(m.attemptedBy) ? [...m.attemptedBy] : [];
+          if (!attempted.includes(currentUserId)) attempted.push(currentUserId);
+          if (!attempted.includes('anonymous')) attempted.push('anonymous');
+          return { ...m, attemptedBy: attempted, isSolved: true };
+        }
+        return m;
+      });
+      if (!mockFound && test) {
+        const attempted = Array.isArray(test.attemptedBy) ? [...test.attemptedBy] : [];
+        if (!attempted.includes(currentUserId)) attempted.push(currentUserId);
+        if (!attempted.includes('anonymous')) attempted.push('anonymous');
+        updatedMocks.unshift({ ...test, attemptedBy: attempted, isSolved: true });
+      }
+      localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updatedMocks));
+    } catch(e) {}
+
+    // 3. Mark in mpsc_cached_practice so Practice.jsx shows isSolved = true
+    try {
+      const cachedPractice = JSON.parse(localStorage.getItem('mpsc_cached_practice') || '[]');
+      let practiceFound = false;
+      const updatedPractice = cachedPractice.map(p => {
+        if ((p._id || p.id) === testId) {
+          practiceFound = true;
+          const attempted = Array.isArray(p.attemptedBy) ? [...p.attemptedBy] : [];
+          if (!attempted.includes(currentUserId)) attempted.push(currentUserId);
+          if (!attempted.includes('anonymous')) attempted.push('anonymous');
+          return { ...p, attemptedBy: attempted, isSolved: true };
+        }
+        return p;
+      });
+      if (!practiceFound && test) {
+        const attempted = Array.isArray(test.attemptedBy) ? [...test.attemptedBy] : [];
+        if (!attempted.includes(currentUserId)) attempted.push(currentUserId);
+        if (!attempted.includes('anonymous')) attempted.push('anonymous');
+        updatedPractice.unshift({ ...test, attemptedBy: attempted, isSolved: true });
+      }
+      localStorage.setItem('mpsc_cached_practice', JSON.stringify(updatedPractice));
+    } catch(e) {}
+
+    try {
+      window.dispatchEvent(new Event('mpsc_test_submitted'));
+      window.dispatchEvent(new Event('storage'));
+    } catch(e) {}
+
+    // 4. Update Practice Accuracy & Test History for Analytics
+    const testPercent = maxScore > 0 ? Math.max(0, (currentScore / maxScore) * 100) : 0;
+    const oldAccuracy = parseFloat(localStorage.getItem('practice_accuracy')) || 0;
+    const testsTaken = parseInt(localStorage.getItem('tests_taken')) || 0;
+    const newAccuracy = testsTaken === 0 ? testPercent : ((oldAccuracy * testsTaken) + testPercent) / (testsTaken + 1);
+
+    try {
+      localStorage.setItem('practice_accuracy', newAccuracy.toFixed(1));
+      localStorage.setItem('tests_taken', (testsTaken + 1).toString());
+
+      const testHistory = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
+      testHistory.unshift({
+        testId,
+        title: test.title || 'MPSC Test',
+        subject: test.subject || 'General Studies',
+        grossScore,
+        penaltyScore,
+        score: currentScore,
+        maxScore,
+        accuracy: Number(testPercent.toFixed(1)),
+        correctCount,
+        wrongCount,
+        unattemptedCount,
+        markingScheme,
+        date: new Date().toLocaleDateString('mr-IN'),
+        timestamp: Date.now()
+      });
+      localStorage.setItem('mpsc_test_history', JSON.stringify(testHistory.slice(0, 30)));
+    } catch (histErr) {
+      console.warn("Failed to store test history", histErr);
+    }
+
+    // 5. 📕 AUTO-SAVE WRONG QUESTIONS INTO MISTAKE BOOK
+    if (wrongQuestionsList.length > 0 && !isMistake) {
+      try {
+        const cachedMistakes = JSON.parse(localStorage.getItem('mpsc_cached_mistakes') || '[]');
+        const existingIdx = cachedMistakes.findIndex(m => m.parentTestId === testId);
+
+        if (existingIdx !== -1) {
+          const existingMock = cachedMistakes[existingIdx];
+          const mergedQuestions = [...existingMock.questions];
+          wrongQuestionsList.forEach(wq => {
+            if (!mergedQuestions.some(q => q.question === wq.question)) {
+              mergedQuestions.push(wq);
+            }
+          });
+          existingMock.questions = mergedQuestions;
+          existingMock.timeLimit = Math.max(mergedQuestions.length, 5);
+          existingMock.updatedAt = new Date().toISOString();
+          cachedMistakes[existingIdx] = existingMock;
+        } else {
+          const mistakeId = `mistake_${testId}_${Date.now()}`;
+          const newMistakeMock = {
+            id: mistakeId,
+            _id: mistakeId,
+            title: `Mistakes: ${test.title || 'MPSC Test'}`,
+            subject: test.subject || 'सामान्य अध्ययन',
+            topic: test.topic || `${test.title || 'Test'} चुका रिव्हिजन`,
+            timeLimit: Math.max(wrongQuestionsList.length, 5),
+            questions: wrongQuestionsList,
+            markingScheme: markingScheme,
+            isMistakeMock: true,
+            parentTestId: testId,
+            createdBy: currentUserId,
+            createdAt: new Date().toISOString(),
+            attemptedBy: []
+          };
+          cachedMistakes.unshift(newMistakeMock);
+        }
+        localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(cachedMistakes));
+
+        // ALSO save to mpsc_cached_mocks so /test/:id can open it directly!
+        const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+        cachedMistakes.forEach(mm => {
+          if (!cachedMocks.some(m => (m._id || m.id) === mm.id)) {
+            cachedMocks.unshift(mm);
+          }
+        });
+        localStorage.setItem('mpsc_cached_mocks', JSON.stringify(cachedMocks));
+
+        // Background sync to backend Firestore so it persists everywhere
+        const toSync = cachedMistakes[existingIdx !== -1 ? existingIdx : 0];
+        if (toSync) {
+          axios.post('https://mpsc-manager.onrender.com/api/custom-tests', {
+            title: toSync.title,
+            subject: toSync.subject,
+            topic: toSync.topic,
+            timeLimit: toSync.timeLimit,
+            questions: toSync.questions,
+            markingScheme: toSync.markingScheme,
+            isMistakeMock: true,
+            parentTestId: testId,
+            createdBy: currentUserId,
+            creatorName: userName
+          }).catch(err => console.warn("Backend mistake sync notice:", err?.message));
+        }
+
+        try {
+          window.dispatchEvent(new Event('mpsc_mistakes_updated'));
+          window.dispatchEvent(new Event('storage'));
+        } catch(e) {}
+
+        toast.success(`📕 ${wrongQuestionsList.length} चुकीचे प्रश्न Mistake Book मध्ये सेव्ह झाले!`, { icon: '📝', duration: 4000 });
+      } catch (mistakeErr) {
+        console.warn("Failed to store local mistake mock", mistakeErr);
+      }
+    } else if (isMistake) {
+      try {
+        const cachedMistakes = JSON.parse(localStorage.getItem('mpsc_cached_mistakes') || '[]');
+        if (wrongQuestionsList.length === 0) {
+          const filtered = cachedMistakes.filter(m => (m._id || m.id) !== testId);
+          localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(filtered));
+          toast.success("🎉 उत्कृष्ट! सर्व चुका दुरुस्त झाल्या. Mistake Book मधून टेस्ट क्लिअर झाली!", { icon: '✨', duration: 5000 });
+        } else {
+          const updated = cachedMistakes.map(m => {
+            if ((m._id || m.id) === testId) {
+              return {
+                ...m,
+                questions: wrongQuestionsList,
+                timeLimit: Math.max(wrongQuestionsList.length, 5),
+                updatedAt: new Date().toISOString()
+              };
+            }
+            return m;
+          });
+          localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(updated));
+          toast.success(`प्रगती! आता फक्त ${wrongQuestionsList.length} चुका रिव्हिजनसाठी बाकी आहेत.`, { icon: '🎯', duration: 4000 });
+        }
+      } catch (err) {}
+    }
+
+    // 6. Add XP Points
+    let batchUpdates = {
+      practice_accuracy: newAccuracy.toFixed(1),
+      tests_taken: testsTaken + 1
+    };
+
+    if (currentScore > 0 && !isMistake) {
+      const sub = test.subject || 'General';
+      const oldPoints = parseFloat(localStorage.getItem(`xp_${sub}`)) || 0;
+      batchUpdates[`xp_${sub}`] = (oldPoints + currentScore).toFixed(2);
+      
+      const totalOld = parseFloat(localStorage.getItem('xp_total')) || 0;
+      batchUpdates['xp_total'] = (totalOld + currentScore).toFixed(2);
+      
+      import('../utils/sound').then(({ playSound }) => playSound.playXpGain());
+      toast.success(`🎉 Earned +${currentScore} XP for ${sub}!`);
+    }
+    
+    import('../utils/dbStore').then(({ saveMultipleToDB }) => saveMultipleToDB(batchUpdates));
+
+    // 7. Sync with server in background
     try {
       const totalAllocatedSeconds = (test?.timeLimit ? test.timeLimit * 60 : 0);
       const timeSpent = Math.max(1, totalAllocatedSeconds - timeLeft);
-      const usr = auth.currentUser;
-      const userName = usr?.displayName ? usr.displayName.split(' ')[0] : 'परीक्षार्थी';
 
       const res = await axios.post(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}/submit`, {
         answers: backendAnswers,
-        userId: usr?.uid || 'anonymous',
+        userId: currentUserId,
         userName: userName,
-        timeTaken: timeSpent
+        timeTaken: timeSpent,
+        testTitle: test.title,
+        subject: test.subject,
+        markingScheme: markingScheme,
+        wrongQuestions: wrongQuestionsList
       });
-      if(res.data.success) {
+
+      if (res.data.success) {
         setRankData({
           userRank: isMistake ? null : res.data.userRank,
           totalParticipants: isMistake ? 0 : (res.data.totalParticipants || 0),
@@ -422,65 +664,9 @@ const TakeTest = () => {
         if (!isMistake && res.data.userRank) {
           toast.success(`🏆 तुमचा रँक: #${res.data.userRank} (${res.data.totalParticipants} विद्यार्थ्यांपैकी)`, { duration: 4000, icon: '🏅' });
         }
-
-        if (res.data.message && res.data.message.includes('Mistake Mock')) {
-          toast.success(res.data.message, { duration: 5000, icon: '🔥' });
-        }
-        
-        // Update Practice Accuracy
-        const testPercent = maxScore > 0 ? Math.max(0, (currentScore / maxScore) * 100) : 0;
-        const oldAccuracy = parseFloat(localStorage.getItem('practice_accuracy')) || 0;
-        const testsTaken = parseInt(localStorage.getItem('tests_taken')) || 0;
-        const newAccuracy = testsTaken === 0 ? testPercent : ((oldAccuracy * testsTaken) + testPercent) / (testsTaken + 1);
-        
-        let batchUpdates = {
-          practice_accuracy: newAccuracy.toFixed(1),
-          tests_taken: testsTaken + 1
-        };
-
-        // Save completed test log for Analytics
-        try {
-          const testHistory = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
-          testHistory.unshift({
-            testId,
-            title: test.title || 'MPSC Test',
-            subject: test.subject || 'General Studies',
-            grossScore,
-            penaltyScore,
-            score: currentScore,
-            maxScore,
-            accuracy: Number(testPercent.toFixed(1)),
-            correctCount,
-            wrongCount,
-            unattemptedCount,
-            markingScheme,
-            date: new Date().toLocaleDateString('mr-IN'),
-            timestamp: Date.now()
-          });
-          localStorage.setItem('mpsc_test_history', JSON.stringify(testHistory.slice(0, 30)));
-        } catch (histErr) {
-          console.warn("Failed to store test history", histErr);
-        }
-
-        // Add Points!
-        if (res.data.scoreEarned > 0) {
-           const sub = res.data.subject || 'General';
-           const oldPoints = parseFloat(localStorage.getItem(`xp_${sub}`)) || 0;
-           batchUpdates[`xp_${sub}`] = (oldPoints + res.data.scoreEarned).toFixed(2);
-           
-           const totalOld = parseFloat(localStorage.getItem('xp_total')) || 0;
-           batchUpdates['xp_total'] = (totalOld + res.data.scoreEarned).toFixed(2);
-           
-           if (!isMistake) {
-             import('../utils/sound').then(({ playSound }) => playSound.playXpGain());
-             toast.success(`🎉 Earned +${res.data.scoreEarned} XP for ${sub}!`);
-           }
-        }
-        
-        import('../utils/dbStore').then(({ saveMultipleToDB }) => saveMultipleToDB(batchUpdates));
       }
     } catch(err) {
-      console.error(err);
+      console.warn("Backend submit sync notice (saved locally):", err?.message);
     }
   };
 
