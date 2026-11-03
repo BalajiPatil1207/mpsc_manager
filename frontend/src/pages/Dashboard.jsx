@@ -7,6 +7,7 @@ import axios from 'axios';
 import ConfirmModal from '../components/ConfirmModal';
 import StudyDeficitModal from '../components/StudyDeficitModal';
 import FocusTimerModal from '../components/FocusTimerModal';
+import NewsTicker from '../components/NewsTicker';
 // Spaced Repetition (SRS) Flashcard Active Recall Modal
 import SrsReviewModal from '../components/SrsReviewModal';
 import { 
@@ -76,7 +77,8 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
       study_backlog_tasks: []
     }));
     setShowResetDeficitConfirm(false);
-    toast.success('अभ्यास तूट आणि backlog reset केला.');
+    playSound.playSuccess();
+    toast.success('✨ अभ्यास तूट यशस्वीरीत्या रीसेट केली! नव्याने आणि उत्साहाने अभ्यास सुरू करा 🚀');
   };
   const currentReasoningSet = parseInt(localStorage.getItem('reasoningSetNumber')) || 1;
   const dragItem = useRef(null);
@@ -479,6 +481,9 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
         </div>
       )}
 
+      {/* Exclusive Scrolling News Ticker for balu@gmail.com */}
+      <NewsTicker user={user} />
+
       {/* Header Section */}
       <div className="dashboard-header flex-row justify-between" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div className="flex-col gap-2">
@@ -684,9 +689,22 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
             <button
               onClick={() => setShowResetDeficitConfirm(true)}
               className="btn"
-              style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '10px 14px', fontSize: '0.875rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{ 
+                background: 'rgba(239, 68, 68, 0.12)', 
+                color: 'var(--danger)', 
+                border: '1px solid rgba(239, 68, 68, 0.35)', 
+                padding: '10px 16px', 
+                fontSize: '0.875rem', 
+                fontWeight: 700, 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                borderRadius: '12px',
+                cursor: 'pointer'
+              }}
+              title="अभ्यासाचा ताण न घेता नवीन सुरुवात करण्यासाठी तूट Reset करा"
             >
-              <FiRotateCcw /> तूट Reset
+              <FiRotateCcw /> तूट Reset करा (Fresh Start)
             </button>
           )}
         </div>
@@ -952,9 +970,10 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
 
       <ConfirmModal
         isOpen={showResetDeficitConfirm}
-        title="अभ्यास तूट Reset करायची?"
-        message="साठवलेले तूटचे तास आणि backlog tasks साफ होतील. कापलेले XP आणि penalty history बदलणार नाहीत."
-        confirmText="Reset"
+        title="अभ्यास तूट (Study Loss Time) Reset करायची?"
+        message="जास्त अभ्यास तूट साठल्यामुळे मानसिक ताण येऊ नये म्हणून तूट शून्य (0h) केली जाईल आणि backlog साफ होईल. तुम्ही नव्याने, ताज्या उत्साहाने अभ्यास सुरू करू शकता!"
+        confirmText="होय, Reset करा"
+        cancelText="रद्द करा"
         isDanger={true}
         onConfirm={resetStudyDeficit}
         onCancel={() => setShowResetDeficitConfirm(false)}
@@ -966,6 +985,10 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
         deficitState={deficitState}
         onStateUpdate={setDeficitState}
         todayProgress={todayProgress}
+        onResetDeficit={() => {
+          setIsDeficitModalOpen(false);
+          setShowResetDeficitConfirm(true);
+        }}
       />
 
       <FocusTimerModal 

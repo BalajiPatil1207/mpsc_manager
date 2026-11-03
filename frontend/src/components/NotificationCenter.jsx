@@ -55,7 +55,7 @@ const formatTimeAgo = (timestamp) => {
   return `${diffDays} दिवसांपूर्वी`;
 };
 
-const NotificationCenter = ({ isOpen, onClose, onCountChange }) => {
+const NotificationCenter = ({ isOpen, onClose, onCountChange, user }) => {
   const [notifications, setNotifications] = useState([]);
   const navigate = useNavigate();
 
@@ -141,6 +141,27 @@ const NotificationCenter = ({ isOpen, onClose, onCountChange }) => {
 
     // Filter out dismissed items
     let updated = existing.filter(n => !dismissedIds.includes(n.id));
+
+    const userEmail = (user?.email || '').trim().toLowerCase();
+    const isBalu = userEmail === 'balu@gmail.com';
+
+    // Strictly ensure other users never see Balu's exclusive quote notifications
+    if (!isBalu) {
+      updated = updated.filter(n => !n.id.startsWith('balu_'));
+    } else {
+      const baluQuoteId = 'balu_quote_daily';
+      if (!dismissedIds.includes(baluQuoteId) && !updated.some(n => n.id === baluQuoteId)) {
+        updated.unshift({
+          id: baluQuoteId,
+          title: 'One day, everything will make sense. ❤️',
+          message: 'स्वतःवर विश्वास ठेवा, तुमचे प्रामाणिक कष्ट नक्की रंग आणतील. Stay focused on your goals!',
+          type: 'reminder',
+          link: '/',
+          createdAt: new Date().toISOString(),
+          read: false
+        });
+      }
+    }
 
     // 1. Merge Smart Timed Reminders
     const timedReminders = generateTimeReminders(dismissedIds);
@@ -244,7 +265,7 @@ const NotificationCenter = ({ isOpen, onClose, onCountChange }) => {
     syncNotifications();
     const interval = setInterval(syncNotifications, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const markAllAsRead = () => {
     const updated = notifications.map(n => ({ ...n, read: true }));

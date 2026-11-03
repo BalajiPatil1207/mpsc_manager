@@ -8,7 +8,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import { FiMenu, FiSun, FiMoon, FiBell, FiCloud, FiDownload } from 'react-icons/fi';
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
-import NotificationCenter from './components/NotificationCenter';
+import NotificationCenter, { getStoredNotifications, saveStoredNotifications } from './components/NotificationCenter';
 import Dashboard from './pages/Dashboard';
 import StudyPlanner from './pages/StudyPlanner';
 import Practice from './pages/Practice';
@@ -168,6 +168,68 @@ function App() {
     };
   }, []);
 
+  // 🌸 Balu Special 2-3 Hour Continuous Motivational Notification
+  useEffect(() => {
+    const userEmail = (user?.email || '').trim().toLowerCase();
+    // Strictly execute ONLY for balu@gmail.com - never for any other user
+    if (userEmail !== 'balu@gmail.com') return;
+
+    // 2.5 hours = 150 minutes (continuous periodic reminder between 2-3 hours)
+    const INTERVAL_MS = 2.5 * 60 * 60 * 1000;
+
+    const checkAndTriggerQuoteNotification = () => {
+      const currentEmail = (auth.currentUser?.email || user?.email || '').trim().toLowerCase();
+      if (currentEmail !== 'balu@gmail.com') return;
+
+      const lastSentStr = localStorage.getItem('balu_last_quote_time');
+      const lastSentTime = lastSentStr ? parseInt(lastSentStr, 10) : 0;
+      const now = Date.now();
+
+      if (now - lastSentTime >= INTERVAL_MS) {
+        import('./utils/notify').then(({ sendPushNotification }) => {
+          sendPushNotification(
+            'One day, everything will make sense. ❤️',
+            'स्वतःवर विश्वास ठेवा, तुमचे प्रामाणिक प्रयत्न नक्कीच रंग आणतील. Keep pushing forward! ✨'
+          );
+        });
+
+        import('./utils/sound').then(({ playSound }) => {
+          try { playSound.playSuccess(); } catch (e) {}
+        });
+
+        localStorage.setItem('balu_last_quote_time', now.toString());
+
+        try {
+          const stored = getStoredNotifications();
+          const notifId = `balu_quote_${now}`;
+          if (!stored.some(n => n.id === notifId)) {
+            const newNotif = {
+              id: notifId,
+              title: 'One day, everything will make sense. ❤️',
+              message: 'कष्टावर विश्वास ठेवा. तुमचा प्रत्येक तास तुम्हाला ध्येयाच्या जवळ नेत आहे! 🌟',
+              type: 'reminder',
+              link: '/',
+              createdAt: new Date().toISOString(),
+              read: false
+            };
+            saveStoredNotifications([newNotif, ...stored]);
+            setUnreadNotifCount(prev => prev + 1);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    };
+
+    // Check immediately on mount/login
+    checkAndTriggerQuoteNotification();
+
+    // Check periodically every minute so that after 2-3 hours it fires automatically
+    const timer = setInterval(checkAndTriggerQuoteNotification, 60 * 1000);
+
+    return () => clearInterval(timer);
+  }, [user]);
+
   if(loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: '32px', background: 'var(--bg-primary)' }}>
       <div className="premium-loader">
@@ -255,6 +317,7 @@ function App() {
                   isOpen={showNotifications} 
                   onClose={() => setShowNotifications(false)} 
                   onCountChange={setUnreadNotifCount} 
+                  user={user}
                 />
                 <Routes>
                   <Route path="/" element={<Dashboard user={user} deferredPrompt={deferredPrompt} setDeferredPrompt={setDeferredPrompt} />} />

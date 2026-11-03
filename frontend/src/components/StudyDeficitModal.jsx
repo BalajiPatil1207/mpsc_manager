@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   FiAlertTriangle, FiCheckCircle, FiClock, FiTrendingDown, 
-  FiRefreshCw, FiBookOpen, FiX, FiAward, FiCalendar, FiChevronRight, FiShield 
+  FiRefreshCw, FiBookOpen, FiX, FiAward, FiCalendar, FiChevronRight, FiShield, FiRotateCcw 
 } from 'react-icons/fi';
 import { recoverBacklogItem } from '../utils/deficitTracker';
 import { playSound } from '../utils/sound';
@@ -12,7 +12,8 @@ const StudyDeficitModal = ({
   onClose, 
   deficitState, 
   onStateUpdate,
-  todayProgress 
+  todayProgress,
+  onResetDeficit
 }) => {
   const [activeTab, setActiveTab] = useState('backlog'); // 'backlog', 'history', 'strategy'
 
@@ -413,7 +414,30 @@ const StudyDeficitModal = ({
         )}
 
         {/* Modal Footer */}
-        <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+        <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          {deficitHours > 0 && onResetDeficit ? (
+            <button 
+              onClick={onResetDeficit}
+              className="btn"
+              style={{
+                background: 'rgba(239, 68, 68, 0.12)',
+                color: 'var(--danger)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
+                padding: '9px 16px',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                borderRadius: '12px',
+                cursor: 'pointer'
+              }}
+              title="अभ्यास तूट (Study Loss Time) रीसेट करून नव्याने सुरुवात करा"
+            >
+              <FiRotateCcw size={16} /> तूट रीसेट करा (Start Fresh)
+            </button>
+          ) : <div />}
+
           <button 
             onClick={onClose}
             className="btn btn-primary"
