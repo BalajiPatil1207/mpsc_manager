@@ -3,11 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { auth } from '../firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -38,23 +40,34 @@ const Register = () => {
             type="text" 
             placeholder="Full Name" 
             className="glass-card" 
-            style={{ padding: '12px', color: 'white', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', outline: 'none' }}
+            style={{ padding: '12px', color: 'var(--text-primary)', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', outline: 'none' }}
             value={name} onChange={(e) => setName(e.target.value)}
           />
           <input 
             type="email" 
             placeholder="Email Address" 
             className="glass-card" 
-            style={{ padding: '12px', color: 'white', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', outline: 'none' }}
+            style={{ padding: '12px', color: 'var(--text-primary)', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', outline: 'none' }}
             value={email} onChange={(e) => setEmail(e.target.value)}
           />
-          <input 
-            type="password" 
-            placeholder="Password" 
-            className="glass-card" 
-            style={{ padding: '12px', color: 'white', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', outline: 'none' }}
-            value={password} onChange={(e) => setPassword(e.target.value)}
-          />
+          <div style={{ position: 'relative', width: '100%' }}>
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Password"
+              className="glass-card"
+              style={{ width: '100%', padding: '12px 44px 12px 12px', color: 'var(--text-primary)', background: 'var(--glass-bg)', border: '1px solid var(--border-color)', outline: 'none' }}
+              value={password} onChange={(e) => setPassword(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((visible) => !visible)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              title={showPassword ? 'Hide password' : 'Show password'}
+              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', border: 0, padding: '4px', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+            </button>
+          </div>
           <button type="submit" disabled={loading} className="btn btn-primary" style={{ padding: '12px', fontSize: '1rem', marginTop: '8px' }}>
             {loading ? 'Creating Account...' : 'Sign Up'}
           </button>

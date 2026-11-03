@@ -61,9 +61,23 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [isEditingTasks, setIsEditingTasks] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
+  const [showResetDeficitConfirm, setShowResetDeficitConfirm] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDuration, setNewTaskDuration] = useState('30 min');
+
+  const resetStudyDeficit = () => {
+    const nextState = { ...deficitState, deficitHours: 0, backlogTasks: [] };
+    localStorage.setItem('study_deficit_hours', '0');
+    localStorage.setItem('study_backlog_tasks', '[]');
+    setDeficitState(nextState);
+    import('../utils/dbStore').then(({ saveMultipleToDB }) => saveMultipleToDB({
+      study_deficit_hours: 0,
+      study_backlog_tasks: []
+    }));
+    setShowResetDeficitConfirm(false);
+    toast.success('अभ्यास तूट आणि backlog reset केला.');
+  };
   const currentReasoningSet = parseInt(localStorage.getItem('reasoningSetNumber')) || 1;
   const dragItem = useRef(null);
   const dragOverItem = useRef(null);
@@ -666,6 +680,15 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           >
             {deficitState.deficitHours > 0 ? 'तूट विश्लेषण व बॅकलॉग भरून काढा ➔' : 'तूट विश्लेषण पहा ➔'}
           </button>
+          {deficitState.deficitHours > 0 && (
+            <button
+              onClick={() => setShowResetDeficitConfirm(true)}
+              className="btn"
+              style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border-color)', padding: '10px 14px', fontSize: '0.875rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <FiRotateCcw /> तूट Reset
+            </button>
+          )}
         </div>
       </div>
 
@@ -925,6 +948,16 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
         isDanger={true}
         onConfirm={confirmDeleteTask}
         onCancel={() => setTaskToDelete(null)}
+      />
+
+      <ConfirmModal
+        isOpen={showResetDeficitConfirm}
+        title="अभ्यास तूट Reset करायची?"
+        message="साठवलेले तूटचे तास आणि backlog tasks साफ होतील. कापलेले XP आणि penalty history बदलणार नाहीत."
+        confirmText="Reset"
+        isDanger={true}
+        onConfirm={resetStudyDeficit}
+        onCancel={() => setShowResetDeficitConfirm(false)}
       />
 
       <StudyDeficitModal 
