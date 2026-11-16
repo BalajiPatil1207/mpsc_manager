@@ -9,6 +9,7 @@ import {
   reviewSrsItem, 
   addTopicToSrs, 
   getSrsStats,
+  getCardIntervalPreviews,
   SRS_INTERVALS_DAYS 
 } from '../utils/srsEngine';
 import { playSound } from '../utils/sound';
@@ -70,6 +71,7 @@ const SrsReviewModal = ({ isOpen, onClose, onXpChange }) => {
 
   const activeList = viewMode === 'due' ? dueCards : deck;
   const currentCard = activeList[currentIndex];
+  const previews = getCardIntervalPreviews(currentCard);
   const stats = getSrsStats();
 
   const handleReveal = () => {
@@ -91,11 +93,11 @@ const SrsReviewModal = ({ isOpen, onClose, onXpChange }) => {
     }
 
     if (rating === 'hard') {
-      toast.error(`⚠️ Reset to Stage 1. उद्या पुन्हा रिव्हिजन येईल (+${result.xpEarned} XP)`);
+      toast.error(`⚠️ Reset to 1 दिवस. उद्या पुन्हा रिव्हिजन येईल (+${result.xpEarned} XP)`);
     } else if (rating === 'good') {
-      toast.success(`👍 छान! पुढील इंटरव्हलवर गेले (+${result.xpEarned} XP)`);
+      toast.success(`👍 छान! पुढील रिव्हिजन ${result.nextInterval} दिवसांनी (+${result.xpEarned} XP)`);
     } else if (rating === 'easy') {
-      toast.success(`🌟 उत्तम! Stage ${result.nextStage} वर उडी (+${result.xpEarned} XP)`);
+      toast.success(`🌟 उत्तम! पुढील रिव्हिजन ${result.nextInterval} दिवसांनी (EF: ${result.nextEf}) (+${result.xpEarned} XP)`);
     }
 
     // Refresh deck lists
@@ -200,11 +202,11 @@ const SrsReviewModal = ({ isOpen, onClose, onXpChange }) => {
                 color: 'var(--accent-primary)',
                 border: '1px solid var(--accent-primary)'
               }}>
-                1-3-7-15-30 Ebbinghaus Rule
+                SuperMemo-2 (SM-2) Adaptive Algorithm
               </span>
             </div>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              विस्मरण वक्र (Forgetting Curve) टाळून घटकांची दीर्घकालीन स्मरणात साठवणूक
+              विस्मरण वक्र (Forgetting Curve) व तुमच्या स्मरण क्षमतेनुसार स्वयंचलित रिव्हिजन अंतर
             </span>
           </div>
 
@@ -520,6 +522,18 @@ const SrsReviewModal = ({ isOpen, onClose, onXpChange }) => {
                   }}>
                     {currentStageInfo.label}
                   </span>
+
+                  <span style={{
+                    padding: '4px 10px',
+                    borderRadius: '8px',
+                    background: 'rgba(59, 130, 246, 0.1)',
+                    color: '#60a5fa',
+                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                    fontWeight: 700,
+                    fontSize: '0.72rem'
+                  }}>
+                    SM-2: {currentCard?.interval || 1} दिवस (EF {currentCard?.easeFactor || 2.5})
+                  </span>
                 </div>
 
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
@@ -662,8 +676,8 @@ const SrsReviewModal = ({ isOpen, onClose, onXpChange }) => {
                       }}
                     >
                       <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🔴 विसरलो (Hard)</span>
-                      <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>Stage 1 • +5 XP</span>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>उद्या पुन्हा येईल</span>
+                      <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>१ दिवस • +५ XP</span>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>पुन्हा सुरू करा</span>
                     </button>
 
                     {/* Good */}
@@ -684,8 +698,8 @@ const SrsReviewModal = ({ isOpen, onClose, onXpChange }) => {
                       }}
                     >
                       <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🟡 आठवले (Good)</span>
-                      <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>पुढील पायरी • +15 XP</span>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>नियमित अंतर</span>
+                      <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>{previews.good} दिवस • +१५ XP</span>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>संतुलित SM-2 अंतर</span>
                     </button>
 
                     {/* Easy */}
@@ -705,9 +719,9 @@ const SrsReviewModal = ({ isOpen, onClose, onXpChange }) => {
                         cursor: 'pointer'
                       }}
                     >
-                      <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🟢 सोपे (Mastered)</span>
-                      <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>+2 स्टेजेस • +25 XP</span>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>तोंडपाठ झाले</span>
+                      <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>🟢 सोपे (Easy)</span>
+                      <span style={{ fontSize: '0.75rem', opacity: 0.85 }}>{previews.easy} दिवस • +२५ XP</span>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>दीर्घकालीन उडी</span>
                     </button>
                   </div>
                 </div>

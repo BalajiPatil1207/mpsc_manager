@@ -1,5 +1,5 @@
 // Spaced Repetition System (SRS) Engine for MPSC Aspirants
-// Based on Hermann Ebbinghaus's Forgetting Curve: 1 - 3 - 7 - 15 - 30 Days Rule.
+// Enhanced SuperMemo-2 (SM-2) Algorithm with Dynamic Ease Factor & Interval Scaling
 
 export const SRS_INTERVALS_DAYS = [1, 3, 7, 15, 30];
 
@@ -19,8 +19,11 @@ const DEFAULT_SRS_CARDS = [
       'कलम ३२: घटनात्मक उपायांचा अधिकार (डॉ. बाबासाहेब आंबेडकर यांनी याला "संविधानाचा आत्मा" म्हटले)'
     ],
     stage: 2,
+    repetitions: 1,
+    interval: 3,
+    easeFactor: 2.5,
     lastReviewedAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    dueAt: Date.now() - 1000 // Due today!
+    dueAt: Date.now() - 1000
   },
   {
     id: 'srs_seed_geo_1',
@@ -37,8 +40,11 @@ const DEFAULT_SRS_CARDS = [
       'कुंभार्ली घाट: कराड ते चिपळूण मार्ग जोडतो'
     ],
     stage: 1,
+    repetitions: 0,
+    interval: 1,
+    easeFactor: 2.5,
     lastReviewedAt: Date.now() - 1 * 24 * 60 * 60 * 1000,
-    dueAt: Date.now() - 2000 // Due today!
+    dueAt: Date.now() - 2000
   },
   {
     id: 'srs_seed_his_1',
@@ -52,8 +58,11 @@ const DEFAULT_SRS_CARDS = [
       'डॉ. बाबासाहेब आंबेडकर: बहिष्कृत हितकारिणी सभा (१९२४); महाडचा चवदार तळे सत्याग्रह (२० मार्च १९२७); काळाराम मंदिर सत्याग्रह (१९३०)'
     ],
     stage: 2,
+    repetitions: 1,
+    interval: 3,
+    easeFactor: 2.5,
     lastReviewedAt: Date.now() - 3 * 24 * 60 * 60 * 1000,
-    dueAt: Date.now() - 3000 // Due today!
+    dueAt: Date.now() - 3000
   },
   {
     id: 'srs_seed_eco_1',
@@ -68,8 +77,11 @@ const DEFAULT_SRS_CARDS = [
       'Monetary Policy Committee (MPC): ६ सदस्य (३ RBI चे + ३ केंद्र सरकारचे नियुक्त); अध्यक्ष RBI गव्हर्नर असतात'
     ],
     stage: 1,
+    repetitions: 0,
+    interval: 1,
+    easeFactor: 2.5,
     lastReviewedAt: Date.now() - 24 * 60 * 60 * 1000,
-    dueAt: Date.now() - 4000 // Due today!
+    dueAt: Date.now() - 4000
   },
   {
     id: 'srs_seed_sci_1',
@@ -85,10 +97,81 @@ const DEFAULT_SRS_CARDS = [
       'व्हिटॅमिन K (Phylloquinone): रक्त गोठण्यासाठी अत्यंत आवश्यक'
     ],
     stage: 3,
+    repetitions: 2,
+    interval: 7,
+    easeFactor: 2.6,
     lastReviewedAt: Date.now() - 7 * 24 * 60 * 60 * 1000,
-    dueAt: Date.now() - 5000 // Due today!
+    dueAt: Date.now() - 5000
   }
 ];
+
+// Map interval days to 1-5 discrete stages for backward-compatible UI & retention indexing
+export const getStageFromInterval = (intervalDays) => {
+  if (intervalDays <= 1) return 1;
+  if (intervalDays <= 3) return 2;
+  if (intervalDays <= 7) return 3;
+  if (intervalDays <= 15) return 4;
+  return 5;
+};
+
+// Calculate next SM-2 interval and ease factor based on performance rating
+export const calculateNextSm2Interval = (card, rating) => {
+  const currentInterval = card?.interval || 1;
+  const currentEf = card?.easeFactor || 2.5;
+  const currentRepetitions = card?.repetitions || 0;
+
+  let nextRepetitions = currentRepetitions;
+  let nextInterval = 1;
+  let nextEf = currentEf;
+
+  if (rating === 'hard') {
+    // Grade = 2 (Forgot / Failed recall): Reset repetitions to 0, interval to 1 day, lower EF
+    nextRepetitions = 0;
+    nextInterval = 1;
+    nextEf = Math.max(1.3, Number((currentEf - 0.2).toFixed(2)));
+  } else if (rating === 'good') {
+    // Grade = 4 (Good recall): Increment repetitions, scale interval by EF
+    nextRepetitions = currentRepetitions + 1;
+    if (nextRepetitions === 1) {
+      nextInterval = 1;
+    } else if (nextRepetitions === 2) {
+      nextInterval = 3;
+    } else {
+      nextInterval = Math.max(1, Math.round(currentInterval * currentEf));
+    }
+    // SM-2 formula: EF' = EF + (0.1 - (5-4)*(0.08 + (5-4)*0.02)) = EF
+    nextEf = Math.max(1.3, Number(currentEf.toFixed(2)));
+  } else if (rating === 'easy') {
+    // Grade = 5 (Effortless recall): Leap forward with 1.3x booster, increase EF
+    nextRepetitions = currentRepetitions + 1;
+    if (nextRepetitions === 1) {
+      nextInterval = 3;
+    } else if (nextRepetitions === 2) {
+      nextInterval = 6;
+    } else {
+      nextInterval = Math.max(1, Math.round(currentInterval * currentEf * 1.3));
+    }
+    // SM-2 formula: EF' = EF + (0.1 - (5-5)*(0.08 + (5-5)*0.02)) = EF + 0.1
+    nextEf = Math.max(1.3, Number((currentEf + 0.15).toFixed(2)));
+  }
+
+  return {
+    nextInterval,
+    nextEf,
+    nextRepetitions,
+    nextStage: getStageFromInterval(nextInterval)
+  };
+};
+
+// Return preview intervals for UI rating buttons (e.g. "१ दिवस", "४ दिवस", "९ दिवस")
+export const getCardIntervalPreviews = (card) => {
+  if (!card) return { hard: 1, good: 1, easy: 3 };
+  return {
+    hard: calculateNextSm2Interval(card, 'hard').nextInterval,
+    good: calculateNextSm2Interval(card, 'good').nextInterval,
+    easy: calculateNextSm2Interval(card, 'easy').nextInterval,
+  };
+};
 
 export const getSrsDeck = () => {
   try {
@@ -96,7 +179,13 @@ export const getSrsDeck = () => {
     if (saved && saved !== 'undefined' && saved !== 'null') {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        // Hydrate SM-2 fields if missing on legacy cards
+        return parsed.map(c => ({
+          ...c,
+          interval: c.interval || (SRS_INTERVALS_DAYS[Math.min(4, (c.stage || 1) - 1)] || 1),
+          easeFactor: c.easeFactor || 2.5,
+          repetitions: c.repetitions !== undefined ? c.repetitions : Math.max(0, (c.stage || 1) - 1)
+        }));
       }
     }
   } catch (e) {
@@ -118,32 +207,28 @@ export const reviewSrsItem = (cardId, rating) => {
   const deck = getSrsDeck();
   const now = Date.now();
   let xpEarned = 0;
-  let nextStage = 1;
+
+  const targetCard = deck.find(i => i.id === cardId);
+  const sm2Result = calculateNextSm2Interval(targetCard, rating);
+
+  if (rating === 'hard') {
+    xpEarned = 5;
+  } else if (rating === 'good') {
+    xpEarned = 15;
+  } else if (rating === 'easy') {
+    xpEarned = 25;
+  }
 
   const updatedDeck = deck.map(item => {
     if (item.id === cardId) {
-      const currentStage = item.stage || 1;
-
-      if (rating === 'hard') {
-        // Forgot or struggled: Reset to Stage 1, repeat tomorrow
-        nextStage = 1;
-        xpEarned = 5;
-      } else if (rating === 'good') {
-        // Recalled well: Move to next stage
-        nextStage = Math.min(5, currentStage + 1);
-        xpEarned = 15;
-      } else if (rating === 'easy') {
-        // Easy / Mastered: Jump +2 stages
-        nextStage = Math.min(5, currentStage + 2);
-        xpEarned = 25;
-      }
-
-      const daysToAdd = SRS_INTERVALS_DAYS[Math.min(nextStage - 1, SRS_INTERVALS_DAYS.length - 1)];
-      const nextDueAt = now + daysToAdd * 24 * 60 * 60 * 1000;
+      const nextDueAt = now + sm2Result.nextInterval * 24 * 60 * 60 * 1000;
 
       return {
         ...item,
-        stage: nextStage,
+        stage: sm2Result.nextStage,
+        interval: sm2Result.nextInterval,
+        easeFactor: sm2Result.nextEf,
+        repetitions: sm2Result.nextRepetitions,
         lastReviewedAt: now,
         dueAt: nextDueAt,
         reviewCount: (item.reviewCount || 0) + 1
@@ -170,7 +255,9 @@ export const reviewSrsItem = (cardId, rating) => {
   return {
     updatedDeck,
     xpEarned,
-    nextStage,
+    nextStage: sm2Result.nextStage,
+    nextInterval: sm2Result.nextInterval,
+    nextEf: sm2Result.nextEf,
     dueItemsCount: updatedDeck.filter(i => (i.dueAt || 0) <= now).length
   };
 };
@@ -200,6 +287,9 @@ export const addTopicToSrs = ({ topicId, title, subject = 'General', keyFacts = 
       'चालू घडामोडी किंवा इतर विषयांशी असलेला परस्परसंबंध'
     ],
     stage: 1,
+    repetitions: 0,
+    interval: 1,
+    easeFactor: 2.5,
     lastReviewedAt: now,
     dueAt: now + 1 * 24 * 60 * 60 * 1000, // Due in 1 day
     reviewCount: 0
@@ -220,18 +310,19 @@ export const getSrsStats = () => {
   const deck = getSrsDeck();
   const now = Date.now();
   const dueItems = deck.filter(i => (i.dueAt || 0) <= now);
-  const masteredItems = deck.filter(i => i.stage >= 5);
+  const masteredItems = deck.filter(i => (i.stage >= 5 || (i.interval || 0) >= 21));
 
   const stageCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
   deck.forEach(i => {
-    const st = i.stage || 1;
+    const st = i.stage || getStageFromInterval(i.interval || 1);
     stageCounts[st] = (stageCounts[st] || 0) + 1;
   });
 
   // Retention index: weighted average of stages (Mastery = 100%)
   let totalScore = 0;
   deck.forEach(i => {
-    totalScore += (i.stage || 1) * 20; // Stage 1 = 20%, Stage 5 = 100%
+    const st = i.stage || getStageFromInterval(i.interval || 1);
+    totalScore += st * 20; // Stage 1 = 20%, Stage 5 = 100%
   });
   const retentionIndex = deck.length > 0 ? Math.round(totalScore / deck.length) : 0;
 
