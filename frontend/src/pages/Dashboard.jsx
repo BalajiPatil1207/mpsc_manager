@@ -16,7 +16,9 @@ import {
   calculateTodayProgress, 
   getLogicalDateString, 
   TASK_XP_REWARD, 
-  DAILY_COMPLETION_BONUS 
+  DAILY_COMPLETION_BONUS,
+  checkDeficitResetEligibility,
+  recordDeficitReset
 } from '../utils/deficitTracker';
 import { getDueSrsItems, addTopicToSrs, getSrsStats } from '../utils/srsEngine';
 import { playSound } from '../utils/sound';
@@ -67,14 +69,28 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDuration, setNewTaskDuration] = useState('30 min');
 
+  const handleRequestResetDeficit = () => {
+    const eligibility = checkDeficitResetEligibility();
+    if (!eligibility.allowed) {
+      toast.error(
+        `⚠️ मर्यादा: अभ्यास तूट महिन्यातून (३० दिवसांत) फक्त एकदाच रीसेट करता येते. पुढील रीसेट ${eligibility.daysRemaining} दिवसांनंतर उपलब्ध होईल.`,
+        { duration: 5000, icon: '⏳' }
+      );
+      return;
+    }
+    setShowResetDeficitConfirm(true);
+  };
+
   const resetStudyDeficit = () => {
     const nextState = { ...deficitState, deficitHours: 0, backlogTasks: [] };
     localStorage.setItem('study_deficit_hours', '0');
     localStorage.setItem('study_backlog_tasks', '[]');
+    recordDeficitReset();
     setDeficitState(nextState);
     import('../utils/dbStore').then(({ saveMultipleToDB }) => saveMultipleToDB({
       study_deficit_hours: 0,
-      study_backlog_tasks: []
+      study_backlog_tasks: [],
+      study_last_deficit_reset_time: Date.now()
     }));
     setShowResetDeficitConfirm(false);
     playSound.playSuccess();
@@ -687,7 +703,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           </button>
           {deficitState.deficitHours > 0 && (
             <button
-              onClick={() => setShowResetDeficitConfirm(true)}
+              onClick={handleRequestResetDeficit}
               className="btn"
               style={{ 
                 background: 'rgba(239, 68, 68, 0.12)', 
@@ -987,7 +1003,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
         todayProgress={todayProgress}
         onResetDeficit={() => {
           setIsDeficitModalOpen(false);
-          setShowResetDeficitConfirm(true);
+          handleRequestResetDeficit();
         }}
       />
 

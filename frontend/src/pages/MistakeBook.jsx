@@ -9,11 +9,13 @@ import {
   FiCheckCircle, 
   FiAlertCircle, 
   FiClock, 
-  FiRefreshCw 
+  FiRefreshCw,
+  FiEdit2
 } from 'react-icons/fi';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import EditQuestionModal from '../components/EditQuestionModal';
 
 const MistakeBook = () => {
   // 1. Instant 0ms hydration from local cache
@@ -42,7 +44,49 @@ const MistakeBook = () => {
   const [expandedTestIds, setExpandedTestIds] = useState(new Set());
   const [deletingTest, setDeletingTest] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [editingQuestionModalData, setEditingQuestionModalData] = useState(null);
   const navigate = useNavigate();
+
+  const handleSaveQuestionEdit = async (updatedData) => {
+    const { testId, qIndex, question, options, correctOption, explanation } = updatedData;
+    const targetTest = mistakes.find(m => (m.id || m._id) === testId);
+    if (!targetTest) return;
+
+    const updatedQuestions = [...(targetTest.questions || [])];
+    if (!updatedQuestions[qIndex]) return;
+
+    updatedQuestions[qIndex] = {
+      ...updatedQuestions[qIndex],
+      question,
+      options,
+      correctOption,
+      explanation
+    };
+
+    const updatedMistakes = mistakes.map(m => {
+      if ((m.id || m._id) === testId) {
+        return { ...m, questions: updatedQuestions };
+      }
+      return m;
+    });
+
+    setMistakes(updatedMistakes);
+    localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(updatedMistakes));
+    window.dispatchEvent(new Event('mpsc_mistakes_updated'));
+    toast.success("✅ प्रश्न आणि पर्याय यशस्वीरीत्या अपडेट केले!");
+
+    try {
+      await axios.patch(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}/edit-question`, {
+        questionIndex: qIndex,
+        question,
+        options,
+        correctOption,
+        explanation
+      });
+    } catch (e) {
+      // Local fallback
+    }
+  };
 
   const toggleExpand = (id) => {
     setExpandedTestIds(prev => {
@@ -499,6 +543,37 @@ const MistakeBook = () => {
                                   💡 <strong>स्पष्टीकरण:</strong> {q.explanation}
                                 </div>
                               )}
+
+                              {/* Edit Question & Options Button */}
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingQuestionModalData({
+                                    testId: m.id || m._id,
+                                    qIndex: qIdx,
+                                    question: q.question,
+                                    options: q.options || [],
+                                    correctOption: typeof q.correctOption === 'number' ? q.correctOption : 0,
+                                    explanation: q.explanation || ''
+                                  })}
+                                  className="btn"
+                                  style={{
+                                    padding: '5px 12px',
+                                    fontSize: '0.78rem',
+                                    background: 'rgba(59, 130, 246, 0.1)',
+                                    border: '1px solid rgba(59, 130, 246, 0.3)',
+                                    color: '#93c5fd',
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    cursor: 'pointer'
+                                  }}
+                                  title="हा प्रश्न किंवा पर्याय एडिट करा"
+                                >
+                                  <FiEdit2 size={12} /> ✏️ प्रश्न / पर्याय एडिट करा
+                                </button>
+                              </div>
                             </div>
                           );
                         })
@@ -560,6 +635,14 @@ const MistakeBook = () => {
           </div>
         </div>
       )}
+
+      {/* Edit Question & Options Modal */}
+      <EditQuestionModal
+        isOpen={Boolean(editingQuestionModalData)}
+        initialData={editingQuestionModalData}
+        onClose={() => setEditingQuestionModalData(null)}
+        onSave={handleSaveQuestionEdit}
+      />
 
     </div>
   );

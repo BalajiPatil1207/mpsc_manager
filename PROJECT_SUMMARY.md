@@ -1,0 +1,188 @@
+# 🚀 MahaPrep OS (MPSC Manager) - संपूर्ण प्रोजेक्ट तपशील व कार्य अहवाल
+
+> **MahaPrep OS / MPSC Study Manager** ही MPSC (राज्यसेवा, गट-ब व गट-क) स्पर्धा परीक्षांची तयारी करणाऱ्या विद्यार्थ्यांसाठी तयार केलेली आधुनिक, ऑल-इन-वन (All-in-One) MERN + Firebase फुल-स्टॅक वेब ॲप्लिकेशन व स्टडी ऑपरेटिंग सिस्टीम आहे.
+
+---
+
+## 📑 अनुक्रमणिका (Table of Contents)
+1. [प्रोजेक्ट आर्किटेक्चर (Tech Stack)](#1-प्रोजेक्ट-आर्किटेक्चर-tech-stack)
+2. [महत्त्वाची वैशिष्ट्ये व मॉड्यूल्स (Core Modules & Features)](#2-महत्त्वाची-वैशिष्ट्ये-व-मॉड्यूल्स)
+3. [नुकतेच केलेले विशेष बदल व सोयी (Latest Updates & Enhancements)](#3-नुकतेच-केलेले-विशेष-बदल-व-सोयी)
+4. [डेटाबेस व बॅकएंड API रचना (Backend & Database Architecture)](#4-डेटाबेस-व-बॅकएंड-api-रचना)
+5. [युजर इंटरफेस व डिझाईन सिस्टीम (UI/UX System)](#5-युजर-इंटरफेस-व-डिझाईन-सिस्टीम)
+6. [फाईल व फोल्डर रचना (Directory Structure)](#6-फाईल-व-फोल्डर-रचना)
+
+---
+
+## 1. प्रोजेक्ट आर्किटेक्चर (Tech Stack)
+
+### **Frontend**
+* **Framework:** React 19, Vite 8, React Router DOM v7
+* **Styling:** Vanilla Modern CSS with Glassmorphism, CSS Variables, Responsive Grid, Dark & Light Mode
+* **Icons & Animation:** React Icons (`Fi*`), Canvas Confetti, Web Animations API
+* **Audio Engine:** HTML5 Web Audio API (सिंथेटिक ध्वनी - 0 KB ऑडिओ फाईल लोड)
+* **Auth & Cloud Cache:** Firebase Authentication, Firestore DB, LocalStorage Fallback
+
+### **Backend**
+* **Runtime:** Node.js, Express.js
+* **Database:** Google Cloud Firestore (Firebase Admin SDK)
+* **Push Services:** Web-Push (VAPID Service Workers), Axios, CORS
+* **Deployment Readiness:** Render.com Cloud Platform
+
+---
+
+## 2. महत्त्वाचे मॉड्यूल्स व वैशिष्ट्ये (Core Features)
+
+### 📊 १. डॅशबोर्ड व स्टडी कॉकपिट (Dashboard & Study Cockpit)
+* **MPSC Countdown Timer:** आगामी परीक्षांसाठी दिवसांची अचूक उलटी गणना (Live Countdown).
+* **Daily Task Manager:** दररोजचे अभ्यासाचे वेळापत्रक (६:०० AM logical day boundary नुसार दिवस बदल).
+* **Animated Numbers:** XP, Tasks आणि Study Time चे स्मूथ काऊंटर ॲनिमेशन्स.
+* **AI Study Coach Widget:** विद्यार्थ्यांच्या कमकुवत घटकांचे विश्लेषण करून अभ्यासाचा योग्य सल्ला देणारे साधन.
+
+### ⏳ २. अभ्यास तूट व बॅकलॉग इंजिन (Study Deficit & Backlog Engine)
+* **Zero Study Day Penalty:** दिवसभरात अभ्यास न झाल्यास `-५० XP` पेनल्टी आणि `६ तास` तूट नोंद.
+* **Partial Study Penalty:** अपूर्ण टास्क्ससाठी `-१० XP` पेनल्टी.
+* **100% Completion Bonus:** सर्व टास्क्स वेळेत पूर्ण केल्यास `+५० XP` चा बोनस.
+* **Backlog Recovery:** अतिरिक्त अभ्यास करून जुना बॅकलॉग भरून काढल्यास `+१५ XP` मिळतात व तूट तास कमी होतात.
+* **Fresh Start (तूट Reset):** जर खूप जास्त तास अभ्यास बुडाला असेल आणि विद्यार्थ्याचे अभ्यासावरून मन उडत असेल, तर एका क्लिकवर तूट ० करून नव्याने सुरुवात करण्याची सुविधा.
+
+### 📝 ३. मॉक टेस्ट व सराव परीक्षा (Mock Tests & TakeTest Engine)
+* **Anti-Cheat Randomizer:** प्रश्न आणि पर्यायांचे स्वयंचलित शफलिंग (Randomization) जेणेकरून फसवणूक होणार नाही.
+* **Dual View Mode:** डिजिटल स्क्रीन व्ह्यू किंवा प्रत्यक्ष परीक्षेचा अनुभव देणारा **OMR Sheet View**.
+* **MPSC Marking Scheme:** 
+  - राज्यसेवा: `+२` बरोबर, `-०.६६` वजा (1/3rd Negative).
+  - गट-ब / गट-क: `+१` बरोबर, `-०.२५` वजा (1/4th Negative).
+* **Mark for Review:** कठीण प्रश्न नंतर तपासण्यासाठी बुकमार्क करण्याची सोय.
+* **Audio Result Praise (TTS):** चांगला स्कोर आल्यास ब्राऊझर व्हॉईसद्वारे कौतुक.
+* **Question & Option Fix/Edit:** टेस्ट सोडवून झाल्यावर चुकीचे उत्तर दुरुस्त करणे किंवा संपूर्ण प्रश्न/पर्याय एडिट करणे.
+
+### 📕 ४. स्वयंचलित मिस्टेक बुक (Mistake Book)
+* टेस्ट सोडवताना चुकलेले सर्व प्रश्न आपोआप Mistake Book मध्ये जमा होतात.
+* **Instant Revision Mock:** चुकलेल्या प्रश्नांची स्वतंत्र मॉक टेस्ट तयार करून लगेच सराव करण्याची सोय.
+* सर्व चुका दुरुस्त झाल्यानंतर टेस्ट Mistake Book मधून आपोआप क्लिअर होते.
+* थेट Mistake Book मधूनही प्रश्न आणि पर्याय दुरुस्त (Edit) करण्याची सुविधा.
+
+### 🧠 ५. SRS फ्लॅशकार्ड रिव्हिजन (Spaced Repetition System)
+* स्मृती टिकवून ठेवण्यासाठी वैज्ञानिक SRS पद्धत (Day 1 ➔ Day 3 ➔ Day 7 ➔ Day 14 ➔ Day 30).
+* दिवसभराचा अभ्यास पूर्ण होताच विषय आपोआप SRS रिव्हिजन रांगेमध्ये जोडले जातात.
+
+### ⏱️ ६. डीप फोकस पोमोडोरो टायमर (Focus Timer Modal)
+* २५/५० मिनिटांचे फोकस सेशन्स.
+* अभ्यास करताना मन एकाग्र राहण्यासाठी ॲम्बियंट पार्श्वसंगीत (पावसाचा आवाज, कॅफे, लो-फाय बीट्स).
+* सेशन पूर्ण होताच थेट XP रिवॉर्ड.
+
+### 🔔 ७. नोटिफिकेशन सेंटर (Smart Notification Center)
+* सकाळचा सराव (८ AM), दुपारची चालू घडामोडी रिव्हिजन (१ PM), संध्याकाळची मॉक टेस्ट (६ PM), आणि रात्रीची मिस्टेक बुक रिव्हिजन (१० PM).
+* ब्राऊझर डेस्कटॉप पुश नोटिफिकेशन्स आणि इन-ॲप टोस्ट बॅनर.
+
+### 📱 ८. Note Reels (शॉर्ट्स स्वरूपातील अभ्यास)
+* इन्स्टाग्राम/युट्यूब शॉर्ट्सप्रमाणे एका स्वाइपवर महत्त्वाची माहिती, कलमे, चालू घडामोडी आणि चालू वर्षांचे प्रश्न वाचण्याची सोय.
+
+---
+
+## 3. नुकतेच केलेले विशेष बदल व सोयी (Latest Updates & Enhancements)
+
+### ✏️ अ) प्रश्न आणि पर्याय एडिट करण्याची पूर्ण सुविधा (Full Question & Option Editing)
+* **समस्या निवारण:** आधी फक्त योग्य पर्याय क्रमांक (A, B, C, D) बदलता येत होता; पण जर प्रश्नात किंवा पर्यायाच्या स्पेलिंग/मजकुरात चूक असेल तर ती बदलता येत नव्हती.
+* **केलेला बदल:**
+  1. `EditQuestionModal.jsx` हा नवीन प्रगत घटक तयार केला.
+  2. **TakeTest निकाल पेजवर:** प्रत्येक प्रश्नाखाली `✏️ प्रश्न / पर्याय एडिट करा` बटण दिले.
+  3. **Mistake Book पेजवर:** प्रत्येक चुकलेल्या प्रश्नाखाली `✏️ प्रश्न / पर्याय एडिट करा` बटण दिले.
+  4. यामध्ये **प्रश्नाचा मूळ मजकूर**, **सर्व पर्यायांचे मजकूर**, **बरोबर पर्याय (Radio selection)** आणि **स्पष्टीकरण (Explanation)** थेट बदलून लगेच सेव्ह करता येते.
+  5. हे बदल स्थानिक मेमरी (LocalStorage) तसेच बॅकएंड Firestore (`PATCH /api/custom-tests/:testId/edit-question`) दोन्हीकडे तात्काळ अपडेट होतात.
+
+### 📢 ब) डॅशबोर्डवर टीव्ही न्यूज चॅनेलसारखी Scrolling पट्टी (News Ticker)
+* **Dynamic Feature Flag:** ही पट्टी आता केवळ हार्डकोडेड ईमेलवर अवलंबून नसून डेटाबेसमधील `user.features.ticker` फ्लॅगद्वारे सुरक्षितपणे नियंत्रित केली जाते (`balu@gmail.com` साठी ही सुविधा डीफॉल्ट ॲक्टिव्हेटेड आहे).
+* **डिझाईन व ॲनिमेशन:**
+  - डाव्या बाजूला लाल रंगाचा पल्सिंग **`🔴 BREAKING`** बॅज.
+  - टीव्ही न्यूज चॅनेलसारखा स्मूथ आडवा स्क्रोलिंग ट्रॅक:
+    > `✦ One day, everything will make sense. ❤️ ✦ कष्ट इतक्या शांततेने करा की यश धिंगाणा घालेल! 🎯 ✦ One day, everything will make sense. ❤️ ✦ स्वतःवर विश्वास ठेवा — प्रामाणिक प्रयत्न कधीही वाया जात नाहीत! 🌟 ✦ One day, everything will make sense. ❤️ ✦`
+  - माऊस फिरवल्यास स्क्रोलिंग पॉज होते (वाचण्यास सोपे).
+
+### 🔔 क) Server-Side Web-Push Notification (ब्राउझर टॅब बंद असतानाही चालू)
+* **मेसेज:** `"One day, everything will make sense. ❤️"`
+* **सर्व्हर-साईड क्रॉन (Node-Cron):** क्लायंटच्या टाइमरवर अवलंबून न राहता बॅकएंड `server.js` आणि `notificationController.js` मधून दर २.५ तासांनी थेट वेब-पुश द्वारे नोटिफिकेशन पाठवले जाते. त्यामुळे **ब्राउझर टॅब बंद असला तरीही** मोबाईल/डेस्कटॉपवर नोटिफिकेशन वेळेवर मिळते.
+
+### 🛡️ ड) सुरक्षा व इनपुट व्हॅलिडेशन (Backend Auth & Input Protection)
+* **Firebase Token Middleware:** `authMiddleware.js` द्वारे अनधिकृत API विनंत्या रोखणे.
+* **Strict Validation on Edit:** `PATCH /edit-question` आणि `fix-answer` वर पर्याय मर्यादा (२ ते ६ पर्याय, बरोबर पर्याय इंडेक्स व्हॅलिडेशन) आणि `updatedAt` टाइमस्टॅम्पिंग (Last-Write-Wins conflict resolution).
+* **Deficit Reset Anti-Abuse Cooldown:** विद्यार्थी पेनल्टी टाळण्यासाठी सतत तूट रीसेट करू नये म्हणून ३० दिवसांत (महिन्यातून) जास्तीत जास्त एकदाच रीसेट करण्याची मर्यादा लागू केली.
+
+---
+
+## 4. डेटाबेस व बॅकएंड API रचना (Backend & Database Architecture)
+
+| Endpoint | Method | वर्णन |
+| :--- | :--- | :--- |
+| `/api/users/:userId/sync` | POST | युजर प्रोफाईल व डायनॅमिक फिचर फ्लॅग्ज (Feature Flags) सिंक करणे |
+| `/api/custom-tests/all` | GET | सर्व उपलब्ध टेस्ट्स आणि सराव संच मिळवणे |
+| `/api/custom-tests/:testId` | GET | विशिष्ट टेस्ट आणि त्यातील प्रश्नांची माहिती |
+| `/api/custom-tests/:testId/submit` | POST | टेस्ट उत्तरपत्रिका जमा करून रँक व गुण मिळवणे |
+| `/api/custom-tests/:testId/fix-answer` | PATCH | प्रश्नाचा फक्त योग्य पर्याय क्रमांक सुरक्षितपणे दुरुस्त करणे |
+| `/api/custom-tests/:testId/edit-question` | PATCH | **संपूर्ण प्रश्न, सर्व पर्याय आणि स्पष्टीकरण इनपुट व्हॅलिडेशनसह एडिट करणे** |
+| `/api/tasks` | GET/POST | दैनंदिन टास्क वेळापत्रक व्यवस्थापन |
+| `/api/notifications/subscribe` | POST | पुश नोटिफिकेशन सर्व्हिस वर्कर सबस्क्रिप्शन नोंद |
+| `/api/ai/coach` | POST | कमकुवत विषयांवर आधारित AI अभ्यास मार्गदर्शक |
+| `/api/reels/all` | GET | चालू घडामोडी व रिव्हिजन रील्स |
+
+---
+
+## 5. युजर इंटरफेस व डिझाईन सिस्टीम (UI/UX System)
+
+* **डार्क व लाईट थीम (Theme Toggle):** डोळ्यांवर ताण येऊ नये म्हणून हाय-कंट्रास्ट डार्क मोड आणि दिवसासाठी स्वच्छ लाईट मोड.
+* **ग्लासमॉर्फिझम डिझाईन (Glassmorphism):** फ्रॉस्टेड ग्लास बॅकड्रॉप, सूक्ष्म बॉर्डर आणि ॲम्बियंट ग्लो इफेक्ट्स.
+* **रिस्पॉन्सिव्ह मोबाईल-फर्स्ट लेआउट:** डेस्कटॉपसाठी विस्तृत डॅशबोर्ड आणि मोबाईलसाठी बॉटम नॅव्हिगेशन बार (`BottomNav`).
+* **ऑटो-स्क्रोलिंग व फीडबॅक ॲनिमेशन्स:** अचूक उत्तर दिल्यावर व्हिज्युअल फीडबॅक, कॉन्फेटी स्फोट आणि स्मूथ पेज ट्रान्झिशन्स.
+
+---
+
+## 6. फाईल व फोल्डर रचना (Directory Structure)
+
+```
+mpsc_manager/
+├── backend/
+│   ├── src/
+│   │   ├── config/ (Firebase Admin SDK config)
+│   │   ├── controllers/ (customTestController.js, taskController.js, etc.)
+│   │   ├── routes/ (customTestRoutes.js, notificationRoutes.js, etc.)
+│   │   └── server.js
+│   └── package.json
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── EditQuestionModal.jsx      <-- [NEW] प्रश्न व पर्याय संपादन मोडल
+│   │   │   ├── NewsTicker.jsx             <-- [NEW] खास न्यूज स्क्रोलिंग पट्टी
+│   │   │   ├── StudyDeficitModal.jsx      <-- अभ्यास तूट व बॅकलॉग मोडल
+│   │   │   ├── FocusTimerModal.jsx        <-- पोमोडोरो डीप वर्क टायमर
+│   │   │   ├── NotificationCenter.jsx     <-- स्मार्ट नोटिफिकेशन सेंटर
+│   │   │   ├── SrsReviewModal.jsx         <-- SRS ऍक्टिव्ह रिकॉल फ्लॅशकार्ड्स
+│   │   │   ├── OmrSheetView.jsx           <-- OMR शीट व्ह्यू
+│   │   │   ├── Sidebar.jsx & BottomNav.jsx<-- नॅव्हिगेशन बार्स
+│   │   │   └── ConfirmModal.jsx           <-- कन्फर्मेशन डायलॉग
+│   │   ├── pages/
+│   │   │   ├── Dashboard.jsx              <-- मुख्य डॅशबोर्ड
+│   │   │   ├── TakeTest.jsx               <-- टेस्ट देण्याचे मुख्य पान
+│   │   │   ├── MistakeBook.jsx            <-- मिस्टेक बुक रिव्हिजन
+│   │   │   ├── MockTests.jsx              <-- टेस्ट सिरीज
+│   │   │   ├── Practice.jsx               <-- सराव प्रश्न
+│   │   │   ├── StudyPlanner.jsx           <-- सिलॅबस व अभ्यास नियोजन
+│   │   │   ├── Analytics.jsx              <-- परफॉर्मन्स आकडेवारी
+│   │   │   ├── TestMaker.jsx              <-- टेस्ट क्रिएटर
+│   │   │   ├── NoteReels.jsx & ReelViewer.jsx <-- रील्स
+│   │   │   └── Login.jsx & Register.jsx   <-- ऑथेंटिकेशन
+│   │   ├── utils/
+│   │   │   ├── deficitTracker.js          <-- पेनल्टी व तूट गणित इंजिन
+│   │   │   ├── srsEngine.js               <-- SRS फ्लॅशकार्ड अल्गोरिदम
+│   │   │   ├── sound.js                   <-- Web Audio API ध्वनी
+│   │   │   ├── notify.js                  <-- पुश व टोस्ट नोटिफिकेशन
+│   │   │   └── dbStore.js                 <-- क्लाऊड व लोकल सिंक
+│   │   ├── App.jsx                        <-- मुख्य ॲप कंटेनर व राऊटर
+│   │   └── index.css                      <-- ॲप्लिकेशन स्टाईलिंग
+│   └── package.json
+└── PROJECT_SUMMARY.md                     <-- [NEW] हा संपूर्ण अहवाल दस्तावेज
+```
+
+---
+
+*हे डॉक्युमेंट MahaPrep OS प्रकल्पाचा संपूर्ण कार्य अहवाल म्हणून भविष्यातील संदर्भ आणि विकासासाठी सुरक्षित करण्यात आले आहे.* 🎯

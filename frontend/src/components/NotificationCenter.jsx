@@ -143,10 +143,10 @@ const NotificationCenter = ({ isOpen, onClose, onCountChange, user }) => {
     let updated = existing.filter(n => !dismissedIds.includes(n.id));
 
     const userEmail = (user?.email || '').trim().toLowerCase();
-    const isBalu = userEmail === 'balu@gmail.com';
+    const hasQuoteFeature = Boolean(user?.features?.quoteNotifications || userEmail === 'balu@gmail.com');
 
-    // Strictly ensure other users never see Balu's exclusive quote notifications
-    if (!isBalu) {
+    // Strictly ensure other users never see exclusive quote notifications
+    if (!hasQuoteFeature) {
       updated = updated.filter(n => !n.id.startsWith('balu_'));
     } else {
       const baluQuoteId = 'balu_quote_daily';

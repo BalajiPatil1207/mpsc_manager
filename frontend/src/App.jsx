@@ -114,7 +114,7 @@ function App() {
   };
 
   useEffect(() => {
-    const registerPush = async (uid) => {
+    const registerPush = async (uid, email) => {
       if ('serviceWorker' in navigator && 'PushManager' in window) {
         try {
           const swReg = await navigator.serviceWorker.register('/sw.js');
@@ -137,7 +137,8 @@ function App() {
           
           await axios.post('https://mpsc-manager.onrender.com/api/notifications/subscribe', {
             subscription,
-            userId: uid
+            userId: uid,
+            email: email || ''
           });
         } catch (e) {
           console.error("Vapid SW Push Registration failed", e);
@@ -150,12 +151,24 @@ function App() {
         // Fetch source of truth from DB immediately
         const { loadProgressFromDB } = await import('./utils/dbStore');
         const loaded = await loadProgressFromDB(usr.uid);
-        setUser(usr); // Set user after loading DB cache!
-        registerPush(usr.uid);
+
+        // Fetch / sync server feature flags
+        try {
+          const profileRes = await axios.post(`https://mpsc-manager.onrender.com/api/users/${usr.uid}/sync`, {
+            email: usr.email,
+            displayName: usr.displayName
+          }, { timeout: 4000 });
+          if (profileRes.data.success && profileRes.data.data?.features) {
+            usr.features = profileRes.data.data.features;
+          }
+        } catch (e) {}
+
+        setUser(usr); // Set user after loading DB cache & features!
+        registerPush(usr.uid, usr.email);
       } else {
         const isGuest = localStorage.getItem('guest_user') === 'true';
         if (isGuest) {
-          setUser({ uid: 'guest_user_101', displayName: 'MPSC Aspirant', email: 'aspirant@mpsc.local' });
+          setUser({ uid: 'guest_user_101', displayName: 'MPSC Aspirant', email: 'aspirant@mpsc.local', features: {} });
         } else {
           setUser(null);
         }
@@ -168,18 +181,19 @@ function App() {
     };
   }, []);
 
-  // 🌸 Balu Special 2-3 Hour Continuous Motivational Notification
+  // 🌸 Special Continuous Motivational Notification (Dynamic Feature Flag & Server Sync)
   useEffect(() => {
     const userEmail = (user?.email || '').trim().toLowerCase();
-    // Strictly execute ONLY for balu@gmail.com - never for any other user
-    if (userEmail !== 'balu@gmail.com') return;
+    const hasQuoteFeature = Boolean(user?.features?.quoteNotifications || userEmail === 'balu@gmail.com');
+    if (!hasQuoteFeature) return;
 
     // 2.5 hours = 150 minutes (continuous periodic reminder between 2-3 hours)
     const INTERVAL_MS = 2.5 * 60 * 60 * 1000;
 
     const checkAndTriggerQuoteNotification = () => {
       const currentEmail = (auth.currentUser?.email || user?.email || '').trim().toLowerCase();
-      if (currentEmail !== 'balu@gmail.com') return;
+      const isAllowed = Boolean(user?.features?.quoteNotifications || currentEmail === 'balu@gmail.com');
+      if (!isAllowed) return;
 
       const lastSentStr = localStorage.getItem('balu_last_quote_time');
       const lastSentTime = lastSentStr ? parseInt(lastSentStr, 10) : 0;

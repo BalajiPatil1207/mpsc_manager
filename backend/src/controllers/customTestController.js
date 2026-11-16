@@ -462,24 +462,129 @@ exports.fixAnswer = async (req, res, next) => {
     const { questionIndex, newCorrectOption } = req.body;
     
     if (questionIndex === undefined || newCorrectOption === undefined) {
-      return res.status(400).json({ success: false, message: "questionIndex and newCorrectOption required" });
+      return res.status(400).json({ success: false, message: "questionIndex and newCorrectOption are required" });
     }
 
     const doc = await db.collection('customTests').doc(testId).get();
     if (!doc.exists) return res.status(404).json({ success: false, message: "Test not found" });
     
     const test = doc.data();
-    const questions = [...test.questions];
+    const questions = [...(test.questions || [])];
     
-    if (questionIndex < 0 || questionIndex >= questions.length) {
+    const qIdx = parseInt(questionIndex, 10);
+    const newCorrect = parseInt(newCorrectOption, 10);
+
+    if (isNaN(qIdx) || qIdx < 0 || qIdx >= questions.length) {
       return res.status(400).json({ success: false, message: "Invalid question index" });
     }
 
-    questions[questionIndex] = { ...questions[questionIndex], correctOption: newCorrectOption };
+    const targetQ = questions[qIdx];
+    const opts = Array.isArray(targetQ.options) ? targetQ.options : [];
+    if (isNaN(newCorrect) || newCorrect < 0 || (opts.length > 0 && newCorrect >= opts.length)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `newCorrectOption must be between 0 and ${Math.max(0, opts.length - 1)}` 
+      });
+    }
+
+    const nowIso = new Date().toISOString();
+    questions[qIdx] = { 
+      ...targetQ, 
+      correctOption: newCorrect,
+      updatedAt: nowIso
+    };
     
-    await db.collection('customTests').doc(testId).update({ questions });
-    res.json({ success: true, message: "Answer fixed successfully!" });
+    await db.collection('customTests').doc(testId).update({ 
+      questions,
+      updatedAt: nowIso
+    });
+
+    res.json({ success: true, message: "Answer fixed successfully!", updatedAt: nowIso });
   } catch(err) {
+    next(err);
+  }
+};
+
+// Edit full question text, options, correctOption, explanation with input validation
+exports.editQuestion = async (req, res, next) => {
+  try {
+    const { testId } = req.params;
+    const { questionIndex, question, options, correctOption, explanation } = req.body;
+
+    if (questionIndex === undefined) {
+      return res.status(400).json({ success: false, message: "questionIndex is required" });
+    }
+
+    const doc = await db.collection('customTests').doc(testId).get();
+    if (!doc.exists) return res.status(404).json({ success: false, message: "Test not found" });
+
+    const test = doc.data();
+    const questions = [...(test.questions || [])];
+
+    const qIdx = parseInt(questionIndex, 10);
+    if (isNaN(qIdx) || qIdx < 0 || qIdx >= questions.length) {
+      return res.status(400).json({ success: false, message: "Invalid question index" });
+    }
+
+    const currentQ = questions[qIdx];
+
+    // Validate question text if provided
+    let finalQuestion = currentQ.question;
+    if (question !== undefined) {
+      if (typeof question !== 'string' || question.trim().length < 3) {
+        return res.status(400).json({ success: false, message: "Question text must be at least 3 characters long" });
+      }
+      finalQuestion = question.trim();
+    }
+
+    // Validate options if provided
+    let finalOptions = currentQ.options || [];
+    if (options !== undefined) {
+      if (!Array.isArray(options) || options.length < 2 || options.length > 6) {
+        return res.status(400).json({ success: false, message: "Options must be an array of 2 to 6 choices" });
+      }
+      const cleaned = options.map(o => (typeof o === 'string' ? o.trim() : String(o || '').trim()));
+      if (cleaned.some(o => !o)) {
+        return res.status(400).json({ success: false, message: "All options must contain non-empty text" });
+      }
+      finalOptions = cleaned;
+    }
+
+    // Validate correctOption
+    let finalCorrect = currentQ.correctOption;
+    if (correctOption !== undefined) {
+      const parsedCorrect = parseInt(correctOption, 10);
+      if (isNaN(parsedCorrect) || parsedCorrect < 0 || parsedCorrect >= finalOptions.length) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `correctOption must be an index between 0 and ${finalOptions.length - 1}` 
+        });
+      }
+      finalCorrect = parsedCorrect;
+    }
+
+    const nowIso = new Date().toISOString();
+    questions[qIdx] = {
+      ...currentQ,
+      question: finalQuestion,
+      options: finalOptions,
+      correctOption: finalCorrect,
+      explanation: explanation !== undefined ? String(explanation || '').trim() : (currentQ.explanation || ''),
+      updatedAt: nowIso
+    };
+
+    await db.collection('customTests').doc(testId).update({ 
+      questions,
+      updatedAt: nowIso
+    });
+
+    res.json({ 
+      success: true, 
+      message: "Question and options updated successfully!", 
+      question: questions[qIdx],
+      updatedAt: nowIso
+    });
+  } catch (err) {
     next(err);
   }
 };

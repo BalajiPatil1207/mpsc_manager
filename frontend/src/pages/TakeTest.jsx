@@ -10,6 +10,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { auth } from '../firebase';
 import OmrSheetView from '../components/OmrSheetView';
+import EditQuestionModal from '../components/EditQuestionModal';
 import { MPSC_SEED_MOCKS } from '../data/mpscMockTestsSeed';
 import { recordTestXp } from '../utils/xpTracker';
 
@@ -32,6 +33,7 @@ const TakeTest = () => {
   const [score, setScore] = useState(0);
   const [showAnswers, setShowAnswers] = useState(false);
   const [editingCorrectOption, setEditingCorrectOption] = useState(null); // { qIndex, value }
+  const [editingQuestionModalData, setEditingQuestionModalData] = useState(null); // full question edit
   const [activeQuestion, setActiveQuestion] = useState(0);
   const [showSuccessVideo, setShowSuccessVideo] = useState(false);
   const [testViewMode, setTestViewMode] = useState('question'); // 'question' | 'omr'
@@ -712,6 +714,70 @@ const TakeTest = () => {
     }
   };
 
+  // Full Question & Options Edit
+  const handleSaveQuestionEdit = async (updatedData) => {
+    const { qIndex, question, options, correctOption, explanation } = updatedData;
+    const q = test.questions[qIndex];
+    if (!q) return;
+
+    const originalQIdx = q.originalQIndex !== undefined ? q.originalQIndex : qIndex;
+    
+    // In current test state:
+    const updatedQuestions = [...test.questions];
+    updatedQuestions[qIndex] = {
+      ...q,
+      question,
+      options,
+      correctOption,
+      explanation
+    };
+
+    setTest(prev => ({ ...prev, questions: updatedQuestions }));
+
+    // 1. Update local storage caches
+    try {
+      const cachedMistakes = JSON.parse(localStorage.getItem('mpsc_cached_mistakes') || '[]');
+      const mIdx = cachedMistakes.findIndex(m => (m._id || m.id) === testId);
+      if (mIdx !== -1) {
+        cachedMistakes[mIdx].questions = updatedQuestions;
+        localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(cachedMistakes));
+        window.dispatchEvent(new Event('mpsc_mistakes_updated'));
+      }
+
+      const cachedPractice = JSON.parse(localStorage.getItem('mpsc_cached_practice') || '[]');
+      const pIdx = cachedPractice.findIndex(p => (p._id || p.id) === testId);
+      if (pIdx !== -1) {
+        cachedPractice[pIdx].questions = updatedQuestions;
+        localStorage.setItem('mpsc_cached_practice', JSON.stringify(cachedPractice));
+      }
+    } catch (e) {
+      console.warn("Local storage cache sync notice:", e);
+    }
+
+    // 2. Sync to Backend
+    const toastId = toast.loading('प्रश्न व पर्याय अपडेट होत आहेत...');
+    try {
+      const res = await axios.patch(
+        `https://mpsc-manager.onrender.com/api/custom-tests/${testId}/edit-question`,
+        {
+          questionIndex: originalQIdx,
+          question,
+          options,
+          correctOption,
+          explanation
+        }
+      );
+      if (res.data.success) {
+        toast.success('✅ प्रश्न व पर्याय यशस्वीरीत्या अपडेट झाले!', { id: toastId });
+      } else {
+        toast.success('✅ बदल स्थानिक पातळीवर सेव्ह झाले!', { id: toastId });
+      }
+    } catch (err) {
+      // Offline / local fallback
+      toast.success('✅ बदल सुरक्षितपणे सेव्ह झाले!', { id: toastId });
+    }
+  };
+
   useEffect(() => {
     if (submitted && test && !isMistake) {
       const percent = test.questions.length > 0 ? (score / test.questions.length) * 100 : 0;
@@ -1371,18 +1437,41 @@ const TakeTest = () => {
                       </button>
                     </>
                   ) : (
-                    <button
-                      onClick={() => setEditingCorrectOption({ qIndex, value: q.correctOption })}
-                      className="btn"
-                      style={{ 
-                        padding: '5px 12px', fontSize: '0.78rem',
-                        background: 'rgba(239,68,68,0.08)', color: 'var(--danger)',
-                        border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px',
-                        display: 'flex', alignItems: 'center', gap: '6px'
-                      }}
-                    >
-                      <FiEdit size={12} /> उत्तर चुकीचे आहे? दुरुस्त करा
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={() => setEditingCorrectOption({ qIndex, value: q.correctOption })}
+                        className="btn"
+                        style={{ 
+                          padding: '5px 12px', fontSize: '0.78rem',
+                          background: 'rgba(239,68,68,0.08)', color: 'var(--danger)',
+                          border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px',
+                          display: 'flex', alignItems: 'center', gap: '6px'
+                        }}
+                      >
+                        <FiEdit size={12} /> उत्तर चुकीचे आहे? दुरुस्त करा
+                      </button>
+
+                      <button
+                        onClick={() => setEditingQuestionModalData({
+                          qIndex,
+                          originalQIndex: q.originalQIndex !== undefined ? q.originalQIndex : qIndex,
+                          question: q.question,
+                          options: q.options || [],
+                          correctOption: q.correctOption,
+                          explanation: q.explanation || ''
+                        })}
+                        className="btn"
+                        style={{ 
+                          padding: '5px 12px', fontSize: '0.78rem',
+                          background: 'rgba(59,130,246,0.1)', color: 'var(--info)',
+                          border: '1px solid rgba(59,130,246,0.3)', borderRadius: '8px',
+                          display: 'flex', alignItems: 'center', gap: '6px'
+                        }}
+                        title="संपूर्ण प्रश्न, पर्याय आणि स्पष्टीकरण एडिट करा"
+                      >
+                        <FiEdit size={12} /> ✏️ प्रश्न / पर्याय एडिट करा
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -1458,6 +1547,14 @@ const TakeTest = () => {
           </div>
         </div>
       )}
+
+      {/* Full Question and Options Edit Modal */}
+      <EditQuestionModal
+        isOpen={Boolean(editingQuestionModalData)}
+        initialData={editingQuestionModalData}
+        onClose={() => setEditingQuestionModalData(null)}
+        onSave={handleSaveQuestionEdit}
+      />
     </div>
   );
 };

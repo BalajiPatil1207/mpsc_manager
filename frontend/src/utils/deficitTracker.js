@@ -363,3 +363,36 @@ export const recoverBacklogItem = (backlogId) => {
     updatedHistory
   };
 };
+
+// Check whether user is eligible to reset deficit (Max once per 30 days to prevent abuse)
+export const checkDeficitResetEligibility = () => {
+  const lastResetStr = localStorage.getItem('study_last_deficit_reset_time');
+  if (!lastResetStr) {
+    return { allowed: true, daysRemaining: 0, lastResetDate: null };
+  }
+
+  const lastResetTime = parseInt(lastResetStr, 10);
+  const now = Date.now();
+  const COOLDOWN_DAYS = 30; // 30-day anti-abuse cooldown
+  const elapsedDays = Math.floor((now - lastResetTime) / (1000 * 60 * 60 * 24));
+
+  if (elapsedDays < COOLDOWN_DAYS) {
+    return {
+      allowed: false,
+      daysRemaining: COOLDOWN_DAYS - elapsedDays,
+      lastResetDate: new Date(lastResetTime).toLocaleDateString('mr-IN')
+    };
+  }
+
+  return { 
+    allowed: true, 
+    daysRemaining: 0, 
+    lastResetDate: new Date(lastResetTime).toLocaleDateString('mr-IN') 
+  };
+};
+
+export const recordDeficitReset = () => {
+  const now = Date.now();
+  localStorage.setItem('study_last_deficit_reset_time', now.toString());
+  return now;
+};

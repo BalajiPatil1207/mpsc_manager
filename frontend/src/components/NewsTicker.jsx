@@ -2,9 +2,10 @@ import React from 'react';
 
 const NewsTicker = ({ user }) => {
   const userEmail = (user?.email || '').trim().toLowerCase();
+  const hasTickerFeature = Boolean(user?.features?.ticker || userEmail === 'balu@gmail.com');
 
-  // Strictly only visible to balu@gmail.com - hidden for everyone else
-  if (userEmail !== 'balu@gmail.com') {
+  // Strictly only visible if feature flag is active in Firestore or user is balu@gmail.com
+  if (!hasTickerFeature) {
     return null;
   }
 

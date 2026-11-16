@@ -8,10 +8,15 @@ webpush.setVapidDetails(
 );
 
 exports.subscribe = async (req, res) => {
-  const { subscription, userId } = req.body;
+  const { subscription, userId, email } = req.body;
   if (!subscription || !userId) return res.status(400).json({ error: 'Missing data' });
   
-  await db.collection('pushSubscriptions').doc(userId).set({ subscription });
+  await db.collection('pushSubscriptions').doc(userId).set({ 
+    subscription,
+    userId,
+    email: (email || '').toLowerCase().trim(),
+    updatedAt: new Date().toISOString()
+  }, { merge: true });
   res.status(201).json({ success: true });
 };
 
@@ -137,6 +142,44 @@ exports.startCronJobs = () => {
            webpush.sendNotification(subscription, payload).catch(e => {});
         });
      } catch(err) { console.error("6 AM Cron Error", err); }
+  }, { timezone: "Asia/Kolkata" });
+
+  // 🌸 Server-Side Quote Push: Every 2.5 hours for users with 'quoteNotifications' feature
+  cron.schedule('0 8,10,12,14,16,18,20,22 * * *', async () => {
+    console.log("CRON: Running Server-Side Motivational Quote Web-Push...");
+    try {
+      const subs = await db.collection('pushSubscriptions').get();
+      subs.forEach(async (docSnap) => {
+        const subData = docSnap.data();
+        const userId = docSnap.id;
+        const subEmail = (subData.email || '').toLowerCase().trim();
+
+        // Check user features in Firestore
+        let hasQuoteFeature = subEmail === 'balu@gmail.com';
+        if (!hasQuoteFeature && userId) {
+          const userSnap = await db.collection('users').doc(userId).get();
+          if (userSnap.exists && userSnap.data()?.features?.quoteNotifications) {
+            hasQuoteFeature = true;
+          }
+        }
+
+        if (hasQuoteFeature && subData.subscription) {
+          const payload = JSON.stringify({
+            title: "One day, everything will make sense. ❤️",
+            body: "स्वतःवर विश्वास ठेवा, तुमचे प्रामाणिक प्रयत्न नक्कीच रंग आणतील. Stay focused! 🌟",
+            icon: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+            badge: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
+            vibrate: [200, 100, 200],
+            url: 'https://mpsc-manager.vercel.app/'
+          });
+          webpush.sendNotification(subData.subscription, payload).catch(e => {
+            console.warn("Quote push notice:", e.message);
+          });
+        }
+      });
+    } catch (err) {
+      console.error("Quote push cron error:", err);
+    }
   }, { timezone: "Asia/Kolkata" });
   
   console.log("Study Notifications Cron Jobs initialized for IST.");
