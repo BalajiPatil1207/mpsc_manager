@@ -218,6 +218,7 @@ const MockTests = () => {
           const localMocksMap = new Map();
           localMocks.forEach(l => localMocksMap.set(l._id || l.id, l));
 
+          const currentUid = auth.currentUser?.uid;
           const solvedList = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
           const hist = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
           const solvedSetInternal = new Set([
@@ -231,8 +232,8 @@ const MockTests = () => {
           MPSC_SEED_MOCKS.forEach(s => {
             const id = s._id || s.id;
             const local = localMocksMap.get(id);
-            const inHist = hist.some(h => (h.testId === id) || (h.title && s.title && h.title.trim().toLowerCase() === s.title.trim().toLowerCase()));
-            const isSolved = Boolean(local?.isSolved || solvedSetInternal.has(id) || inHist);
+            const inHist = hist.some(h => h.testId && h.testId === id);
+            const isSolved = Boolean(solvedSetInternal.has(id) || inHist);
             combinedMap.set(id, { ...s, ...local, isSolved });
           });
 
@@ -241,19 +242,15 @@ const MockTests = () => {
             const id = m._id || m.id;
             const existing = combinedMap.get(id);
             const local = localMocksMap.get(id);
-            const inHist = hist.some(h => (h.testId === id) || (h.title && m.title && h.title.trim().toLowerCase() === m.title.trim().toLowerCase()));
-            const isSolved = Boolean(existing?.isSolved || local?.isSolved || m.isSolved || solvedSetInternal.has(id) || inHist);
+            const inHist = hist.some(h => h.testId && h.testId === id);
+            const isUserAttempted = Boolean(currentUid && currentUid !== 'anonymous' && Array.isArray(m.attemptedBy) && m.attemptedBy.includes(currentUid));
+            const isSolved = Boolean(solvedSetInternal.has(id) || inHist || isUserAttempted);
             combinedMap.set(id, {
               ...m,
               ...existing,
               ...local,
               isSolved,
-              attemptedBy: Array.from(new Set([
-                ...(Array.isArray(m.attemptedBy) ? m.attemptedBy : []),
-                ...(Array.isArray(existing?.attemptedBy) ? existing.attemptedBy : []),
-                ...(Array.isArray(local?.attemptedBy) ? local.attemptedBy : []),
-                ...(isSolved ? ['anonymous'] : [])
-              ]))
+              attemptedBy: Array.isArray(m.attemptedBy) ? m.attemptedBy : []
             });
           });
 
@@ -261,10 +258,10 @@ const MockTests = () => {
           localMocks.forEach(l => {
             const id = l._id || l.id;
             if (!combinedMap.has(id)) {
-              const inHist = hist.some(h => (h.testId === id) || (h.title && l.title && h.title.trim().toLowerCase() === l.title.trim().toLowerCase()));
+              const inHist = hist.some(h => h.testId && h.testId === id);
               combinedMap.set(id, {
                 ...l,
-                isSolved: Boolean(l.isSolved || solvedSetInternal.has(id) || inHist)
+                isSolved: Boolean(solvedSetInternal.has(id) || inHist)
               });
             }
           });
@@ -288,36 +285,39 @@ const MockTests = () => {
     };
   }, []);
 
-  const currentUser = auth.currentUser?.uid || 'anonymous';
-
   const isTestSolved = (test) => {
     if (!test) return false;
     const tId = test._id || test.id;
-    if (test.isSolved) return true;
-    if (tId && solvedSet.has(tId)) return true;
+    if (!tId) return false;
+
+    // 1. Exact ID match in solvedSet (populated from mpsc_solved_tests & mpsc_test_history)
+    if (solvedSet.has(tId)) return true;
     if (test.id && solvedSet.has(test.id)) return true;
     if (test._id && solvedSet.has(test._id)) return true;
 
-    if (test.attemptedBy && Array.isArray(test.attemptedBy)) {
-      if (currentUser && test.attemptedBy.includes(currentUser)) return true;
-      if (test.attemptedBy.includes('anonymous') || test.attemptedBy.length > 0) return true;
-    }
-
+    // 2. Direct check in localStorage mpsc_solved_tests
     try {
       const solvedList = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
-      if (tId && solvedList.includes(tId)) return true;
-      if (test.id && solvedList.includes(test.id)) return true;
-      if (test._id && solvedList.includes(test._id)) return true;
+      if (Array.isArray(solvedList)) {
+        if (solvedList.includes(tId) || (test.id && solvedList.includes(test.id)) || (test._id && solvedList.includes(test._id))) {
+          return true;
+        }
+      }
     } catch(e) {}
 
+    // 3. Direct check in localStorage mpsc_test_history by exact testId (never title!)
     try {
       const hist = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
-      const inHist = hist.some(h => 
-        (h.testId && (h.testId === tId || h.testId === test.id || h.testId === test._id)) ||
-        (h.title && test.title && h.title.trim().toLowerCase() === test.title.trim().toLowerCase())
-      );
-      if (inHist) return true;
+      if (Array.isArray(hist) && hist.some(h => h.testId && (h.testId === tId || h.testId === test.id || h.testId === test._id))) {
+        return true;
+      }
     } catch(e) {}
+
+    // 4. Backend attemptedBy check strictly for the authenticated user ID (never anonymous)
+    const currentUid = auth.currentUser?.uid;
+    if (currentUid && currentUid !== 'anonymous' && Array.isArray(test.attemptedBy)) {
+      if (test.attemptedBy.includes(currentUid)) return true;
+    }
 
     return false;
   };

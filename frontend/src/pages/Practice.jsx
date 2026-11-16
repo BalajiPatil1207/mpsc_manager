@@ -518,35 +518,39 @@ const Practice = () => {
     };
   }, []);
 
-  const currentUser = auth.currentUser?.uid || 'anonymous';
   const isTestSolved = (test) => {
     if (!test) return false;
     const tId = test._id || test.id;
-    if (test.isSolved) return true;
-    if (tId && solvedSet.has(tId)) return true;
+    if (!tId) return false;
+
+    // 1. Direct ID match in solvedSet
+    if (solvedSet.has(tId)) return true;
     if (test.id && solvedSet.has(test.id)) return true;
     if (test._id && solvedSet.has(test._id)) return true;
 
-    if (test.attemptedBy && Array.isArray(test.attemptedBy)) {
-      if (currentUser && test.attemptedBy.includes(currentUser)) return true;
-      if (test.attemptedBy.includes('anonymous') || test.attemptedBy.length > 0) return true;
-    }
-
+    // 2. Direct check in localStorage mpsc_solved_tests
     try {
       const solvedList = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
-      if (tId && solvedList.includes(tId)) return true;
-      if (test.id && solvedList.includes(test.id)) return true;
-      if (test._id && solvedList.includes(test._id)) return true;
+      if (Array.isArray(solvedList)) {
+        if (solvedList.includes(tId) || (test.id && solvedList.includes(test.id)) || (test._id && solvedList.includes(test._id))) {
+          return true;
+        }
+      }
     } catch(e) {}
 
+    // 3. Direct check in localStorage mpsc_test_history strictly by testId
     try {
       const hist = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
-      const found = hist.some(h => 
-        (h.testId && (h.testId === tId || h.testId === test.id || h.testId === test._id)) ||
-        (h.title && test.title && h.title.trim().toLowerCase() === test.title.trim().toLowerCase())
-      );
-      if (found) return true;
+      if (Array.isArray(hist) && hist.some(h => h.testId && (h.testId === tId || h.testId === test.id || h.testId === test._id))) {
+        return true;
+      }
     } catch(e) {}
+
+    // 4. Backend attemptedBy check strictly for the authenticated user ID (never anonymous)
+    const currentUid = auth.currentUser?.uid;
+    if (currentUid && currentUid !== 'anonymous' && Array.isArray(test.attemptedBy)) {
+      if (test.attemptedBy.includes(currentUid)) return true;
+    }
 
     return false;
   };

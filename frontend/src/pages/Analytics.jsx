@@ -25,6 +25,10 @@ import { getSrsStats } from '../utils/srsEngine';
 
 const Analytics = () => {
   const navigate = useNavigate();
+  const [showAllTests, setShowAllTests] = useState(false);
+  const [showAllPenalties, setShowAllPenalties] = useState(false);
+  const [showAllWeakTopics, setShowAllWeakTopics] = useState(false);
+
   const [metrics, setMetrics] = useState({
     prepScore: 0,
     syllabusCovered: 0,
@@ -753,49 +757,80 @@ const Analytics = () => {
         </div>
 
         {metrics.weakTopicHeatmap && metrics.weakTopicHeatmap.length > 0 ? (
-          <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
-            {metrics.weakTopicHeatmap.map((t, idx) => (
-              <div 
-                key={idx} 
-                className="glass-card" 
-                style={{ 
-                  padding: '16px', 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  background: t.severity === 'CRITICAL' ? 'rgba(239,68,68,0.06)' : 'rgba(245,158,11,0.04)',
-                  border: `1px solid ${t.severity === 'CRITICAL' ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.2)'}`
+          <div>
+            <div 
+              className="dashboard-grid" 
+              style={{ 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+                gap: '14px',
+                maxHeight: showAllWeakTopics ? '360px' : 'none',
+                overflowY: showAllWeakTopics ? 'auto' : 'visible',
+                paddingRight: showAllWeakTopics ? '4px' : '0'
+              }}
+            >
+              {(showAllWeakTopics ? metrics.weakTopicHeatmap : metrics.weakTopicHeatmap.slice(0, 4)).map((t, idx) => (
+                <div 
+                  key={idx} 
+                  className="glass-card" 
+                  style={{ 
+                    padding: '16px', 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center',
+                    background: t.severity === 'CRITICAL' ? 'rgba(239,68,68,0.06)' : 'rgba(245,158,11,0.04)',
+                    border: `1px solid ${t.severity === 'CRITICAL' ? 'rgba(239,68,68,0.25)' : 'rgba(245,158,11,0.2)'}`
+                  }}
+                >
+                  <div>
+                    <span style={{ 
+                      fontSize: '0.68rem', 
+                      padding: '2px 6px', 
+                      borderRadius: '4px', 
+                      background: t.severity === 'CRITICAL' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
+                      color: t.severity === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)',
+                      fontWeight: 700,
+                      display: 'inline-block',
+                      marginBottom: '6px'
+                    }}>
+                      {t.severity === 'CRITICAL' ? '🔴 तातडीचे लक्ष' : '🟠 सराव हवा'}
+                    </span>
+                    <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>
+                      {t.topic}
+                    </strong>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      {t.subject}
+                    </span>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--danger)' }}>
+                      {t.count}
+                    </div>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>चुकलेले प्रश्न</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {metrics.weakTopicHeatmap.length > 4 && (
+              <button 
+                onClick={() => setShowAllWeakTopics(prev => !prev)}
+                className="btn"
+                style={{
+                  width: '100%',
+                  marginTop: '12px',
+                  padding: '8px',
+                  background: 'var(--glass-bg)',
+                  border: '1px solid var(--border-color)',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-secondary)',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
                 }}
               >
-                <div>
-                  <span style={{ 
-                    fontSize: '0.68rem', 
-                    padding: '2px 6px', 
-                    borderRadius: '4px', 
-                    background: t.severity === 'CRITICAL' ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
-                    color: t.severity === 'CRITICAL' ? 'var(--danger)' : 'var(--warning)',
-                    fontWeight: 700,
-                    display: 'inline-block',
-                    marginBottom: '6px'
-                  }}>
-                    {t.severity === 'CRITICAL' ? '🔴 तातडीचे लक्ष' : '🟠 सराव हवा'}
-                  </span>
-                  <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>
-                    {t.topic}
-                  </strong>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {t.subject}
-                  </span>
-                </div>
-
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: 'var(--danger)' }}>
-                    {t.count}
-                  </div>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>चुकलेले प्रश्न</span>
-                </div>
-              </div>
-            ))}
+                {showAllWeakTopics ? 'कमी घटक दाखवा 🔼' : `सर्व ${metrics.weakTopicHeatmap.length} कमकुवत घटक पहा (स्क्रोल करा) 🔽`}
+              </button>
+            )}
           </div>
         ) : (
           <div style={{ 
@@ -976,80 +1011,109 @@ const Analytics = () => {
           </div>
 
           {metrics.testHistory && metrics.testHistory.length > 0 ? (
-            <div className="flex-col gap-3">
-              {metrics.testHistory.slice(0, 6).map((t, idx) => (
-                <div 
-                  key={idx} 
-                  className="glass-card" 
-                  style={{ 
-                    padding: '14px 18px', 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    flexWrap: 'wrap', 
-                    gap: '12px',
-                    borderLeft: `4px solid ${t.accuracy >= 65 ? 'var(--success)' : t.accuracy >= 45 ? 'var(--warning)' : 'var(--danger)'}`
+            <div>
+              <div 
+                className="flex-col gap-3"
+                style={{
+                  maxHeight: showAllTests ? '400px' : 'none',
+                  overflowY: showAllTests ? 'auto' : 'visible',
+                  paddingRight: showAllTests ? '6px' : '0'
+                }}
+              >
+                {(showAllTests ? metrics.testHistory : metrics.testHistory.slice(0, 4)).map((t, idx) => (
+                  <div 
+                    key={idx} 
+                    className="glass-card" 
+                    style={{ 
+                      padding: '14px 18px', 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center', 
+                      flexWrap: 'wrap', 
+                      gap: '12px',
+                      borderLeft: `4px solid ${t.accuracy >= 65 ? 'var(--success)' : t.accuracy >= 45 ? 'var(--warning)' : 'var(--danger)'}`
+                    }}
+                  >
+                    <div className="flex-col gap-1" style={{ flex: '1 1 200px' }}>
+                      <div className="flex-row align-center gap-2">
+                        <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                          {t.title || 'MPSC Test'}
+                        </span>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          padding: '2px 8px', 
+                          borderRadius: '6px', 
+                          background: t.markingScheme === 'group_c' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                          color: t.markingScheme === 'group_c' ? '#60a5fa' : '#f59e0b',
+                          fontWeight: 700
+                        }}>
+                          {t.markingScheme === 'group_c' ? 'गट क +1/-0.25' : 'राज्यसेवा +2/-0.66'}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        {t.subject || 'सामान्य अध्ययन'} • {t.date}
+                      </span>
+                    </div>
+
+                    <div className="flex-row align-center gap-4" style={{ flexWrap: 'wrap' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>मिळालेले गुण</span>
+                        <strong style={{ fontSize: '1.15rem', color: t.score > 0 ? 'var(--success)' : 'var(--text-primary)' }}>
+                          {t.score !== undefined ? t.score : 0} <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/ {t.maxScore || 0}</span>
+                        </strong>
+                      </div>
+
+                      <div style={{ 
+                        padding: '6px 12px', 
+                        borderRadius: '8px', 
+                        background: t.accuracy >= 65 ? 'rgba(34, 197, 94, 0.15)' : t.accuracy >= 45 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                        color: t.accuracy >= 65 ? 'var(--success)' : t.accuracy >= 45 ? 'var(--warning)' : 'var(--danger)',
+                        fontWeight: 800,
+                        fontSize: '0.9rem',
+                        textAlign: 'center'
+                      }}>
+                        {t.accuracy || 0}%
+                        <span style={{ display: 'block', fontSize: '0.65rem', fontWeight: 600 }}>अचूकता</span>
+                      </div>
+
+                      <button 
+                        onClick={() => navigate(t.testId ? `/test/${t.testId}` : '/mock')} 
+                        className="btn" 
+                        style={{ 
+                          padding: '6px 12px', 
+                          fontSize: '0.75rem', 
+                          background: 'var(--glass-bg)', 
+                          color: 'var(--text-primary)', 
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '8px'
+                        }}
+                      >
+                        पुन्हा सोडवा
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {metrics.testHistory.length > 4 && (
+                <button 
+                  onClick={() => setShowAllTests(prev => !prev)}
+                  className="btn"
+                  style={{
+                    width: '100%',
+                    marginTop: '12px',
+                    padding: '8px 14px',
+                    background: 'var(--glass-bg)',
+                    border: '1px solid var(--border-color)',
+                    fontSize: '0.82rem',
+                    color: 'var(--text-secondary)',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
                   }}
                 >
-                  <div className="flex-col gap-1" style={{ flex: '1 1 200px' }}>
-                    <div className="flex-row align-center gap-2">
-                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {t.title || 'MPSC Test'}
-                      </span>
-                      <span style={{ 
-                        fontSize: '0.7rem', 
-                        padding: '2px 8px', 
-                        borderRadius: '6px', 
-                        background: t.markingScheme === 'group_c' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                        color: t.markingScheme === 'group_c' ? '#60a5fa' : '#f59e0b',
-                        fontWeight: 700
-                      }}>
-                        {t.markingScheme === 'group_c' ? 'गट क +1/-0.25' : 'राज्यसेवा +2/-0.66'}
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      {t.subject || 'सामान्य अध्ययन'} • {t.date}
-                    </span>
-                  </div>
-
-                  <div className="flex-row align-center gap-4" style={{ flexWrap: 'wrap' }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>मिळालेले गुण</span>
-                      <strong style={{ fontSize: '1.15rem', color: t.score > 0 ? 'var(--success)' : 'var(--text-primary)' }}>
-                        {t.score !== undefined ? t.score : 0} <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>/ {t.maxScore || 0}</span>
-                      </strong>
-                    </div>
-
-                    <div style={{ 
-                      padding: '6px 12px', 
-                      borderRadius: '8px', 
-                      background: t.accuracy >= 65 ? 'rgba(34, 197, 94, 0.15)' : t.accuracy >= 45 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                      color: t.accuracy >= 65 ? 'var(--success)' : t.accuracy >= 45 ? 'var(--warning)' : 'var(--danger)',
-                      fontWeight: 800,
-                      fontSize: '0.9rem',
-                      textAlign: 'center'
-                    }}>
-                      {t.accuracy || 0}%
-                      <span style={{ display: 'block', fontSize: '0.65rem', fontWeight: 600 }}>अचूकता</span>
-                    </div>
-
-                    <button 
-                      onClick={() => navigate(t.testId ? `/test/${t.testId}` : '/mock')} 
-                      className="btn" 
-                      style={{ 
-                        padding: '6px 12px', 
-                        fontSize: '0.75rem', 
-                        background: 'var(--glass-bg)', 
-                        color: 'var(--text-primary)', 
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '8px'
-                      }}
-                    >
-                      पुन्हा सोडवा
-                    </button>
-                  </div>
-                </div>
-              ))}
+                  {showAllTests ? 'कमी चाचण्या दाखवा 🔼' : `सर्व ${metrics.testHistory.length} चाचण्या पहा (स्क्रोल करा) 🔽`}
+                </button>
+              )}
             </div>
           ) : (
             <div style={{ 
@@ -1150,9 +1214,17 @@ const Analytics = () => {
             <h3 style={{ fontSize: '1rem', marginBottom: '12px', color: 'var(--warning)' }}>
               📚 कोणत्या विषयाचा अभ्यास किती कमी पडत आहे?
             </h3>
-            <div className="flex-row gap-3" style={{ flexWrap: 'wrap' }}>
+            <div 
+              className="flex-row gap-3" 
+              style={{ 
+                flexWrap: 'wrap',
+                maxHeight: '120px',
+                overflowY: 'auto',
+                paddingRight: '4px'
+              }}
+            >
               {Object.entries(metrics.backlogBySubject).map(([sub, count]) => (
-                <div key={sub} style={{ padding: '10px 16px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '10px', fontSize: '0.875rem' }}>
+                <div key={sub} style={{ padding: '8px 14px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '10px', fontSize: '0.85rem' }}>
                   <strong style={{ color: 'var(--text-primary)' }}>{sub}: </strong>
                   <span style={{ color: 'var(--warning)', fontWeight: 700 }}>{count} टास्क्स मागे</span>
                 </div>
@@ -1164,11 +1236,24 @@ const Analytics = () => {
         {/* Recent Penalty Logs */}
         {metrics.penaltyHistory && metrics.penaltyHistory.length > 0 && (
           <div>
-            <h3 style={{ fontSize: '1rem', marginBottom: '12px' }}>
-              📅 मागील पेनल्टी नोंदी (Recent Deductions)
-            </h3>
-            <div className="flex-col gap-2">
-              {metrics.penaltyHistory.map((p, idx) => (
+            <div className="flex-row justify-between align-center mb-2" style={{ marginBottom: '10px' }}>
+              <h3 style={{ fontSize: '1rem', margin: 0 }}>
+                📅 मागील पेनल्टी नोंदी (Recent Deductions)
+              </h3>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                एकूण: {metrics.penaltyHistory.length} नोंदी
+              </span>
+            </div>
+
+            <div 
+              className="flex-col gap-2"
+              style={{
+                maxHeight: showAllPenalties ? '260px' : 'none',
+                overflowY: showAllPenalties ? 'auto' : 'visible',
+                paddingRight: showAllPenalties ? '6px' : '0'
+              }}
+            >
+              {(showAllPenalties ? metrics.penaltyHistory : metrics.penaltyHistory.slice(0, 4)).map((p, idx) => (
                 <div key={idx} style={{ padding: '10px 14px', background: 'var(--glass-bg)', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                     <strong>{p.date}</strong> — {p.reason}
@@ -1179,6 +1264,26 @@ const Analytics = () => {
                 </div>
               ))}
             </div>
+
+            {metrics.penaltyHistory.length > 4 && (
+              <button 
+                onClick={() => setShowAllPenalties(prev => !prev)}
+                className="btn"
+                style={{
+                  width: '100%',
+                  marginTop: '10px',
+                  padding: '7px 12px',
+                  background: 'var(--glass-bg)',
+                  border: '1px solid var(--border-color)',
+                  fontSize: '0.8rem',
+                  color: 'var(--text-secondary)',
+                  borderRadius: '8px',
+                  cursor: 'pointer'
+                }}
+              >
+                {showAllPenalties ? 'कमी पेनल्टी नोंदी दाखवा 🔼' : `सर्व ${metrics.penaltyHistory.length} पेनल्टी नोंदी पहा (स्क्रोल करा) 🔽`}
+              </button>
+            )}
           </div>
         )}
       </div>
