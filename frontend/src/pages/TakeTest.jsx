@@ -500,6 +500,11 @@ const TakeTest = () => {
       localStorage.setItem('practice_accuracy', newAccuracy.toFixed(1));
       localStorage.setItem('tests_taken', (testsTaken + 1).toString());
 
+      const totalAllocatedSeconds = (test?.timeLimit ? test.timeLimit * 60 : 0);
+      const timeSpent = Math.max(1, totalAllocatedSeconds - timeLeft);
+      const totalAttempted = correctCount + wrongCount;
+      const avgSecondsPerQ = totalAttempted > 0 ? Math.round(timeSpent / totalAttempted) : 45;
+
       const testHistory = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
       testHistory.unshift({
         testId,
@@ -514,6 +519,8 @@ const TakeTest = () => {
         wrongCount,
         unattemptedCount,
         markingScheme,
+        timeSpentSeconds: timeSpent,
+        avgSecondsPerQ,
         date: new Date().toLocaleDateString('mr-IN'),
         timestamp: Date.now()
       });

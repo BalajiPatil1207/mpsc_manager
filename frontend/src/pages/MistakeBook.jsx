@@ -45,6 +45,8 @@ const MistakeBook = () => {
   const [deletingTest, setDeletingTest] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [editingQuestionModalData, setEditingQuestionModalData] = useState(null);
+  const [selectedTopic, setSelectedTopic] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
 
   const handleSaveQuestionEdit = async (updatedData) => {
@@ -205,7 +207,34 @@ const MistakeBook = () => {
   };
 
   let totalQuestionsWrong = 0;
-  mistakes.forEach(m => totalQuestionsWrong += (m.questions?.length || 0));
+  const topicErrorCounts = {};
+
+  mistakes.forEach(m => {
+    (m.questions || []).forEach(q => {
+      totalQuestionsWrong += 1;
+      const tName = (q.topic || q.subject || m.subject || 'General Studies').trim();
+      topicErrorCounts[tName] = (topicErrorCounts[tName] || 0) + 1;
+    });
+  });
+
+  const topMistakeTopics = Object.entries(topicErrorCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  const allDistinctTopics = Object.keys(topicErrorCounts).slice(0, 8);
+
+  const filteredMistakes = mistakes.filter(m => {
+    const qList = m.questions || [];
+    const matchesTopic = selectedTopic === 'ALL' || qList.some(q => 
+      (q.topic || q.subject || m.subject || '').toLowerCase().includes(selectedTopic.toLowerCase())
+    );
+
+    const matchesSearch = !searchQuery.trim() ||
+      (m.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      qList.some(q => (q.question || '').toLowerCase().includes(searchQuery.toLowerCase()));
+
+    return matchesTopic && matchesSearch;
+  });
 
   return (
     <div className="flex-col gap-6" style={{ paddingBottom: '50px', animation: 'fadeIn 0.3s' }}>
@@ -284,13 +313,160 @@ const MistakeBook = () => {
         </div>
       </div>
 
+      {/* 🔥 Most Frequent Mistake Topics Insight Banner */}
+      {topMistakeTopics.length > 0 && (
+        <div 
+          className="glass-card"
+          style={{
+            padding: '18px 22px',
+            borderRadius: '18px',
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%)',
+            border: '1px solid rgba(239, 68, 68, 0.3)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+            <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FiAlertCircle /> 🔥 तुमचे सर्वाधिक चुकणारे मुख्य टॉपिक्स (Most Frequent Error Areas):
+            </span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              विषयावर क्लिक करून संबंधित प्रश्न फिल्टर करा
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            {topMistakeTopics.map(([tName, count], idx) => {
+              const isActive = selectedTopic === tName;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedTopic(isActive ? 'ALL' : tName)}
+                  className="btn"
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '20px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    background: isActive ? 'var(--danger)' : 'rgba(239, 68, 68, 0.15)',
+                    color: isActive ? '#fff' : 'var(--text-primary)',
+                    border: '1px solid rgba(239, 68, 68, 0.35)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <span>{tName}</span>
+                  <span style={{
+                    background: isActive ? 'rgba(0,0,0,0.3)' : 'rgba(239, 68, 68, 0.3)',
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    fontSize: '0.75rem',
+                    fontWeight: 800
+                  }}>
+                    {count} चुका
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Filter & Search Bar */}
+      <div 
+        className="glass-card" 
+        style={{ 
+          padding: '14px 18px', 
+          borderRadius: '16px', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: '12px' 
+        }}
+      >
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="🔍 मिस्टेक बुकमध्ये प्रश्न किंवा विषय शोधा..."
+            style={{
+              flex: 1,
+              minWidth: '220px',
+              padding: '10px 14px',
+              borderRadius: '10px',
+              background: 'var(--bg-tertiary)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-primary)',
+              fontSize: '0.88rem',
+              outline: 'none'
+            }}
+          />
+          {selectedTopic !== 'ALL' && (
+            <button
+              onClick={() => setSelectedTopic('ALL')}
+              className="btn"
+              style={{
+                padding: '8px 14px',
+                fontSize: '0.82rem',
+                background: 'rgba(255, 255, 255, 0.08)',
+                color: 'var(--text-secondary)',
+                borderRadius: '8px'
+              }}
+            >
+              फिल्टर काढा ✕
+            </button>
+          )}
+        </div>
+
+        {allDistinctTopics.length > 0 && (
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+            <button
+              onClick={() => setSelectedTopic('ALL')}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '8px',
+                border: 'none',
+                background: selectedTopic === 'ALL' ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                color: selectedTopic === 'ALL' ? '#fff' : 'var(--text-secondary)',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              सर्व विषय ({mistakes.length})
+            </button>
+            {allDistinctTopics.map((topKey, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedTopic(topKey)}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: selectedTopic === topKey ? 'var(--accent-primary)' : 'var(--bg-tertiary)',
+                  color: selectedTopic === topKey ? '#fff' : 'var(--text-secondary)',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                {topKey} ({topicErrorCounts[topKey] || 0})
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Main Content */}
       <div className="flex-col gap-4">
         <div className="flex-row justify-between align-center" style={{ padding: '0 4px' }}>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-            चुकांचे सराव संच ({mistakes.length})
+            चुकांचे सराव संच ({filteredMistakes.length})
           </h2>
-          {mistakes.length > 0 && (
+          {filteredMistakes.length > 0 && (
             <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
               प्रश्नांची उत्तरे पाहण्यासाठी कार्ड उघडा
             </span>
@@ -321,9 +497,22 @@ const MistakeBook = () => {
               मॉक टेस्ट सोडवा 🚀
             </button>
           </div>
+        ) : filteredMistakes.length === 0 ? (
+          <div className="glass-card" style={{ padding: '40px 20px', textAlign: 'center', borderRadius: '16px' }}>
+            <p style={{ color: 'var(--text-muted)', margin: '0 0 12px 0', fontSize: '0.95rem' }}>
+              🔍 '<strong>{searchQuery || selectedTopic}</strong>' या फिल्टरमध्ये कोणतेही प्रश्न सापडले नाहीत.
+            </p>
+            <button
+              onClick={() => { setSelectedTopic('ALL'); setSearchQuery(''); }}
+              className="btn btn-primary"
+              style={{ padding: '6px 16px', fontSize: '0.85rem' }}
+            >
+              सर्व प्रश्न पहा
+            </button>
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {mistakes.map((m, mIdx) => {
+            {filteredMistakes.map((m, mIdx) => {
               const testId = m.id || m._id;
               const isExpanded = expandedTestIds.has(testId);
               const qList = Array.isArray(m.questions) ? m.questions : [];
