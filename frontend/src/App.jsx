@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -9,18 +9,45 @@ import { FiMenu, FiSun, FiMoon, FiBell, FiCloud, FiDownload } from 'react-icons/
 import Sidebar from './components/Sidebar';
 import BottomNav from './components/BottomNav';
 import NotificationCenter, { getStoredNotifications, saveStoredNotifications } from './components/NotificationCenter';
-import Dashboard from './pages/Dashboard';
-import StudyPlanner from './pages/StudyPlanner';
-import Practice from './pages/Practice';
-import MockTests from './pages/MockTests';
-import Analytics from './pages/Analytics';
-import MistakeBook from './pages/MistakeBook';
-import TestMaker from './pages/TestMaker';
-import TakeTest from './pages/TakeTest';
-import NoteReels from './pages/NoteReels';
-import ReelViewer from './pages/ReelViewer';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import { sendPushNotification } from './utils/notify';
+import { playSound } from './utils/sound';
+
+// Lazy-loaded routes for 2x faster initial bundle load & code splitting
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const StudyPlanner = lazy(() => import('./pages/StudyPlanner'));
+const Practice = lazy(() => import('./pages/Practice'));
+const MockTests = lazy(() => import('./pages/MockTests'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const MistakeBook = lazy(() => import('./pages/MistakeBook'));
+const TestMaker = lazy(() => import('./pages/TestMaker'));
+const TakeTest = lazy(() => import('./pages/TakeTest'));
+const NoteReels = lazy(() => import('./pages/NoteReels'));
+const ReelViewer = lazy(() => import('./pages/ReelViewer'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+
+const PageLoader = () => (
+  <div style={{
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '60vh',
+    gap: '14px'
+  }}>
+    <div 
+      className="spin-animation" 
+      style={{
+        width: '42px',
+        height: '42px',
+        borderRadius: '50%',
+        border: '3px solid var(--border-color)',
+        borderTopColor: 'var(--accent-primary)'
+      }} 
+    />
+    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>लोड होत आहे...</span>
+  </div>
+);
 
 function App() {
   const [user, setUser] = useState(null);
@@ -200,16 +227,12 @@ function App() {
       const now = Date.now();
 
       if (now - lastSentTime >= INTERVAL_MS) {
-        import('./utils/notify').then(({ sendPushNotification }) => {
-          sendPushNotification(
-            'One day, everything will make sense. ❤️',
-            'स्वतःवर विश्वास ठेवा, तुमचे प्रामाणिक प्रयत्न नक्कीच रंग आणतील. Keep pushing forward! ✨'
-          );
-        });
+        sendPushNotification(
+          'One day, everything will make sense. ❤️',
+          'स्वतःवर विश्वास ठेवा, तुमचे प्रामाणिक प्रयत्न नक्कीच रंग आणतील. Keep pushing forward! ✨'
+        );
 
-        import('./utils/sound').then(({ playSound }) => {
-          try { playSound.playSuccess(); } catch (e) {}
-        });
+        try { playSound.playSuccess(); } catch (e) {}
 
         localStorage.setItem('balu_last_quote_time', now.toString());
 
@@ -275,81 +298,85 @@ function App() {
   return (
     <BrowserRouter>
       <Toaster position="top-right" reverseOrder={false} />
-      <Routes>
-        <Route path="/test/:testId" element={<TakeTest />} />
-        <Route path="/reel/:reelId" element={<ReelViewer />} />
-        <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
-        <Route path="/register" element={user ? <Navigate to="/" /> : <Register />} />
-        <Route 
-          path="*" 
-          element={
-            user ? (
-            <div className="app-container">
-              <Sidebar user={user} isOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} onSync={handleCloudSync} isSyncing={isSyncing} />
-              <main className="main-content">
-                <div className="top-header">
-                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                     {!sidebarOpen && (
-                       <button onClick={() => setSidebarOpen(true)} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', color: 'var(--text-primary)' }}>
-                         <FiMenu size={24} />
-                       </button>
-                     )}
-                     <span className="mobile-only-title" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--text-primary)' }}>MahaPrep OS</span>
-                   </div>
-                   <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={toggleTheme} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Toggle Theme">
-                        {theme === 'dark' ? <FiSun size={18} color="var(--text-secondary)" /> : <FiMoon size={18} color="var(--text-secondary)" />}
-                      </button>
-                      <button 
-                        onClick={handleNotificationClick} 
-                        className="btn" 
-                        style={{ 
-                          background: 'var(--glass-bg)', 
-                          border: '1px solid var(--border-color)', 
-                          borderRadius: '50%', 
-                          width: '40px', 
-                          height: '40px', 
-                          padding: 0,
-                          position: 'relative',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center'
-                        }} 
-                        title="Notifications"
-                      >
-                         <FiBell size={18} color="var(--accent-primary)" />
-                         {unreadNotifCount > 0 && (
-                           <span className="bell-badge-pill">
-                             {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
-                           </span>
-                         )}
-                      </button>
-                   </div>
-                </div>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/test/:testId" element={<TakeTest />} />
+          <Route path="/reel/:reelId" element={<ReelViewer />} />
+          <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
+          <Route path="/register" element={user ? <Navigate to="/" /> : <Register />} />
+          <Route 
+            path="*" 
+            element={
+              user ? (
+              <div className="app-container">
+                <Sidebar user={user} isOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} onSync={handleCloudSync} isSyncing={isSyncing} />
+                <main className="main-content">
+                  <div className="top-header">
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                       {!sidebarOpen && (
+                         <button onClick={() => setSidebarOpen(true)} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '8px', color: 'var(--text-primary)' }}>
+                           <FiMenu size={24} />
+                         </button>
+                       )}
+                       <span className="mobile-only-title" style={{ fontWeight: 'bold', fontSize: '1.25rem', color: 'var(--text-primary)' }}>MahaPrep OS</span>
+                     </div>
+                     <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={toggleTheme} className="btn" style={{ background: 'var(--glass-bg)', border: '1px solid var(--border-color)', borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} title="Toggle Theme">
+                          {theme === 'dark' ? <FiSun size={18} color="var(--text-secondary)" /> : <FiMoon size={18} color="var(--text-secondary)" />}
+                        </button>
+                        <button 
+                          onClick={handleNotificationClick} 
+                          className="btn" 
+                          style={{ 
+                            background: 'var(--glass-bg)', 
+                            border: '1px solid var(--border-color)', 
+                            borderRadius: '50%', 
+                            width: '40px', 
+                            height: '40px', 
+                            padding: 0,
+                            position: 'relative',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }} 
+                          title="Notifications"
+                        >
+                           <FiBell size={18} color="var(--accent-primary)" />
+                           {unreadNotifCount > 0 && (
+                             <span className="bell-badge-pill">
+                               {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                             </span>
+                           )}
+                        </button>
+                     </div>
+                  </div>
 
-                <NotificationCenter 
-                  isOpen={showNotifications} 
-                  onClose={() => setShowNotifications(false)} 
-                  onCountChange={setUnreadNotifCount} 
-                  user={user}
-                />
-                <Routes>
-                  <Route path="/" element={<Dashboard user={user} deferredPrompt={deferredPrompt} setDeferredPrompt={setDeferredPrompt} />} />
-                  <Route path="/planner" element={<StudyPlanner user={user} />} />
-                  <Route path="/practice" element={<Practice />} />
-                  <Route path="/mock" element={<MockTests />} />
-                  <Route path="/analytics" element={<Analytics />} />
-                  <Route path="/mistakes" element={<MistakeBook />} />
-                  <Route path="/test-maker" element={<TestMaker />} />
-                  <Route path="/reels" element={<NoteReels />} />
-                </Routes>
-              </main>
-              <BottomNav />
-            </div>
-            ) : <Navigate to="/register" />
-          } 
-        />
-      </Routes>
+                  <NotificationCenter 
+                    isOpen={showNotifications} 
+                    onClose={() => setShowNotifications(false)} 
+                    onCountChange={setUnreadNotifCount} 
+                    user={user}
+                  />
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      <Route path="/" element={<Dashboard user={user} deferredPrompt={deferredPrompt} setDeferredPrompt={setDeferredPrompt} />} />
+                      <Route path="/planner" element={<StudyPlanner user={user} />} />
+                      <Route path="/practice" element={<Practice />} />
+                      <Route path="/mock" element={<MockTests />} />
+                      <Route path="/analytics" element={<Analytics />} />
+                      <Route path="/mistakes" element={<MistakeBook />} />
+                      <Route path="/test-maker" element={<TestMaker />} />
+                      <Route path="/reels" element={<NoteReels />} />
+                    </Routes>
+                  </Suspense>
+                </main>
+                <BottomNav />
+              </div>
+              ) : <Navigate to="/register" />
+            } 
+          />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

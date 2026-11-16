@@ -141,6 +141,16 @@
 * **Live Question Preview & Validation:** प्रश्न तयार होण्यापूर्वी अचूक पर्याय हायलाइट करून लाइव्ह प्रिव्ह्यू पाहता येतो.
 * **Instant Offline Test Caching:** टेस्ट तयार होताच ती स्थानिक मेमरीत साठवली जाते, जेणेकरून लिंकवरून लगेच टेस्ट सोडवता येते.
 
+### ⚡ ओ) कोड स्प्लिटिंग व लेझी लोडिंग (React.lazy Code-Splitting)
+* **२ पट वेगवान ॲप लोडिंग:** मुख्य १.५ MB चा बंडल लहान ऑन-डिमांड चंक्समध्ये (उदा. `TakeTest` ~५९ KB, `Analytics` ~५२ KB, `Dashboard` ~५५ KB) विभागला.
+* **Suspense & Smooth Fallback:** पेज बदलताना स्मूथ लोडिंग स्पिनर, ज्यामुळे मोबाईल नेटवर्कवर ॲप अत्यंत जलद सुरू होते.
+
+### 🔒 औ) Firestore सिक्युरिटी रूल्स (firestore.rules)
+* **डेटाबेस संरक्षण:** क्लायंटकडून थेट डेटाबेसमध्ये छेडछाड (उदा. बनावट XP किंवा दुसऱ्याचे प्रश्न बदलणे) रोखण्यासाठी अधिकृत नियम लागू केले.
+
+### 🧪 अं) स्वयंचलित युनिट टेस्ट्स (Automated Unit Tests)
+* **९/९ टेस्ट्स पास:** `deficitTracker.js` (तूट तास, ३० दिवसांचा कुलडाऊन) आणि `srsEngine.js` (SM-2 अल्गोरिदम व इंटरव्हल्स) या दोन्ही किचकट लॉजिकच्या पडताळणीसाठी टेस्ट सूट (`npm --prefix frontend test`).
+
 ---
 
 ## 4. डेटाबेस व बॅकएंड API रचना (Backend & Database Architecture)
@@ -189,7 +199,7 @@ mpsc_manager/
 │   │   │   ├── StudyDeficitModal.jsx      <-- अभ्यास तूट व बॅकलॉग मोडल
 │   │   │   ├── FocusTimerModal.jsx        <-- पोमोडोरो डीप वर्क टायमर
 │   │   │   ├── NotificationCenter.jsx     <-- स्मार्ट नोटिफिकेशन सेंटर
-│   │   │   ├── SrsReviewModal.jsx         <-- SRS ऍक्टिव्ह रिकॉल फ्लॅशकार्ड्स
+│   │   │   ├── SrsReviewModal.jsx         <-- SRS SM-2 ऍक्टिव्ह रिकॉल फ्लॅशकार्ड्स
 │   │   │   ├── OmrSheetView.jsx           <-- OMR शीट व्ह्यू
 │   │   │   ├── Sidebar.jsx & BottomNav.jsx<-- नॅव्हिगेशन बार्स
 │   │   │   └── ConfirmModal.jsx           <-- कन्फर्मेशन डायलॉग
@@ -200,19 +210,22 @@ mpsc_manager/
 │   │   │   ├── MockTests.jsx              <-- टेस्ट सिरीज
 │   │   │   ├── Practice.jsx               <-- सराव प्रश्न
 │   │   │   ├── StudyPlanner.jsx           <-- सिलॅबस व अभ्यास नियोजन
-│   │   │   ├── Analytics.jsx              <-- परफॉर्मन्स आकडेवारी
-│   │   │   ├── TestMaker.jsx              <-- टेस्ट क्रिएटर
+│   │   │   ├── Analytics.jsx              <-- प्रगत परफॉर्मन्स आकडेवारी
+│   │   │   ├── TestMaker.jsx              <-- बल्क टेस्ट क्रिएटर
 │   │   │   ├── NoteReels.jsx & ReelViewer.jsx <-- रील्स
 │   │   │   └── Login.jsx & Register.jsx   <-- ऑथेंटिकेशन
+│   │   ├── tests/
+│   │   │   └── engines.test.js            <-- [NEW] Deficit & SRS युनिट टेस्ट्स
 │   │   ├── utils/
 │   │   │   ├── deficitTracker.js          <-- पेनल्टी व तूट गणित इंजिन
-│   │   │   ├── srsEngine.js               <-- SRS फ्लॅशकार्ड अल्गोरिदम
+│   │   │   ├── srsEngine.js               <-- SuperMemo-2 (SM-2) अल्गोरिदम
 │   │   │   ├── sound.js                   <-- Web Audio API ध्वनी
 │   │   │   ├── notify.js                  <-- पुश व टोस्ट नोटिफिकेशन
 │   │   │   └── dbStore.js                 <-- क्लाऊड व लोकल सिंक
-│   │   ├── App.jsx                        <-- मुख्य ॲप कंटेनर व राऊटर
+│   │   ├── App.jsx                        <-- मुख्य ॲप कंटेनर (React.lazy)
 │   │   └── index.css                      <-- ॲप्लिकेशन स्टाईलिंग
 │   └── package.json
+├── firestore.rules                        <-- [NEW] Firestore सुरक्षा नियम
 └── PROJECT_SUMMARY.md                     <-- [NEW] हा संपूर्ण अहवाल दस्तावेज
 ```
 
