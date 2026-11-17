@@ -418,6 +418,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     setDailyTasks(rolloverResult.resetTasks);
     const nextGroup = getScheduleForDate(logicalToday);
     setActiveGroupKey(nextGroup.key);
+    localStorage.setItem('user_daily_tasks_group', nextGroup.key);
     setDeficitState({
       deficitHours: rolloverResult.updatedDeficitHours,
       totalPenalties: rolloverResult.updatedTotalPenalties,
@@ -504,6 +505,13 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
       const currentMinutes = now.getMinutes().toString().padStart(2, '0');
       const currentTimeString = `${currentHours}:${currentMinutes}`;
       
+      // Auto rollover to next timetable group across 6:00 AM even if tab stays open!
+      const currentLogicalDate = getLogicalDateString();
+      const savedDate = localStorage.getItem('last_task_date');
+      if (savedDate && savedDate !== currentLogicalDate) {
+        advanceToNextDay();
+      }
+
       // Mock daily task check
       if (currentTimeString === "19:00") {
         sendPushNotification("Task Alert 🚨", "It's time for Current Affairs!");
