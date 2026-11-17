@@ -119,18 +119,41 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const [activeGroupKey, setActiveGroupKey] = useState(() => getScheduleForDate(getLogicalDateString()).key);
   const [dailyTasks, setDailyTasks] = useState(() => {
     try {
+      const logicalToday = getLogicalDateString();
+      const currentSchedule = getScheduleForDate(logicalToday);
+      const savedDate = localStorage.getItem('last_task_date');
+      const savedGroup = localStorage.getItem('user_daily_tasks_group');
       const saved = localStorage.getItem('user_daily_tasks');
+
       if (saved && saved !== 'undefined' && saved !== 'null') {
-         let parsed = JSON.parse(saved);
-         if (Array.isArray(parsed) && parsed.length > 0) {
-           return parsed.sort((a, b) => {
-             if (a.completed === b.completed) return 0;
-             return a.completed ? 1 : -1;
-           });
-         }
+        let parsed = JSON.parse(saved);
+        // Detect legacy tasks: if parsed has > 4 tasks OR contains old IDs (e.g. reasoning, maths, or mixed Group A + B)
+        const isLegacyOldFormat = Array.isArray(parsed) && (
+          parsed.length > 4 ||
+          parsed.some(t => t.id === 'reasoning' || t.id === 'maths') ||
+          (parsed.some(t => t.id === 'gk_pol') && parsed.some(t => t.id === 'gk_geo'))
+        );
+
+        if (!isLegacyOldFormat && Array.isArray(parsed) && parsed.length > 0 && savedDate === logicalToday && savedGroup === currentSchedule.key) {
+          return parsed.sort((a, b) => {
+            if (a.completed === b.completed) return 0;
+            return a.completed ? 1 : -1;
+          });
+        }
       }
     } catch(e) { }
-    return getInitialTasksForToday();
+
+    // Automatic migration to timetable: load exactly 4 tasks for today's active group
+    const freshTasks = getInitialTasksForToday();
+    try {
+      const logicalToday = getLogicalDateString();
+      const currentSchedule = getScheduleForDate(logicalToday);
+      localStorage.setItem('user_daily_tasks', JSON.stringify(freshTasks));
+      localStorage.setItem('last_task_date', logicalToday);
+      localStorage.setItem('user_daily_tasks_group', currentSchedule.key);
+      import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', freshTasks));
+    } catch(e) {}
+    return freshTasks;
   });
   const [deficitState, setDeficitState] = useState(() => getDeficitState());
   const [isDeficitModalOpen, setIsDeficitModalOpen] = useState(false);
@@ -144,7 +167,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     setIsFocusModalOpen(true);
   };
 
-  const [showAllTasks, setShowAllTasks] = useState(false);
+  const [showAllTasks, setShowAllTasks] = useState(true);
   const [isEditingTasks, setIsEditingTasks] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [showResetDeficitConfirm, setShowResetDeficitConfirm] = useState(false);
@@ -222,8 +245,10 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     }));
     setDailyTasks(newTasks);
     setActiveGroupKey(groupKey);
+    localStorage.setItem('user_daily_tasks', JSON.stringify(newTasks));
+    localStorage.setItem('user_daily_tasks_group', groupKey);
     import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', newTasks));
-    toast.success(`${targetGroup.name} चे टास्क्स सक्रिय केले! 🚀`);
+    toast.success(`${targetGroup.name} चे टास्क्स सक्रिय केले! (${newTasks.length} टास्क्स) 🚀`);
     setIsScheduleModalOpen(false);
   };
   const [showTaskVideo, setShowTaskVideo] = useState(false);
@@ -439,11 +464,35 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   useEffect(() => {
     const now = new Date();
     const logicalToday = getLogicalDateString();
+    const currentSchedule = getScheduleForDate(logicalToday);
     const lastDate = localStorage.getItem('last_task_date');
-    if (lastDate !== logicalToday && lastDate) {
+    const savedGroup = localStorage.getItem('user_daily_tasks_group');
+
+    // Auto-migrate if current tasks list is old legacy format (>4 tasks or old IDs)
+    let currentSaved = [];
+    try {
+      currentSaved = JSON.parse(localStorage.getItem('user_daily_tasks') || '[]');
+    } catch(e) {}
+
+    const isOldLegacy = Array.isArray(currentSaved) && (
+      currentSaved.length > 4 ||
+      currentSaved.some(t => t.id === 'reasoning' || t.id === 'maths') ||
+      (currentSaved.some(t => t.id === 'gk_pol') && currentSaved.some(t => t.id === 'gk_geo'))
+    );
+
+    if (isOldLegacy || savedGroup !== currentSchedule.key) {
+      const freshTasks = getInitialTasksForToday();
+      setDailyTasks(freshTasks);
+      setActiveGroupKey(currentSchedule.key);
+      localStorage.setItem('user_daily_tasks', JSON.stringify(freshTasks));
+      localStorage.setItem('user_daily_tasks_group', currentSchedule.key);
+      localStorage.setItem('last_task_date', logicalToday);
+      import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', freshTasks));
+    } else if (lastDate !== logicalToday && lastDate) {
       advanceToNextDay();
     } else if (!lastDate) {
       localStorage.setItem('last_task_date', logicalToday);
+      localStorage.setItem('user_daily_tasks_group', currentSchedule.key);
       localStorage.setItem('last_task_time', now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase());
     }
     
@@ -949,7 +998,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
             </div>
 
             <div className="flex-col gap-4">
-              {(showAllTasks ? dailyTasks : dailyTasks.slice(0, 3)).map((task, idx) => (
+              {(showAllTasks ? dailyTasks : dailyTasks.slice(0, 4)).map((task, idx) => (
                 <div 
                   key={task.id} 
                   className="task-item" 
