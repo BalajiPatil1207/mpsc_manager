@@ -15,9 +15,11 @@ global.localStorage = {
 import { 
   parseDurationMinutes, 
   calculateDayGap, 
-  calculateTodayProgress,
-  checkDeficitResetEligibility,
-  recordDeficitReset
+  calculateTodayProgress, 
+  checkDeficitResetEligibility, 
+  recordDeficitReset,
+  SCHEDULE_GROUPS,
+  getScheduleForDate
 } from '../utils/deficitTracker.js';
 
 import { 
@@ -150,4 +152,63 @@ test('getCardIntervalPreviews returns preview for all 3 buttons', () => {
   assert.equal(previews.hard, 1);
   assert.equal(previews.good, 3);
   assert.equal(previews.easy, 6);
+});
+
+// ==========================================
+// 3. 3+3 Alternate Day Schedule Unit Tests
+// ==========================================
+
+test('getScheduleForDate accurately routes Mon/Wed/Fri to Group A with Daily CSAT', () => {
+  // Monday: 18/05/2026 (day 1)
+  const mondaySched = getScheduleForDate('18/05/2026');
+  assert.equal(mondaySched.key, 'A');
+  assert.equal(mondaySched.tasks.length, 4);
+
+  const taskIds = mondaySched.tasks.map(t => t.id);
+  assert.ok(taskIds.includes('gk_pol'));
+  assert.ok(taskIds.includes('gk_his'));
+  assert.ok(taskIds.includes('gk_ca'));
+  assert.ok(taskIds.includes('csat_maths_reasoning'));
+
+  // Wednesday: 20/05/2026 (day 3)
+  const wedSched = getScheduleForDate('20/05/2026');
+  assert.equal(wedSched.key, 'A');
+
+  // Friday: 22/05/2026 (day 5)
+  const friSched = getScheduleForDate('22/05/2026');
+  assert.equal(friSched.key, 'A');
+});
+
+test('getScheduleForDate accurately routes Tue/Thu/Sat to Group B with Daily CSAT', () => {
+  // Tuesday: 19/05/2026 (day 2)
+  const tueSched = getScheduleForDate('19/05/2026');
+  assert.equal(tueSched.key, 'B');
+  assert.equal(tueSched.tasks.length, 4);
+
+  const taskIds = tueSched.tasks.map(t => t.id);
+  assert.ok(taskIds.includes('gk_geo'));
+  assert.ok(taskIds.includes('gk_sci'));
+  assert.ok(taskIds.includes('gk_eco'));
+  assert.ok(taskIds.includes('csat_maths_reasoning'));
+
+  // Thursday: 21/05/2026 (day 4)
+  const thuSched = getScheduleForDate('21/05/2026');
+  assert.equal(thuSched.key, 'B');
+
+  // Saturday: 23/05/2026 (day 6)
+  const satSched = getScheduleForDate('23/05/2026');
+  assert.equal(satSched.key, 'B');
+});
+
+test('getScheduleForDate routes Sunday to Group C (Consolidation Day)', () => {
+  // Sunday: 24/05/2026 (day 0)
+  const sunSched = getScheduleForDate('24/05/2026');
+  assert.equal(sunSched.key, 'C');
+  assert.equal(sunSched.tasks.length, 4);
+
+  const taskIds = sunSched.tasks.map(t => t.id);
+  assert.ok(taskIds.includes('srs_weekly_review'));
+  assert.ok(taskIds.includes('sunday_mega_mock'));
+  assert.ok(taskIds.includes('mistake_book_audit'));
+  assert.ok(taskIds.includes('backlog_recovery'));
 });

@@ -7,6 +7,66 @@ export const DAILY_COMPLETION_BONUS = 50;
 export const MISSED_DAY_PENALTY = 50; // XP deducted when zero study done on a day
 export const MISSED_TASK_PENALTY = 10; // XP deducted per incomplete task
 
+// 🎯 MPSC 3+3 Alternate Day Study Schedule Definition
+export const SCHEDULE_GROUPS = {
+  A: {
+    key: 'A',
+    name: "गट 'अ' (Day A)",
+    daysLabel: 'सोमवार, बुधवार, शुक्रवार',
+    days: [1, 3, 5],
+    tasks: [
+      { id: 'gk_pol', title: '🏛️ भारतीय राज्यव्यवस्था (Polity)', duration: '2 hr', subject: 'Polity', studyType: 'संकल्पनात्मक + पाठांतर' },
+      { id: 'gk_his', title: '📜 इतिहास (History)', duration: '2 hr', subject: 'History', studyType: 'नोट्स रिव्हिजन' },
+      { id: 'gk_ca', title: '📰 चालू घडामोडी (Current Affairs)', duration: '1 hr', subject: 'Current Affairs', studyType: 'ताज्या घडामोडी' },
+      { id: 'csat_maths_reasoning', title: '📐 अंकगणित व बुद्धिमत्ता (CSAT Daily)', duration: '1.5 hr', subject: 'CSAT', studyType: 'दररोजचे २०-२५ प्रश्न सराव' }
+    ]
+  },
+  B: {
+    key: 'B',
+    name: "गट 'ब' (Day B)",
+    daysLabel: 'मंगळवार, गुरुवार, शनिवार',
+    days: [2, 4, 6],
+    tasks: [
+      { id: 'gk_geo', title: '🌍 भूगोल व पर्यावरण (Geography)', duration: '2 hr', subject: 'Geography', studyType: 'नकाशे व फॅक्ट्स' },
+      { id: 'gk_sci', title: '🔬 सामान्य विज्ञान (General Science)', duration: '2 hr', subject: 'Science', studyType: 'फॉर्म्युले, Bio/Phy संकल्पना' },
+      { id: 'gk_eco', title: '💰 भारतीय अर्थव्यवस्था (Economics)', duration: '1.5 hr', subject: 'Economics', studyType: 'संकल्पना + चालू बजेट/योजना' },
+      { id: 'csat_maths_reasoning', title: '📐 अंकगणित व बुद्धिमत्ता (CSAT Daily)', duration: '1.5 hr', subject: 'CSAT', studyType: 'दररोजचे २०-२५ प्रश्न सराव' }
+    ]
+  },
+  C: {
+    key: 'C',
+    name: 'रविवार (Sunday Consolidation Day)',
+    daysLabel: 'रविवार',
+    days: [0],
+    tasks: [
+      { id: 'srs_weekly_review', title: '⚡ संपूर्ण आठवड्याची रिव्हिजन (SRS Flashcards)', duration: '2 hr', subject: 'Revision', studyType: 'नवीन काहीही वाचायचे नाही! आठवडा उजळणी' },
+      { id: 'sunday_mega_mock', title: '📋 १ फुल मॉक टेस्ट (100 Qs / 200 Marks)', duration: '1.5 hr', subject: 'Mock Test', studyType: 'परीक्षा हॉल वेळेत प्रत्यक्ष सराव' },
+      { id: 'mistake_book_audit', title: '📖 मिस्टेक बुक ॲनालिसिस व त्रुटी सुधारणा', duration: '1.5 hr', subject: 'Mistakes', studyType: 'चुकलेल्या प्रश्नांचे सखोल विश्लेषण' },
+      { id: 'backlog_recovery', title: '🎯 आठवड्याचा बॅकलॉग भरून काढणे', duration: '1 hr', subject: 'Backlog', studyType: 'आठवड्याची अभ्यास तूट भरून काढणे' }
+    ]
+  }
+};
+
+export const getScheduleForDate = (dateInput) => {
+  let target = new Date();
+  if (!dateInput) {
+    // Current time shifted by 6 AM logical boundary
+    target.setHours(target.getHours() - 6);
+  } else if (typeof dateInput === 'string') {
+    target = parseDateString(dateInput);
+    target.setHours(12, 0, 0, 0); // Midday so timezone won't alter the day
+  } else if (dateInput instanceof Date) {
+    target = new Date(dateInput.getTime());
+    target.setHours(target.getHours() - 6);
+  }
+
+  const day = target.getDay();
+
+  if (day === 0) return SCHEDULE_GROUPS.C;
+  if (day === 1 || day === 3 || day === 5) return SCHEDULE_GROUPS.A;
+  return SCHEDULE_GROUPS.B;
+};
+
 export const parseDurationMinutes = (durationStr = '') => {
   if (!durationStr) return 30;
   const str = durationStr.toString().toLowerCase();
@@ -254,7 +314,7 @@ export const processDayRollover = ({
   if (dayGap > 1) {
     const gapDaysCount = dayGap - 1;
     const gapPenalty = gapDaysCount * MISSED_DAY_PENALTY;
-    const gapMissedHrs = gapDaysCount * 6.0;
+    const gapMissedHrs = parseFloat((gapDaysCount * 6.5).toFixed(1)); // 6.5 hrs/day in alternate schedule
 
     totalXpDeducted += gapPenalty;
     totalMissedHours += gapMissedHrs;
@@ -265,9 +325,9 @@ export const processDayRollover = ({
       type: 'absent_days',
       xpDeducted: gapPenalty,
       missedHours: gapMissedHrs,
-      missedTasksCount: gapDaysCount * 8,
+      missedTasksCount: gapDaysCount * 4,
       reason: `मागील ${gapDaysCount} दिवस अभ्यास झाला नाही (Absent Days)`,
-      details: `प्रत्येक दिवसासाठी -५० XP व ६ तास तूट`
+      details: `प्रत्येक दिवसासाठी -५० XP व ६.५ तास तूट`
     });
   }
 
@@ -300,13 +360,16 @@ export const processDayRollover = ({
     }
   });
 
-  // Generate clean reset tasks for the new day
-  const resetTasks = savedTasks.map(t => {
+  // Generate clean reset tasks for the new day based on the 3+3 Alternate Schedule!
+  const targetSchedule = getScheduleForDate(todayDateStr);
+  const resetTasks = targetSchedule.tasks.map(t => {
     const nextTitle = getTitleForTask ? getTitleForTask(t.id, newIndexes[t.id] || 0) : t.title;
     return {
       id: t.id,
       title: nextTitle || t.title,
       duration: t.duration,
+      subject: t.subject,
+      studyType: t.studyType,
       completed: false
     };
   });

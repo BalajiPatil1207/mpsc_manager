@@ -10,6 +10,7 @@ import FocusTimerModal from '../components/FocusTimerModal';
 import NewsTicker from '../components/NewsTicker';
 // Spaced Repetition (SRS) Flashcard Active Recall Modal
 import SrsReviewModal from '../components/SrsReviewModal';
+import ScheduleTimetableModal from '../components/ScheduleTimetableModal';
 import { 
   getDeficitState, 
   processDayRollover, 
@@ -18,7 +19,9 @@ import {
   TASK_XP_REWARD, 
   DAILY_COMPLETION_BONUS,
   checkDeficitResetEligibility,
-  recordDeficitReset
+  recordDeficitReset,
+  SCHEDULE_GROUPS,
+  getScheduleForDate
 } from '../utils/deficitTracker';
 import { getDueSrsItems, addTopicToSrs, getSrsStats } from '../utils/srsEngine';
 import { playSound } from '../utils/sound';
@@ -54,6 +57,8 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const [isDeficitModalOpen, setIsDeficitModalOpen] = useState(false);
   const [isFocusModalOpen, setIsFocusModalOpen] = useState(false);
   const [isSrsModalOpen, setIsSrsModalOpen] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [activeGroupKey, setActiveGroupKey] = useState(() => getScheduleForDate(getLogicalDateString()).key);
   const [activeFocusTask, setActiveFocusTask] = useState(null);
 
   const handleStartFocus = (taskItem) => {
@@ -130,14 +135,20 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   };
 
   const topicsMap = {
+    gk_pol: ["संविधान सभा व पार्श्वभूमी", "प्रस्ताविका व नागरिकत्व", "मूलभूत हक्क (भाग ३)", "मार्गदर्शक तत्त्वे व कर्तव्ये", "राष्ट्रपती व राज्यपाल", "संसद व विधीमंडळ", "सर्वोच्च व उच्च न्यायालय"],
+    gk_his: ["१८५७ चा उठाव व पार्श्वभूमी", "महाराष्ट्रातील समाजसुधारक", "राष्ट्रीय चळवळ (मवाळ व जहाल)", "गांधी युग व जनआंदोलने", "संयुक्त महाराष्ट्र चळवळ", "स्वातंत्र्योत्तर महाराष्ट्र"],
+    gk_ca:  ["महाराष्ट्र शासकीय योजना व पुरस्कार", "राष्ट्रीय व आंतरराष्ट्रीय महत्त्वाच्या घडामोडी", "आर्थिक घडामोडी व निर्देशांक", "पर्यावरण व विज्ञान तंत्रज्ञान", "क्रीडा व व्यक्तीविशेष"],
+    csat_maths_reasoning: ["संख्यामाला व अक्षरमाला (Series)", "कोडिंग-डिकोडिंग व नातेसंबंध", "बैठक व्यवस्था व दिशा ज्ञान", "शेकडेवारी व नफा-तोटा", "सरासरी व गुणोत्तर-प्रमाण", "काळ, काम व वेग", "वेन आकृत्या व घड्याळ/कॅलेंडर"],
+    gk_geo: ["महाराष्ट्राची प्राकृतिक रचना व घाट", "महाराष्ट्राची नदीप्रणाली (गोदावरी, भीमा, कृष्णा)", "हवामान, पर्जन्य व मान्सून", "मृदा व वने (जंगले)", "खनिज संपत्ती व ऊर्जा साधने", "लोकसंख्या भूगोल व पर्यावरण"],
+    gk_sci: ["प्राणी व वनस्पतींचे वर्गीकरण", "मानवी आरोग्य व रोगशास्त्र", "पचन, श्वसन व रक्ताभिसरण संस्था", "प्रकाश व ध्वनी (Light & Sound)", "विद्युतधारा व चुंबकत्व", "अणूची रचना व रासायनिक अभिक्रिया"],
+    gk_eco: ["राष्ट्रीय उत्पन्न (GDP, GNP)", "रिझर्व्ह बँक (RBI) व बँकिंग", "दारिद्र्य व बेरोजगारी मापन", "सार्वजनिक वित्त (कर रचना व बजेट)", "परकीय व्यापार व BOP", "शाश्वत विकास व शासकीय आर्थिक योजना"],
+    srs_weekly_review: ["आठवड्यातील सर्व कठीण संकल्पना रिव्हिजन", "Spaced Repetition Flashcards रिव्ह्यू", "शॉर्ट नोट्स व हायलाइट्स रिव्हिजन"],
+    sunday_mega_mock: ["MPSC राज्यसेवा / संयुक्त पूर्व सर्वसमावेशक मॉक टेस्ट", "नेगेटिव्ह मार्किंग मॅनेजमेंट (+२ / -०.६६)", "वेळेचे अचूक नियोजन (Time per Question)"],
+    mistake_book_audit: ["आजच्या टेस्टमध्ये चुकलेल्या प्रश्नांची कारणे", "Mistake Book मधील वीव्हड प्रश्न पुन्हा सोडवणे", "वारंवार चुकणारे टॉपिक्स हायलाइट करणे"],
+    backlog_recovery: ["मागील ७ दिवसांतील अपूर्ण राहिलेले टास्क्स क्लिअर करणे", "अभ्यास तूट (Deficit Hours) शून्य करणे", "पुढील आठवड्यासाठी १००% सज्ज होणे"],
+    // Backward compatibility
     reasoning: ["Number Series", "Alphabet Series", "Coding-Decoding", "Analogy", "Blood Relations", "Direction Test"],
-    maths: ["Number System", "BODMAS & Fractions", "LCM & HCF", "Percentage", "Profit & Loss", "Simple Interest"],
-    gk_geo: ["earth & latitudes", "mountains & plateaus", "rivers & oceans", "atmosphere & weather", "monsoon & climate", "soils & natural vegetation"],
-    gk_his: ["indus valley civilization", "vedic period", "maurya & gupta empires", "delhi sultanate", "mughal empire", "maratha empire"],
-    gk_sci: ["measurements & motion", "force & work", "energy & heat", "light & sound", "electricity & magnetism", "atoms & molecules"],
-    gk_eco: ["gdp & national income", "inflation & unemployment", "poverty & basic concepts", "rbi & banking", "monetary policy", "public finance (tax)"],
-    gk_pol: ["historical background", "making of the constitution", "preamble", "fundamental rights", "directive principles", "fundamental duties"],
-    gk_ca:  ["jan 2025: maharashtra", "jan 2025: india", "jan 2025: world", "jan 2025: economy", "jan 2025: science", "jan 2025: sports"]
+    maths: ["Number System", "BODMAS & Fractions", "LCM & HCF", "Percentage", "Profit & Loss", "Simple Interest"]
   };
 
   const getTopicIndexes = () => {
@@ -162,28 +173,31 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     const indexes = getTopicIndexes();
     const idx = indexOverride !== undefined ? indexOverride : (indexes[taskId] || 0);
     const titles = {
+      'gk_pol': '🏛️ भारतीय राज्यव्यवस्था (Polity)',
+      'gk_his': '📜 इतिहास (History)',
+      'gk_ca': '📰 चालू घडामोडी (Current Affairs)',
+      'csat_maths_reasoning': `📐 अंकगणित व बुद्धिमत्ता (CSAT Daily Set ${idx + 1})`,
+      'gk_geo': '🌍 भूगोल व पर्यावरण (Geography)',
+      'gk_sci': '🔬 सामान्य विज्ञान (General Science)',
+      'gk_eco': '💰 भारतीय अर्थव्यवस्था (Economics)',
+      'srs_weekly_review': '⚡ संपूर्ण आठवड्याची रिव्हिजन (SRS Flashcards)',
+      'sunday_mega_mock': '📋 १ फुल मॉक टेस्ट (100 Qs / 200 Marks)',
+      'mistake_book_audit': '📖 मिस्टेक बुक ॲनालिसिस व त्रुटी सुधारणा',
+      'backlog_recovery': '🎯 आठवड्याचा बॅकलॉग भरून काढणे',
       'reasoning': `🧠 Reasoning Practice (Set ${idx + 1})`,
-      'maths': '📐 Maths Practice',
-      'gk_geo': '🌍 Geography',
-      'gk_his': '📜 History',
-      'gk_sci': '🔬 Science',
-      'gk_eco': '💰 Economics',
-      'gk_pol': '🏛️ Polity',
-      'gk_ca': '📰 Current Affairs'
+      'maths': '📐 Maths Practice'
     };
     return titles[taskId];
   };
 
-  const initialDailyTasks = [
-    { id: 'reasoning', title: getTitleForTask('reasoning'), duration: '1 hr', completed: false },
-    { id: 'maths', title: getTitleForTask('maths'), duration: '2 hr', completed: false },
-    { id: 'gk_geo', title: getTitleForTask('gk_geo'), duration: '30 min', completed: false },
-    { id: 'gk_his', title: getTitleForTask('gk_his'), duration: '30 min', completed: false },
-    { id: 'gk_sci', title: getTitleForTask('gk_sci'), duration: '30 min', completed: false },
-    { id: 'gk_eco', title: getTitleForTask('gk_eco'), duration: '30 min', completed: false },
-    { id: 'gk_pol', title: getTitleForTask('gk_pol'), duration: '30 min', completed: false },
-    { id: 'gk_ca', title: getTitleForTask('gk_ca'), duration: '30 min', completed: false }
-  ];
+  const getInitialTasksForToday = () => {
+    const activeSched = getScheduleForDate(getLogicalDateString());
+    return activeSched.tasks.map(t => ({
+      ...t,
+      title: getTitleForTask(t.id) || t.title,
+      completed: false
+    }));
+  };
 
   const [dailyTasks, setDailyTasks] = useState(() => {
     try {
@@ -198,8 +212,23 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
          }
       }
     } catch(e) { }
-    return initialDailyTasks;
+    return getInitialTasksForToday();
   });
+
+  const handleApplyGroup = (groupKey) => {
+    const targetGroup = SCHEDULE_GROUPS[groupKey];
+    if (!targetGroup) return;
+    const newTasks = targetGroup.tasks.map(t => ({
+      ...t,
+      title: getTitleForTask(t.id) || t.title,
+      completed: false
+    }));
+    setDailyTasks(newTasks);
+    setActiveGroupKey(groupKey);
+    import('../utils/dbStore').then(({ saveToDB }) => saveToDB('user_daily_tasks', newTasks));
+    toast.success(`${targetGroup.name} चे टास्क्स सक्रिय केले! 🚀`);
+    setIsScheduleModalOpen(false);
+  };
   const [showTaskVideo, setShowTaskVideo] = useState(false);
 
   const toggleTask = (taskId, isUndo = false) => {
@@ -323,7 +352,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     
     // If empty or corrupted, fallback to initial tasks!
     if (!Array.isArray(savedTasks) || savedTasks.length === 0) {
-       savedTasks = initialDailyTasks;
+       savedTasks = getInitialTasksForToday();
     }
     const oldIndexes = getTopicIndexes();
     const lastDate = localStorage.getItem('last_task_date') || getLogicalDateString();
@@ -365,6 +394,8 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
     import('../utils/dbStore').then(({ saveMultipleToDB }) => saveMultipleToDB(dbUpdates));
 
     setDailyTasks(rolloverResult.resetTasks);
+    const nextGroup = getScheduleForDate(logicalToday);
+    setActiveGroupKey(nextGroup.key);
     setDeficitState({
       deficitHours: rolloverResult.updatedDeficitHours,
       totalPenalties: rolloverResult.updatedTotalPenalties,
@@ -465,7 +496,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   
   const pastWeeklyTasks = parseInt(localStorage.getItem('weekly_completed')) || 0;
   const currentWeeklyTotal = pastWeeklyTasks + completedTasks.length;
-  const weeklySyllabusPercent = Math.min(100, Math.round((currentWeeklyTotal / 56) * 100)); // 8 tasks * 7 days = 56
+  const weeklySyllabusPercent = Math.min(100, Math.round((currentWeeklyTotal / 28) * 100)); // 4 tasks * 7 days = 28 (3+3 Alternate Schedule)
 
   const [dueRevisionCount, setDueRevisionCount] = useState(() => getDueSrsItems().length);
 
@@ -795,6 +826,131 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
               </div>
             </div>
             
+            {/* MPSC 3+3 Alternate Day Schedule Banner & Switcher */}
+            <div style={{
+              background: activeGroupKey === 'A' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.05) 100%)'
+                : activeGroupKey === 'B' ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.05) 100%)'
+                : 'linear-gradient(135deg, rgba(168, 85, 247, 0.12) 0%, rgba(147, 51, 234, 0.05) 100%)',
+              border: activeGroupKey === 'A' ? '1px solid rgba(59, 130, 246, 0.35)'
+                : activeGroupKey === 'B' ? '1px solid rgba(16, 185, 129, 0.35)'
+                : '1px solid rgba(168, 85, 247, 0.35)',
+              borderRadius: '16px',
+              padding: '14px 18px',
+              marginBottom: '18px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: activeGroupKey === 'A' ? '#3b82f6' : activeGroupKey === 'B' ? '#10b981' : '#a855f7',
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.25rem',
+                  fontWeight: 800,
+                  flexShrink: 0
+                }}>
+                  {activeGroupKey === 'A' ? 'A' : activeGroupKey === 'B' ? 'B' : 'C'}
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                      {SCHEDULE_GROUPS[activeGroupKey]?.name}
+                    </strong>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      • {SCHEDULE_GROUPS[activeGroupKey]?.daysLabel}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                    {activeGroupKey === 'A' && '🏛️ राज्यव्यवस्था + 📜 इतिहास + 📰 चालू घडामोडी + 📐 CSAT रोज'}
+                    {activeGroupKey === 'B' && '🌍 भूगोल + 🔬 सामान्य विज्ञान + 💰 अर्थव्यवस्था + 📐 CSAT रोज'}
+                    {activeGroupKey === 'C' && '🏆 नवीन वाचन शून्य: SRS रिव्हिजन + फुल मॉक + मिस्टेक बुक'}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', background: 'rgba(0,0,0,0.25)', padding: '3px', borderRadius: '10px' }}>
+                  <button 
+                    onClick={() => handleApplyGroup('A')}
+                    style={{
+                      background: activeGroupKey === 'A' ? '#3b82f6' : 'transparent',
+                      color: activeGroupKey === 'A' ? '#fff' : 'var(--text-secondary)',
+                      border: 'none',
+                      padding: '5px 12px',
+                      borderRadius: '7px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                    title="सोम, बुध, शुक्र: राज्यव्यवस्था, इतिहास, चालू घडामोडी + CSAT"
+                  >
+                    गट 'अ'
+                  </button>
+                  <button 
+                    onClick={() => handleApplyGroup('B')}
+                    style={{
+                      background: activeGroupKey === 'B' ? '#10b981' : 'transparent',
+                      color: activeGroupKey === 'B' ? '#fff' : 'var(--text-secondary)',
+                      border: 'none',
+                      padding: '5px 12px',
+                      borderRadius: '7px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                    title="मंगळ, गुरु, शनि: भूगोल, विज्ञान, अर्थव्यवस्था + CSAT"
+                  >
+                    गट 'ब'
+                  </button>
+                  <button 
+                    onClick={() => handleApplyGroup('C')}
+                    style={{
+                      background: activeGroupKey === 'C' ? '#a855f7' : 'transparent',
+                      color: activeGroupKey === 'C' ? '#fff' : 'var(--text-secondary)',
+                      border: 'none',
+                      padding: '5px 12px',
+                      borderRadius: '7px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                    title="रविवार: उजळणी, मॉक टेस्ट, मिस्टेक बुक"
+                  >
+                    रविवार
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setIsScheduleModalOpen(true)}
+                  className="btn"
+                  style={{
+                    background: 'rgba(255,255,255,0.06)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-primary)',
+                    padding: '5px 12px',
+                    borderRadius: '8px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    cursor: 'pointer'
+                  }}
+                  title="संपूर्ण आठवड्याचे ३+३ वेळापत्रक पहा"
+                >
+                  📅 वेळापत्रक
+                </button>
+              </div>
+            </div>
+
             <div className="flex-col gap-4">
               {(showAllTasks ? dailyTasks : dailyTasks.slice(0, 3)).map((task, idx) => (
                 <div 
@@ -824,6 +980,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
                       <span style={{ fontWeight: 600, color: task.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title.replace(' (GKGS)', '')}</span>
                       <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
                         🕒 {task.duration} {getTopicForTask(task.id) && <span>• <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', letterSpacing: '0.5px' }}>topic: {getTopicForTask(task.id)}</span></span>}
+                        {task.studyType && <span> • <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{task.studyType}</span></span>}
                       </span>
                     </div>
                     {!isEditingTasks && (
@@ -1029,6 +1186,13 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           const currentXp = parseFloat(localStorage.getItem('xp_total')) || 0;
           setDeficitState(prev => ({ ...prev, xpTotal: currentXp }));
         }}
+      />
+
+      <ScheduleTimetableModal 
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        activeGroupKey={activeGroupKey}
+        onApplyGroup={handleApplyGroup}
       />
     </div>
   );

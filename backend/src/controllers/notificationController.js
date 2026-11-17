@@ -124,16 +124,33 @@ exports.startCronJobs = () => {
     }, { timezone: "Asia/Kolkata" });
   });
 
-  // Morning Wakeup: 6 AM IST
+  // Morning Wakeup: 6 AM IST - Aligned with Alternate 3+3 Schedule
   cron.schedule('0 6 * * *', async () => {
      console.log("Running 6 AM Morning Wake-up Push");
      try {
+        const { getGroupForDate } = require('./taskController');
+        const activeGroup = getGroupForDate(new Date());
+
+        let pushTitle = "🌅 सुप्रभात! आजचे टास्क्स तयार आहेत 📚";
+        let pushBody = "आजचा अभ्यास सुरू करा आणि +५० XP दैनंदिन बोनस मिळवा! 🎯";
+
+        if (activeGroup.key === 'C') {
+          pushTitle = "🌅 शुभ रविवार! आज Consolidation Day आहे 🏆";
+          pushBody = "नवीन वाचन पूर्ण बंद! आज संपूर्ण आठवड्याची रिव्हिजन (SRS), १ फुल मॉक टेस्ट व मिस्टेक बुक पूर्ण करा 🚀";
+        } else if (activeGroup.key === 'A') {
+          pushTitle = "🌅 सुप्रभात! आज गट 'अ' चा दिवस आहे 🏛️";
+          pushBody = "आजचे विषय: राज्यव्यवस्था, इतिहास, चालू घडामोडी + अंकगणित व बुद्धिमत्ता (CSAT Daily) 🎯";
+        } else if (activeGroup.key === 'B') {
+          pushTitle = "🌅 सुप्रभात! आज गट 'ब' चा दिवस आहे 🌍";
+          pushBody = "आजचे विषय: भूगोल, सामान्य विज्ञान, अर्थव्यवस्था + अंकगणित व बुद्धिमत्ता (CSAT Daily) 🎯";
+        }
+
         const subs = await db.collection('pushSubscriptions').get();
         subs.forEach(docSnap => {
            const { subscription } = docSnap.data();
            const payload = JSON.stringify({
-              title: "🌅 Good Morning! Today's Tasks are Ready",
-              body: "Wake up! Your Daily Mega Test and Mistake Book revisions are unlocked. Start studying now! 📚",
+              title: pushTitle,
+              body: pushBody,
               icon: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
               badge: 'https://cdn-icons-png.flaticon.com/512/3242/3242257.png',
               vibrate: [300, 150, 300, 150, 300],
