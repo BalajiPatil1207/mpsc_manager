@@ -5,7 +5,14 @@ exports.getCoachAdvice = async (req, res) => {
   
   try {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return res.status(500).json({ success: false, error: "API Key missing" });
+    if (!apiKey) {
+      // Safe fallback advice when GEMINI_API_KEY is absent
+      return res.json({ 
+        success: true, 
+        advice: "कमी गुण मिळालेल्या विषयांवर भर द्या. रोजचे सराव प्रश्न सोडवा आणि सातत्य ठेवा! 🎯",
+        isFallback: true 
+      });
+    }
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -26,8 +33,12 @@ exports.getCoachAdvice = async (req, res) => {
     
     res.json({ success: true, advice });
   } catch (error) {
-    console.error('AI Error:', error.message || error);
-    res.status(500).json({ success: false, error: error.message || 'AI Generation Failed' });
+    console.warn('AI Coach Fallback Triggered:', error.message || error);
+    res.json({ 
+      success: true, 
+      advice: "आजच्या नियोजनानुसार कमकुवत घटकांची उजळणी करा आणि मॉक टेस्ट सोडवा. यश नक्की मिळेल! 🚀",
+      isFallback: true 
+    });
   }
 };
 

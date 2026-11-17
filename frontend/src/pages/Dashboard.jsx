@@ -51,14 +51,92 @@ const AnimatedNumber = ({ value }) => {
   return <>{display}</>;
 };
 
+const topicsMap = {
+  gk_pol: ["संविधान सभा व पार्श्वभूमी", "प्रस्ताविका व नागरिकत्व", "मूलभूत हक्क (भाग ३)", "मार्गदर्शक तत्त्वे व कर्तव्ये", "राष्ट्रपती व राज्यपाल", "संसद व विधीमंडळ", "सर्वोच्च व उच्च न्यायालय"],
+  gk_his: ["१८५७ चा उठाव व पार्श्वभूमी", "महाराष्ट्रातील समाजसुधारक", "राष्ट्रीय चळवळ (मवाळ व जहाल)", "गांधी युग व जनआंदोलने", "संयुक्त महाराष्ट्र चळवळ", "स्वातंत्र्योत्तर महाराष्ट्र"],
+  gk_ca:  ["महाराष्ट्र शासकीय योजना व पुरस्कार", "राष्ट्रीय व आंतरराष्ट्रीय महत्त्वाच्या घडामोडी", "आर्थिक घडामोडी व निर्देशांक", "पर्यावरण व विज्ञान तंत्रज्ञान", "क्रीडा व व्यक्तीविशेष"],
+  csat_maths_reasoning: ["संख्यामाला व अक्षरमाला (Series)", "कोडिंग-डिकोडिंग व नातेसंबंध", "बैठक व्यवस्था व दिशा ज्ञान", "शेकडेवारी व नफा-तोटा", "सरासरी व गुणोत्तर-प्रमाण", "काळ, काम व वेग", "वेन आकृत्या व घड्याळ/कॅलेंडर"],
+  gk_geo: ["महाराष्ट्राची प्राकृतिक रचना व घाट", "महाराष्ट्राची नदीप्रणाली (गोदावरी, भीमा, कृष्णा)", "हवामान, पर्जन्य व मान्सून", "मृदा व वने (जंगले)", "खनिज संपत्ती व ऊर्जा साधने", "लोकसंख्या भूगोल व पर्यावरण"],
+  gk_sci: ["प्राणी व वनस्पतींचे वर्गीकरण", "मानवी आरोग्य व रोगशास्त्र", "पचन, श्वसन व रक्ताभिसरण संस्था", "प्रकाश व ध्वनी (Light & Sound)", "विद्युतधारा व चुंबकत्व", "अणूची रचना व रासायनिक अभिक्रिया"],
+  gk_eco: ["राष्ट्रीय उत्पन्न (GDP, GNP)", "रिझर्व्ह बँक (RBI) व बँकिंग", "दारिद्र्य व बेरोजगारी मापन", "सार्वजनिक वित्त (कर रचना व बजेट)", "परकीय व्यापार व BOP", "शाश्वत विकास व शासकीय आर्थिक योजना"],
+  srs_weekly_review: ["आठवड्यातील सर्व कठीण संकल्पना रिव्हिजन", "Spaced Repetition Flashcards रिव्ह्यू", "शॉर्ट नोट्स व हायलाइट्स रिव्हिजन"],
+  sunday_mega_mock: ["MPSC राज्यसेवा / संयुक्त पूर्व सर्वसमावेशक मॉक टेस्ट", "नेगेटिव्ह मार्किंग मॅनेजमेंट (+२ / -०.६६)", "वेळेचे अचूक नियोजन (Time per Question)"],
+  mistake_book_audit: ["आजच्या टेस्टमध्ये चुकलेल्या प्रश्नांची कारणे", "Mistake Book मधील वीव्हड प्रश्न पुन्हा सोडवणे", "वारंवार चुकणारे टॉपिक्स हायलाइट करणे"],
+  backlog_recovery: ["मागील ७ दिवसांतील अपूर्ण राहिलेले टास्क्स क्लिअर करणे", "अभ्यास तूट (Deficit Hours) शून्य करणे", "पुढील आठवड्यासाठी १००% सज्ज होणे"],
+  // Backward compatibility
+  reasoning: ["Number Series", "Alphabet Series", "Coding-Decoding", "Analogy", "Blood Relations", "Direction Test"],
+  maths: ["Number System", "BODMAS & Fractions", "LCM & HCF", "Percentage", "Profit & Loss", "Simple Interest"]
+};
+
+const getTopicIndexes = () => {
+  try {
+    return JSON.parse(localStorage.getItem('task_indexes') || '{}');
+  } catch(e) {
+    return {};
+  }
+};
+
+const getTopicForTask = (taskId, indexOverride) => {
+  const arr = topicsMap[taskId];
+  if (!arr) return "";
+  const indexes = getTopicIndexes();
+  const idx = indexOverride !== undefined ? indexOverride : (indexes[taskId] || 0);
+  return arr[idx % arr.length];
+};
+
+const getTitleForTask = (taskId, indexOverride) => {
+  const indexes = getTopicIndexes();
+  const idx = indexOverride !== undefined ? indexOverride : (indexes[taskId] || 0);
+  const titles = {
+    'gk_pol': '🏛️ भारतीय राज्यव्यवस्था (Polity)',
+    'gk_his': '📜 इतिहास (History)',
+    'gk_ca': '📰 चालू घडामोडी (Current Affairs)',
+    'csat_maths_reasoning': `📐 अंकगणित व बुद्धिमत्ता (CSAT Daily Set ${idx + 1})`,
+    'gk_geo': '🌍 भूगोल व पर्यावरण (Geography)',
+    'gk_sci': '🔬 सामान्य विज्ञान (General Science)',
+    'gk_eco': '💰 भारतीय अर्थव्यवस्था (Economics)',
+    'srs_weekly_review': '⚡ संपूर्ण आठवड्याची रिव्हिजन (SRS Flashcards)',
+    'sunday_mega_mock': '📋 १ फुल मॉक टेस्ट (100 Qs / 200 Marks)',
+    'mistake_book_audit': '📖 मिस्टेक बुक ॲनालिसिस व त्रुटी सुधारणा',
+    'backlog_recovery': '🎯 आठवड्याचा बॅकलॉग भरून काढणे',
+    'reasoning': `🧠 Reasoning Practice (Set ${idx + 1})`,
+    'maths': '📐 Maths Practice'
+  };
+  return titles[taskId];
+};
+
+const getInitialTasksForToday = () => {
+  const activeSched = getScheduleForDate(getLogicalDateString());
+  return activeSched.tasks.map(t => ({
+    ...t,
+    title: getTitleForTask(t.id) || t.title,
+    completed: false
+  }));
+};
+
 const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const navigate = useNavigate();
+  const [activeGroupKey, setActiveGroupKey] = useState(() => getScheduleForDate(getLogicalDateString()).key);
+  const [dailyTasks, setDailyTasks] = useState(() => {
+    try {
+      const saved = localStorage.getItem('user_daily_tasks');
+      if (saved && saved !== 'undefined' && saved !== 'null') {
+         let parsed = JSON.parse(saved);
+         if (Array.isArray(parsed) && parsed.length > 0) {
+           return parsed.sort((a, b) => {
+             if (a.completed === b.completed) return 0;
+             return a.completed ? 1 : -1;
+           });
+         }
+      }
+    } catch(e) { }
+    return getInitialTasksForToday();
+  });
   const [deficitState, setDeficitState] = useState(() => getDeficitState());
   const [isDeficitModalOpen, setIsDeficitModalOpen] = useState(false);
   const [isFocusModalOpen, setIsFocusModalOpen] = useState(false);
   const [isSrsModalOpen, setIsSrsModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
-  const [activeGroupKey, setActiveGroupKey] = useState(() => getScheduleForDate(getLogicalDateString()).key);
   const [activeFocusTask, setActiveFocusTask] = useState(null);
 
   const handleStartFocus = (taskItem) => {
@@ -133,87 +211,6 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
       });
     }
   };
-
-  const topicsMap = {
-    gk_pol: ["संविधान सभा व पार्श्वभूमी", "प्रस्ताविका व नागरिकत्व", "मूलभूत हक्क (भाग ३)", "मार्गदर्शक तत्त्वे व कर्तव्ये", "राष्ट्रपती व राज्यपाल", "संसद व विधीमंडळ", "सर्वोच्च व उच्च न्यायालय"],
-    gk_his: ["१८५७ चा उठाव व पार्श्वभूमी", "महाराष्ट्रातील समाजसुधारक", "राष्ट्रीय चळवळ (मवाळ व जहाल)", "गांधी युग व जनआंदोलने", "संयुक्त महाराष्ट्र चळवळ", "स्वातंत्र्योत्तर महाराष्ट्र"],
-    gk_ca:  ["महाराष्ट्र शासकीय योजना व पुरस्कार", "राष्ट्रीय व आंतरराष्ट्रीय महत्त्वाच्या घडामोडी", "आर्थिक घडामोडी व निर्देशांक", "पर्यावरण व विज्ञान तंत्रज्ञान", "क्रीडा व व्यक्तीविशेष"],
-    csat_maths_reasoning: ["संख्यामाला व अक्षरमाला (Series)", "कोडिंग-डिकोडिंग व नातेसंबंध", "बैठक व्यवस्था व दिशा ज्ञान", "शेकडेवारी व नफा-तोटा", "सरासरी व गुणोत्तर-प्रमाण", "काळ, काम व वेग", "वेन आकृत्या व घड्याळ/कॅलेंडर"],
-    gk_geo: ["महाराष्ट्राची प्राकृतिक रचना व घाट", "महाराष्ट्राची नदीप्रणाली (गोदावरी, भीमा, कृष्णा)", "हवामान, पर्जन्य व मान्सून", "मृदा व वने (जंगले)", "खनिज संपत्ती व ऊर्जा साधने", "लोकसंख्या भूगोल व पर्यावरण"],
-    gk_sci: ["प्राणी व वनस्पतींचे वर्गीकरण", "मानवी आरोग्य व रोगशास्त्र", "पचन, श्वसन व रक्ताभिसरण संस्था", "प्रकाश व ध्वनी (Light & Sound)", "विद्युतधारा व चुंबकत्व", "अणूची रचना व रासायनिक अभिक्रिया"],
-    gk_eco: ["राष्ट्रीय उत्पन्न (GDP, GNP)", "रिझर्व्ह बँक (RBI) व बँकिंग", "दारिद्र्य व बेरोजगारी मापन", "सार्वजनिक वित्त (कर रचना व बजेट)", "परकीय व्यापार व BOP", "शाश्वत विकास व शासकीय आर्थिक योजना"],
-    srs_weekly_review: ["आठवड्यातील सर्व कठीण संकल्पना रिव्हिजन", "Spaced Repetition Flashcards रिव्ह्यू", "शॉर्ट नोट्स व हायलाइट्स रिव्हिजन"],
-    sunday_mega_mock: ["MPSC राज्यसेवा / संयुक्त पूर्व सर्वसमावेशक मॉक टेस्ट", "नेगेटिव्ह मार्किंग मॅनेजमेंट (+२ / -०.६६)", "वेळेचे अचूक नियोजन (Time per Question)"],
-    mistake_book_audit: ["आजच्या टेस्टमध्ये चुकलेल्या प्रश्नांची कारणे", "Mistake Book मधील वीव्हड प्रश्न पुन्हा सोडवणे", "वारंवार चुकणारे टॉपिक्स हायलाइट करणे"],
-    backlog_recovery: ["मागील ७ दिवसांतील अपूर्ण राहिलेले टास्क्स क्लिअर करणे", "अभ्यास तूट (Deficit Hours) शून्य करणे", "पुढील आठवड्यासाठी १००% सज्ज होणे"],
-    // Backward compatibility
-    reasoning: ["Number Series", "Alphabet Series", "Coding-Decoding", "Analogy", "Blood Relations", "Direction Test"],
-    maths: ["Number System", "BODMAS & Fractions", "LCM & HCF", "Percentage", "Profit & Loss", "Simple Interest"]
-  };
-
-  const getTopicIndexes = () => {
-    return JSON.parse(localStorage.getItem('task_indexes') || '{}');
-  };
-
-  const getLogicalDateString = () => {
-    const d = new Date();
-    d.setHours(d.getHours() - 6); // Shift day boundary to 6:00 AM
-    return d.toLocaleDateString('en-GB');
-  };
-
-  const getTopicForTask = (taskId, indexOverride) => {
-    const arr = topicsMap[taskId];
-    if (!arr) return "";
-    const indexes = getTopicIndexes();
-    const idx = indexOverride !== undefined ? indexOverride : (indexes[taskId] || 0);
-    return arr[idx % arr.length];
-  };
-
-  const getTitleForTask = (taskId, indexOverride) => {
-    const indexes = getTopicIndexes();
-    const idx = indexOverride !== undefined ? indexOverride : (indexes[taskId] || 0);
-    const titles = {
-      'gk_pol': '🏛️ भारतीय राज्यव्यवस्था (Polity)',
-      'gk_his': '📜 इतिहास (History)',
-      'gk_ca': '📰 चालू घडामोडी (Current Affairs)',
-      'csat_maths_reasoning': `📐 अंकगणित व बुद्धिमत्ता (CSAT Daily Set ${idx + 1})`,
-      'gk_geo': '🌍 भूगोल व पर्यावरण (Geography)',
-      'gk_sci': '🔬 सामान्य विज्ञान (General Science)',
-      'gk_eco': '💰 भारतीय अर्थव्यवस्था (Economics)',
-      'srs_weekly_review': '⚡ संपूर्ण आठवड्याची रिव्हिजन (SRS Flashcards)',
-      'sunday_mega_mock': '📋 १ फुल मॉक टेस्ट (100 Qs / 200 Marks)',
-      'mistake_book_audit': '📖 मिस्टेक बुक ॲनालिसिस व त्रुटी सुधारणा',
-      'backlog_recovery': '🎯 आठवड्याचा बॅकलॉग भरून काढणे',
-      'reasoning': `🧠 Reasoning Practice (Set ${idx + 1})`,
-      'maths': '📐 Maths Practice'
-    };
-    return titles[taskId];
-  };
-
-  const getInitialTasksForToday = () => {
-    const activeSched = getScheduleForDate(getLogicalDateString());
-    return activeSched.tasks.map(t => ({
-      ...t,
-      title: getTitleForTask(t.id) || t.title,
-      completed: false
-    }));
-  };
-
-  const [dailyTasks, setDailyTasks] = useState(() => {
-    try {
-      const saved = localStorage.getItem('user_daily_tasks');
-      if (saved && saved !== 'undefined' && saved !== 'null') {
-         let parsed = JSON.parse(saved);
-         if (Array.isArray(parsed) && parsed.length > 0) {
-           return parsed.sort((a, b) => {
-             if (a.completed === b.completed) return 0;
-             return a.completed ? 1 : -1;
-           });
-         }
-      }
-    } catch(e) { }
-    return getInitialTasksForToday();
-  });
 
   const handleApplyGroup = (groupKey) => {
     const targetGroup = SCHEDULE_GROUPS[groupKey];
