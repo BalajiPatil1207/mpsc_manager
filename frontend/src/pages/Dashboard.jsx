@@ -114,6 +114,31 @@ const getInitialTasksForToday = () => {
   }));
 };
 
+const getScheduleSubjectsPills = (groupKey) => {
+  if (groupKey === 'A') {
+    return [
+      { name: '🏛️ राज्यव्यवस्था', isCsat: false },
+      { name: '📜 इतिहास', isCsat: false },
+      { name: '📰 चालू घडामोडी', isCsat: false },
+      { name: '📐 CSAT रोज', isCsat: true }
+    ];
+  } else if (groupKey === 'B') {
+    return [
+      { name: '🌍 भूगोल', isCsat: false },
+      { name: '🔬 सामान्य विज्ञान', isCsat: false },
+      { name: '💰 अर्थव्यवस्था', isCsat: false },
+      { name: '📐 CSAT रोज', isCsat: true }
+    ];
+  } else {
+    return [
+      { name: '⚡ SRS रिव्हिजन', isCsat: false },
+      { name: '📋 फुल मॉक टेस्ट', isCsat: false },
+      { name: '📖 मिस्टेक बुक', isCsat: false },
+      { name: '🎯 बॅकलॉग भरून काढणे', isCsat: true }
+    ];
+  }
+};
+
 const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   const navigate = useNavigate();
   const [activeGroupKey, setActiveGroupKey] = useState(() => getScheduleForDate(getLogicalDateString()).key);
