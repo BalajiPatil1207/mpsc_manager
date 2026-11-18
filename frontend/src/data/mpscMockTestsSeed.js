@@ -9,10 +9,10 @@ export const MPSC_SEED_MOCKS = [
     subject: 'General Studies (GS Paper 1)',
     topic: 'सर्वसमावेशक सामान्य अध्ययन: राज्यव्यवस्था, इतिहास, भूगोल, विज्ञान व अर्थव्यवस्था',
     timeLimit: 30, // 30 minutes
-    totalMarks: 50,
-    marksPerQuestion: 2.0,
-    penaltyPerQuestion: 0.66,
-    markingScheme: 'mpsc_rajyaseva', // +2 for correct, -0.66 for incorrect (1:3rd negative)
+    totalMarks: 25,
+    marksPerQuestion: 1.0,
+    penaltyPerQuestion: 0.25,
+    markingScheme: 'group_c', // +1 for correct, -0.25 for incorrect (1:4th negative)
     examDate: '19 ऑक्टोबर 2026',
     formattedDate: '2026-10-19',
     difficulty: 'राजसेवा दर्जा (Moderate to Hard)',
@@ -205,10 +205,10 @@ export const MPSC_SEED_MOCKS = [
     subject: 'Combine Group B & C Prelims',
     topic: 'महाराष्ट्र इतिहास, भूगोल, पंचायत राज, विज्ञान व अंकगणित',
     timeLimit: 25,
-    totalMarks: 40,
-    marksPerQuestion: 2.0,
-    penaltyPerQuestion: 0.66,
-    markingScheme: 'mpsc_rajyaseva', // +2 for correct, -0.66 for incorrect
+    totalMarks: 20,
+    marksPerQuestion: 1.0,
+    penaltyPerQuestion: 0.25,
+    markingScheme: 'group_c', // +1 for correct, -0.25 for incorrect
     examDate: '19 ऑक्टोबर 2026',
     formattedDate: '2026-10-19',
     difficulty: 'संयुक्त पूर्व दर्जा (Exam-level)',

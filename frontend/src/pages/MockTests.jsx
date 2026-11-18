@@ -13,7 +13,22 @@ const MockTests = () => {
     try {
       const cached = localStorage.getItem('mpsc_cached_mocks');
       if (cached) {
-        const parsed = JSON.parse(cached);
+        let parsed = JSON.parse(cached);
+        // Normalize any legacy 2-mark tests to 1 mark & 0.25 penalty
+        parsed = parsed.map(m => {
+          if (m.markingScheme === 'mpsc_rajyaseva' || m.marksPerQuestion === 2.0) {
+            const count = m.questions?.length || 0;
+            return {
+              ...m,
+              markingScheme: 'group_c',
+              marksPerQuestion: 1.0,
+              penaltyPerQuestion: 0.25,
+              totalMarks: count
+            };
+          }
+          return m;
+        });
+        localStorage.setItem('mpsc_cached_mocks', JSON.stringify(parsed));
         const seedIds = new Set(MPSC_SEED_MOCKS.map(s => s._id || s.id));
         return [...MPSC_SEED_MOCKS, ...parsed.filter(m => !seedIds.has(m._id || m.id))];
       }
@@ -60,7 +75,7 @@ const MockTests = () => {
   const [showDynamicModal, setShowDynamicModal] = useState(false);
   const [genSubject, setGenSubject] = useState('all');
   const [genCount, setGenCount] = useState(25);
-  const [genScheme, setGenScheme] = useState('mpsc_rajyaseva');
+  const [genScheme, setGenScheme] = useState('group_c');
   const [genTime, setGenTime] = useState(30);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -871,7 +886,7 @@ const MockTests = () => {
                         alignItems: 'center',
                         gap: '4px'
                       }}>
-                        ⚡ {isGroupC ? 'गट-क (+१.०० / -०.२५)' : 'MPSC अधिकृत (+२.०० / -०.६६)'}
+                        ⚡ {isGroupC ? 'MPSC गट-ब/क (+१.०० / -०.२५)' : 'राज्यसेवा (+२.०० / -०.६६)'}
                       </span>
                       <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>
                         {isGroupC ? '१/४ निगेटिव्ह' : '१/३ निगेटिव्ह'}

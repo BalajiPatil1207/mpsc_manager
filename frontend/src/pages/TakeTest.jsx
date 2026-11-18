@@ -37,7 +37,7 @@ const TakeTest = () => {
   const [activeQuestion, setActiveQuestion] = useState(0);
   const [showSuccessVideo, setShowSuccessVideo] = useState(false);
   const [testViewMode, setTestViewMode] = useState('question'); // 'question' | 'omr'
-  const [markingScheme, setMarkingScheme] = useState('mpsc_rajyaseva'); // 'mpsc_rajyaseva' (+2/-0.66) | 'group_c' (+1/-0.25)
+  const [markingScheme, setMarkingScheme] = useState('group_c'); // 'group_c' (+1/-0.25) | 'mpsc_rajyaseva' (+2/-0.66)
   const [showExitConfirmModal, setShowExitConfirmModal] = useState(false);
   const [allReels, setAllReels] = useState([]);
   const [aiExplanations, setAiExplanations] = useState({});
@@ -180,7 +180,7 @@ const TakeTest = () => {
         }
 
         if (fetchedTest && fetchedTest.markingScheme) {
-          setMarkingScheme(fetchedTest.markingScheme);
+          setMarkingScheme(fetchedTest.markingScheme === 'mpsc_rajyaseva' ? 'group_c' : fetchedTest.markingScheme);
         }
 
         if (fetchedTest) {
@@ -205,7 +205,7 @@ const TakeTest = () => {
                   setActiveQuestion(session.activeQuestion);
                 }
                 if (session.markingScheme) {
-                  setMarkingScheme(session.markingScheme);
+                  setMarkingScheme(session.markingScheme === 'mpsc_rajyaseva' ? 'group_c' : session.markingScheme);
                 }
                 sessionRestored = true;
                 toast.success("🔄 तुमची चालू टेस्ट पूर्ववत केली आहे! (Test Resumed)", { icon: '⚡', duration: 4000 });
@@ -372,8 +372,9 @@ const TakeTest = () => {
   };
 
   const handleSubmit = async () => {
-    const marksPerCorrect = markingScheme === 'group_c' ? 1.0 : 2.0;
-    const penaltyPerWrong = markingScheme === 'group_c' ? 0.25 : 0.66;
+    const isRajyaseva = markingScheme === 'mpsc_rajyaseva';
+    const marksPerCorrect = isRajyaseva ? 2.0 : 1.0;
+    const penaltyPerWrong = isRajyaseva ? 0.66 : 0.25;
     let correctCount = 0;
     let wrongCount = 0;
     let unattemptedCount = 0;
@@ -942,17 +943,17 @@ const TakeTest = () => {
                 type="button"
                 onClick={() => {
                   if (!submitted) {
-                    const next = markingScheme === 'mpsc_rajyaseva' ? 'group_c' : 'mpsc_rajyaseva';
+                    const next = markingScheme === 'group_c' ? 'mpsc_rajyaseva' : 'group_c';
                     setMarkingScheme(next);
-                    toast.success(next === 'mpsc_rajyaseva' ? '⚡ MPSC अधिकृत मार्किंग: +२.०० / -०.६६' : '🎯 गट-क मार्किंग: +१.०० / -०.२५');
+                    toast.success(next === 'group_c' ? '🎯 MPSC अधिकृत मार्किंग: +१.०० / -०.२५' : '⚡ राज्यसेवा मार्किंग: +२.०० / -०.६६');
                   }
                 }}
                 disabled={submitted}
                 title={submitted ? 'मार्किंग पद्धत' : 'क्लिक करून मार्किंग पद्धत बदला'}
                 style={{
-                  background: markingScheme === 'mpsc_rajyaseva' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-                  color: markingScheme === 'mpsc_rajyaseva' ? '#fbbf24' : '#38bdf8',
-                  border: markingScheme === 'mpsc_rajyaseva' ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid rgba(56, 189, 248, 0.35)',
+                  background: markingScheme === 'group_c' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                  color: markingScheme === 'group_c' ? '#38bdf8' : '#fbbf24',
+                  border: markingScheme === 'group_c' ? '1px solid rgba(56, 189, 248, 0.35)' : '1px solid rgba(245, 158, 11, 0.35)',
                   padding: '5px 10px',
                   borderRadius: '10px',
                   fontSize: '0.72rem',
@@ -964,7 +965,7 @@ const TakeTest = () => {
                 }}
               >
                 <span>⚡</span>
-                {markingScheme === 'mpsc_rajyaseva' ? '+२ / -०.६६' : '+१ / -०.२५'}
+                {markingScheme === 'group_c' ? '+१ / -०.२५' : '+२ / -०.६६'}
               </button>
 
               {!submitted && (
@@ -1112,8 +1113,9 @@ const TakeTest = () => {
 
           {/* Results Summary Modal / Card */}
           {submitted && !showAnswers && (() => {
-            const marksPerCorrect = markingScheme === 'group_c' ? 1.0 : 2.0;
-            const penaltyPerWrong = markingScheme === 'group_c' ? 0.25 : 0.66;
+            const isRajyaseva = markingScheme === 'mpsc_rajyaseva';
+            const marksPerCorrect = isRajyaseva ? 2.0 : 1.0;
+            const penaltyPerWrong = isRajyaseva ? 0.66 : 0.25;
             let correctCount = 0, wrongCount = 0, unattemptedCount = 0;
             test.questions.forEach((q, idx) => {
               if (answers[idx] === undefined) { unattemptedCount++; }

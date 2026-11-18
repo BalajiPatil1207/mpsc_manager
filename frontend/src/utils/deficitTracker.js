@@ -40,7 +40,7 @@ export const SCHEDULE_GROUPS = {
     days: [0],
     tasks: [
       { id: 'srs_weekly_review', title: '⚡ संपूर्ण आठवड्याची रिव्हिजन (SRS Flashcards)', duration: '2 hr', subject: 'Revision', studyType: 'नवीन काहीही वाचायचे नाही! आठवडा उजळणी' },
-      { id: 'sunday_mega_mock', title: '📋 १ फुल मॉक टेस्ट (100 Qs / 200 Marks)', duration: '1.5 hr', subject: 'Mock Test', studyType: 'परीक्षा हॉल वेळेत प्रत्यक्ष सराव' },
+      { id: 'sunday_mega_mock', title: '📋 १ फुल मॉक टेस्ट (100 Qs / 100 Marks)', duration: '1.5 hr', subject: 'Mock Test', studyType: 'परीक्षा हॉल वेळेत प्रत्यक्ष सराव' },
       { id: 'mistake_book_audit', title: '📖 मिस्टेक बुक ॲनालिसिस व त्रुटी सुधारणा', duration: '1.5 hr', subject: 'Mistakes', studyType: 'चुकलेल्या प्रश्नांचे सखोल विश्लेषण' },
       { id: 'backlog_recovery', title: '🎯 आठवड्याचा बॅकलॉग भरून काढणे', duration: '1 hr', subject: 'Backlog', studyType: 'आठवड्याची अभ्यास तूट भरून काढणे' }
     ]

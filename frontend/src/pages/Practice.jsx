@@ -16,9 +16,9 @@ const MPSC_PYQ_CATALOG = [
     subject: 'भारतीय राज्यव्यवस्था',
     questionCount: 15,
     timeLimit: 15,
-    markingScheme: 'mpsc_rajyaseva',
+    markingScheme: 'group_c',
     meta: '15 प्रश्न • MPSC राज्यघटना PYQs',
-    badge: 'राज्यसेवा +2/-0.66'
+    badge: 'MPSC +1/-0.25'
   },
   {
     id: 'geo_mh_rivers',
@@ -28,7 +28,7 @@ const MPSC_PYQ_CATALOG = [
     timeLimit: 15,
     markingScheme: 'group_c',
     meta: '15 प्रश्न • महाराष्ट्र प्राकृतिक भूगोल',
-    badge: 'गट क +1/-0.25'
+    badge: 'MPSC +1/-0.25'
   },
   {
     id: 'his_reformers',
@@ -36,9 +36,9 @@ const MPSC_PYQ_CATALOG = [
     subject: 'इतिहास',
     questionCount: 15,
     timeLimit: 15,
-    markingScheme: 'mpsc_rajyaseva',
+    markingScheme: 'group_c',
     meta: '15 प्रश्न • आधुनिक भारताचा इतिहास',
-    badge: 'राज्यसेवा +2/-0.66'
+    badge: 'MPSC +1/-0.25'
   },
   {
     id: 'econ_rbi_budget',
@@ -48,7 +48,7 @@ const MPSC_PYQ_CATALOG = [
     timeLimit: 15,
     markingScheme: 'group_c',
     meta: '15 प्रश्न • भारतीय अर्थव्यवस्था PYQs',
-    badge: 'गट क +1/-0.25'
+    badge: 'MPSC +1/-0.25'
   },
   {
     id: 'sci_physics_bio',
@@ -56,9 +56,9 @@ const MPSC_PYQ_CATALOG = [
     subject: 'सामान्य विज्ञान',
     questionCount: 15,
     timeLimit: 15,
-    markingScheme: 'mpsc_rajyaseva',
+    markingScheme: 'group_c',
     meta: '15 प्रश्न • सामान्य विज्ञान सराव संच',
-    badge: 'राज्यसेवा +2/-0.66'
+    badge: 'MPSC +1/-0.25'
   },
   {
     id: 'csat_reasoning',
@@ -68,7 +68,7 @@ const MPSC_PYQ_CATALOG = [
     timeLimit: 15,
     markingScheme: 'group_c',
     meta: '15 प्रश्न • CSAT Reasoning Practice',
-    badge: 'गट क +1/-0.25'
+    badge: 'MPSC +1/-0.25'
   },
   {
     id: 'polity_panchayat',
@@ -76,9 +76,9 @@ const MPSC_PYQ_CATALOG = [
     subject: 'भारतीय राज्यव्यवस्था',
     questionCount: 15,
     timeLimit: 15,
-    markingScheme: 'mpsc_rajyaseva',
+    markingScheme: 'group_c',
     meta: '15 प्रश्न • पंचायत राज व स्थानिक प्रशासन',
-    badge: 'राज्यसेवा +2/-0.66'
+    badge: 'MPSC +1/-0.25'
   },
   {
     id: 'geo_agri_mineral',
@@ -88,7 +88,7 @@ const MPSC_PYQ_CATALOG = [
     timeLimit: 15,
     markingScheme: 'group_c',
     meta: '15 प्रश्न • खनिजे, उद्योग व वाहतूक',
-    badge: 'गट क +1/-0.25'
+    badge: 'MPSC +1/-0.25'
   }
 ];
 
@@ -429,7 +429,7 @@ const Practice = () => {
       const newTest = generateDynamicMpscTest({
         subject: subject,
         questionCount: 15,
-        markingScheme: 'mpsc_rajyaseva',
+        markingScheme: 'group_c',
         timeLimit: 15,
         topic: `${subject} Rapid Mastery Drill`
       });

@@ -5,8 +5,8 @@ const webpush = require('web-push');
 exports.createTest = async (req, res, next) => {
   try {
     const { title, subject, topic, timeLimit, questions, createdBy, creatorName, markingScheme, examDate, totalMarks } = req.body;
-    const isGroupC = markingScheme === 'group_c';
-    const marksPerQ = isGroupC ? 1.0 : 2.0;
+    const isRajyaseva = markingScheme === 'mpsc_rajyaseva';
+    const marksPerQ = isRajyaseva ? 2.0 : 1.0;
     const calculatedMarks = totalMarks || ((questions?.length || 0) * marksPerQ);
 
     const newTest = { 
@@ -15,7 +15,7 @@ exports.createTest = async (req, res, next) => {
       topic: topic || '',
       timeLimit: parseInt(timeLimit) || 15, 
       questions, 
-      markingScheme: markingScheme || 'mpsc_rajyaseva',
+      markingScheme: markingScheme || 'group_c',
       totalMarks: calculatedMarks,
       examDate: examDate || new Date().toLocaleDateString('mr-IN'),
       createdBy: createdBy || 'anonymous', 
@@ -122,6 +122,10 @@ exports.generateMegaTest = async (req, res, next) => {
       topic: 'सर्वसमावेशक मेगा सराव परीक्षा (100 प्रश्न)',
       timeLimit: 90, 
       questions: shuffle(megaQuestions), 
+      markingScheme: 'group_c',
+      totalMarks: megaQuestions.length,
+      marksPerQuestion: 1.0,
+      penaltyPerQuestion: 0.25,
       createdBy: 'System Engine',
       examDate: new Date().toLocaleDateString('mr-IN'),
       createdAt: new Date().toISOString()
@@ -147,7 +151,7 @@ exports.submitTest = async (req, res, next) => {
       test = {
         title: testTitle || 'MPSC Mock Test',
         subject: subject || 'General Studies',
-        markingScheme: markingScheme || 'mpsc_rajyaseva',
+        markingScheme: markingScheme || 'group_c',
         questions: clientWrongQuestions || [],
         attemptedBy: userId ? [userId] : ['anonymous'],
         createdAt: new Date().toISOString()
@@ -188,9 +192,9 @@ exports.submitTest = async (req, res, next) => {
     }
 
     const totalAttempted = correctCount + wrongCount;
-    const isGroupC = test.markingScheme === 'group_c';
-    const marksPerCorrect = isGroupC ? 1.0 : 2.0;
-    const penaltyPerWrong = isGroupC ? 0.25 : 0.66;
+    const isRajyaseva = test.markingScheme === 'mpsc_rajyaseva';
+    const marksPerCorrect = isRajyaseva ? 2.0 : 1.0;
+    const penaltyPerWrong = isRajyaseva ? 0.66 : 0.25;
     const rawScore = (correctCount * marksPerCorrect) - (wrongCount * penaltyPerWrong);
     const netScore = Math.max(0, parseFloat(rawScore.toFixed(2)));
     const penalty = parseFloat((wrongCount * penaltyPerWrong).toFixed(2));

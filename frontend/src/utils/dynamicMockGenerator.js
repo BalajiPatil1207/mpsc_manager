@@ -404,7 +404,7 @@ export const MPSC_MASTER_QUESTION_POOL = [
 export const generateDynamicMpscTest = ({
   subject = 'all',
   questionCount = 20,
-  markingScheme = 'mpsc_rajyaseva',
+  markingScheme = 'group_c',
   timeLimit = null,
   topic = '',
   testIndex = null
@@ -449,8 +449,9 @@ export const generateDynamicMpscTest = ({
   });
 
   const count = randomizedQuestions.length;
-  const isGroupC = markingScheme === 'group_c';
-  const marksPerQ = isGroupC ? 1.0 : 2.0;
+  const isRajyaseva = markingScheme === 'mpsc_rajyaseva';
+  const marksPerQ = isRajyaseva ? 2.0 : 1.0;
+  const penaltyPerQ = isRajyaseva ? 0.66 : 0.25;
   const totalMarks = count * marksPerQ;
   const allocatedTime = timeLimit || (count >= 100 ? 120 : count >= 50 ? 60 : count >= 25 ? 30 : 20);
 
@@ -465,10 +466,10 @@ export const generateDynamicMpscTest = ({
     subject: subjectLabel,
     topic: topic || `${subjectLabel} सराव परीक्षा (${count} प्रश्न)`,
     timeLimit: allocatedTime,
-    markingScheme,
+    markingScheme: isRajyaseva ? 'mpsc_rajyaseva' : 'group_c',
     totalMarks,
     marksPerQuestion: marksPerQ,
-    penaltyPerQuestion: isGroupC ? 0.25 : 0.66,
+    penaltyPerQuestion: penaltyPerQ,
     examDate: new Date().toLocaleDateString('mr-IN'),
     formattedDate: new Date().toISOString().split('T')[0],
     isDynamic: true,

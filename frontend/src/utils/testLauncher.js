@@ -18,7 +18,7 @@ export const PYQ_DRILLS = [
     subject: 'भारतीय राज्यव्यवस्था',
     questionCount: 15,
     timeLimit: 15,
-    markingScheme: 'mpsc_rajyaseva',
+    markingScheme: 'group_c',
     group: 'A'
   },
   {
@@ -27,7 +27,7 @@ export const PYQ_DRILLS = [
     subject: 'इतिहास',
     questionCount: 15,
     timeLimit: 15,
-    markingScheme: 'mpsc_rajyaseva',
+    markingScheme: 'group_c',
     group: 'A'
   },
   {
@@ -36,7 +36,7 @@ export const PYQ_DRILLS = [
     subject: 'चालू घडामोडी',
     questionCount: 15,
     timeLimit: 15,
-    markingScheme: 'mpsc_rajyaseva',
+    markingScheme: 'group_c',
     group: 'A'
   },
   {
@@ -54,7 +54,7 @@ export const PYQ_DRILLS = [
     subject: 'सामान्य विज्ञान',
     questionCount: 15,
     timeLimit: 15,
-    markingScheme: 'mpsc_rajyaseva',
+    markingScheme: 'group_c',
     group: 'B'
   },
   {
@@ -202,7 +202,7 @@ export const launchTodayPracticeTest = async (navigate) => {
       const generated = generateDynamicMpscTest({
         subject: selectedTest.subject || 'all',
         questionCount: selectedTest.questionCount || 15,
-        markingScheme: selectedTest.markingScheme || 'mpsc_rajyaseva',
+        markingScheme: selectedTest.markingScheme || 'group_c',
         timeLimit: selectedTest.timeLimit || 15,
         topic: selectedTest.title
       });
@@ -229,7 +229,7 @@ export const launchTodayPracticeTest = async (navigate) => {
       selectedTest = generateDynamicMpscTest({
         subject: todaySubject,
         questionCount: 15,
-        markingScheme: 'mpsc_rajyaseva',
+        markingScheme: 'group_c',
         timeLimit: 15,
         topic: `${todaySubject} दैनिक सराव चाचणी`
       });
@@ -293,7 +293,7 @@ export const launchTodayMegaTest = async (navigate) => {
       todayMega = generateDynamicMpscTest({
         subject: 'all',
         questionCount: 70,
-        markingScheme: 'mpsc_rajyaseva',
+        markingScheme: 'group_c',
         timeLimit: 90,
         topic: 'MPSC सर्वसमावेशक दैनिक मेगा टेस्ट (GS Paper 1)',
         testIndex: 1
