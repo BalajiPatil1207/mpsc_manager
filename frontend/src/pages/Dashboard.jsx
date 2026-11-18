@@ -630,7 +630,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           <p style={{ color: 'var(--text-secondary)' }}>Welcome to your personalized Study OS</p>
         </div>
         
-        <div className="dashboard-header-actions flex-row gap-4" style={{ height: 'fit-content', flexWrap: 'wrap' }}>
+        <div className="dashboard-header-actions stat-cards-carousel">
           {/* Days Left Card */}
           <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.8s ease-out', flex: 1, minWidth: '130px', gap: '8px', textAlign: 'center' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', margin: '0 auto' }}>⏳</div>
@@ -879,9 +879,12 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           
           {/* Today's Tasks */}
           <div className="glass-panel dashboard-panel">
-            <div className="flex-row justify-between" style={{ marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
+            <div className="flex-row justify-between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
               <div className="flex-col gap-1">
-                <h2 style={{ fontSize: '1.25rem', margin: 0 }}>📋 Today's Tasks</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h2 style={{ fontSize: '1.25rem', margin: 0 }}>📋 Today's Tasks</h2>
+                  <span className="tasks-swipe-hint">👈 स्वाईप करा 👉</span>
+                </div>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   new tasks fetched: {localStorage.getItem('last_task_date') || new Date().toLocaleDateString('en-GB')} at {localStorage.getItem('last_task_time') || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase()}
                 </span>
@@ -966,7 +969,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
               </div>
             </div>
 
-            <div className="flex-col gap-3">
+            <div className="tasks-cards-carousel">
               {(showAllTasks ? dailyTasks : dailyTasks.slice(0, 4)).map((task, idx) => (
                 <div 
                   key={task.id} 

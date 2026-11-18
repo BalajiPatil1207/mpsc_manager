@@ -244,6 +244,26 @@ h1, h2, h3, h4, h5, h6 {
   padding: 24px;
 }
 
+/* Tasks Cards Carousel & Swipe Hint */
+.tasks-cards-carousel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.tasks-swipe-hint {
+  display: none;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  background: var(--accent-glow);
+  border: 1px solid rgba(249, 115, 22, 0.3);
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 0.3px;
+}
+
 /* Pro Responsive Task Card Component */
 .task-card-pro {
   background: var(--glass-bg);
@@ -992,16 +1012,61 @@ h1, h2, h3, h4, h5, h6 {
   .date-input-theme { width: 100%; } 
   
   .dashboard-header { flex-direction: column; gap: 14px; align-items: flex-start !important; } 
-  .dashboard-header-actions { 
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
+  .dashboard-header-actions,
+  .stat-cards-carousel { 
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
     gap: 10px !important;
-    width: 100% !important;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 12px 10px 12px !important;
+    margin: 0 -12px 8px -12px !important;
+    scrollbar-width: none;
+    width: calc(100% + 24px) !important;
   } 
-  .dashboard-header-actions .glass-card {
-    min-width: 0 !important;
-    padding: 12px 10px !important;
-    flex: unset !important;
+  .dashboard-header-actions::-webkit-scrollbar,
+  .stat-cards-carousel::-webkit-scrollbar {
+    display: none;
+  }
+  .dashboard-header-actions .glass-card,
+  .stat-cards-carousel .glass-card {
+    flex: 0 0 135px !important;
+    min-width: 135px !important;
+    max-width: 135px !important;
+    scroll-snap-align: start;
+    padding: 14px 10px !important;
+    margin: 0 !important;
+  } 
+
+  /* Mobile Horizontal Tasks Carousel */
+  .tasks-swipe-hint {
+    display: inline-flex !important;
+  }
+  .tasks-cards-carousel {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 12px !important;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 12px 14px 12px !important;
+    margin: 0 -12px !important;
+    scrollbar-width: none;
+    width: calc(100% + 24px) !important;
+  }
+  .tasks-cards-carousel::-webkit-scrollbar {
+    display: none;
+  }
+  .tasks-cards-carousel .task-card-pro {
+    flex: 0 0 85% !important;
+    min-width: 275px !important;
+    max-width: 325px !important;
+    scroll-snap-align: start;
+    margin-bottom: 0 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   } 
   
   .task-action-btn {
