@@ -21,6 +21,33 @@ const BottomNav = () => {
     { name: 'Mocks', path: '/mock', icon: <FiTarget size={22} />, isMockTrigger: true },
   ];
 
+  const handlePracticeLaunch = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsArcMenuOpen(false);
+    launchTodayPracticeTest(navigate);
+  };
+
+  const handleMegaLaunch = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsArcMenuOpen(false);
+    launchTodayMegaTest(navigate);
+  };
+
+  const handleMockExplorer = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsArcMenuOpen(false);
+    navigate('/mock');
+  };
+
   return (
     <>
       {/* Semi-transparent dark blur backdrop to dismiss arc menu on outside tap */}
@@ -28,13 +55,22 @@ const BottomNav = () => {
         <div
           className="mock-arc-backdrop"
           onClick={() => setIsArcMenuOpen(false)}
+          onTouchEnd={() => setIsArcMenuOpen(false)}
           aria-label="Close menu"
         />
       )}
 
       {/* Rotating Curved Arc Speed-Dial Menu */}
       {isArcMenuOpen && (
-        <div className="mock-arc-container" role="dialog" aria-label="Quick Test Launch Arc">
+        <div 
+          className="mock-arc-container" 
+          role="dialog" 
+          aria-label="Quick Test Launch Arc"
+          onClick={(e) => {
+            // Close if clicked directly on empty container space
+            if (e.target === e.currentTarget) setIsArcMenuOpen(false);
+          }}
+        >
           {/* Subtle curved connecting SVG trail */}
           <svg className="mock-arc-svg-trail" viewBox="0 0 200 240" fill="none">
             <path
@@ -57,10 +93,8 @@ const BottomNav = () => {
             <button
               type="button"
               className="mock-arc-action-btn"
-              onClick={() => {
-                setIsArcMenuOpen(false);
-                launchTodayPracticeTest(navigate);
-              }}
+              onClick={handlePracticeLaunch}
+              onTouchEnd={handlePracticeLaunch}
             >
               <div className="mock-arc-badge">
                 <span className="mock-arc-title">🎯 दैनिक सराव चाचणी</span>
@@ -77,10 +111,8 @@ const BottomNav = () => {
             <button
               type="button"
               className="mock-arc-action-btn"
-              onClick={() => {
-                setIsArcMenuOpen(false);
-                launchTodayMegaTest(navigate);
-              }}
+              onClick={handleMegaLaunch}
+              onTouchEnd={handleMegaLaunch}
             >
               <div className="mock-arc-badge">
                 <span className="mock-arc-title">🔥 दैनिक मेगा टेस्ट</span>
@@ -97,10 +129,8 @@ const BottomNav = () => {
             <button
               type="button"
               className="mock-arc-action-btn"
-              onClick={() => {
-                setIsArcMenuOpen(false);
-                navigate('/mock');
-              }}
+              onClick={handleMockExplorer}
+              onTouchEnd={handleMockExplorer}
             >
               <div className="mock-arc-badge">
                 <span className="mock-arc-title">📋 सर्व मॉक टेस्ट दालन</span>

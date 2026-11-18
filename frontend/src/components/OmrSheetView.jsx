@@ -10,11 +10,12 @@ const OmrSheetView = ({
   onJumpToQuestion,
   onSubmitTest,
   submitted = false,
-  markingScheme = 'mpsc_rajyaseva',
+  markingScheme = 'group_c',
   onSchemeChange
 }) => {
-  const marksPerCorrect = markingScheme === 'group_c' ? 1.0 : 2.0;
-  const penaltyPerWrong = markingScheme === 'group_c' ? 0.25 : 0.66;
+  const isRajyaseva = markingScheme === 'mpsc_rajyaseva';
+  const marksPerCorrect = isRajyaseva ? 2.0 : 1.0;
+  const penaltyPerWrong = isRajyaseva ? 0.66 : 0.25;
 
   const attemptedCount = Object.keys(answers).length;
   const reviewCount = Object.values(reviews).filter(Boolean).length;

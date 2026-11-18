@@ -4,4 +4,8 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: true, // Exposes server to local network (0.0.0.0) so mobile phones can connect
+    port: 5173
+  }
 })

@@ -692,7 +692,7 @@ h1, h2, h3, h4, h5, h6 {
     padding-bottom: env(safe-area-inset-bottom, 8px);
     justify-content: space-around;
     align-items: center;
-    z-index: 999;
+    z-index: 10002;
   }
   
   .bottom-nav-item {
@@ -766,11 +766,12 @@ h1, h2, h3, h4, h5, h6 {
 .mock-arc-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 15, 30, 0.58);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  z-index: 997;
+  background: rgba(10, 15, 30, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 10000;
   animation: arcBackdropFadeIn 0.25s ease forwards;
+  touch-action: manipulation;
 }
 
 .mock-arc-container {
@@ -778,9 +779,11 @@ h1, h2, h3, h4, h5, h6 {
   bottom: 72px;
   right: 0;
   width: 320px;
+  max-width: 90vw;
   height: 260px;
-  pointer-events: none;
-  z-index: 998;
+  pointer-events: auto;
+  z-index: 10001;
+  touch-action: manipulation;
 }
 
 .mock-arc-svg-trail {
@@ -797,6 +800,7 @@ h1, h2, h3, h4, h5, h6 {
 .mock-arc-item {
   position: absolute;
   pointer-events: auto;
+  z-index: 10002;
 }
 
 .mock-arc-item.item-practice {
@@ -826,8 +830,10 @@ h1, h2, h3, h4, h5, h6 {
   border: none;
   outline: none;
   cursor: pointer;
-  padding: 0;
+  padding: 4px;
   user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
   transition: transform 0.15s ease;
 }
 
