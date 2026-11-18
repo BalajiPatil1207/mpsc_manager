@@ -878,7 +878,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
         <div className="flex-col gap-6">
           
           {/* Today's Tasks */}
-          <div className="glass-panel" style={{ padding: '24px' }}>
+          <div className="glass-panel dashboard-panel">
             <div className="flex-row justify-between" style={{ marginBottom: '20px', flexWrap: 'wrap', gap: '8px' }}>
               <div className="flex-col gap-1">
                 <h2 style={{ fontSize: '1.25rem', margin: 0 }}>📋 Today's Tasks</h2>
@@ -906,198 +906,150 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
             </div>
             
             {/* MPSC 3+3 Alternate Day Schedule Banner & Switcher */}
-            <div style={{
-              background: activeGroupKey === 'A' ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.12) 0%, rgba(37, 99, 235, 0.05) 100%)'
-                : activeGroupKey === 'B' ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.05) 100%)'
-                : 'linear-gradient(135deg, rgba(168, 85, 247, 0.12) 0%, rgba(147, 51, 234, 0.05) 100%)',
-              border: activeGroupKey === 'A' ? '1px solid rgba(59, 130, 246, 0.35)'
-                : activeGroupKey === 'B' ? '1px solid rgba(16, 185, 129, 0.35)'
-                : '1px solid rgba(168, 85, 247, 0.35)',
-              borderRadius: '16px',
-              padding: '14px 18px',
-              marginBottom: '18px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '12px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '12px',
-                  background: activeGroupKey === 'A' ? '#3b82f6' : activeGroupKey === 'B' ? '#10b981' : '#a855f7',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.25rem',
-                  fontWeight: 800,
-                  flexShrink: 0
-                }}>
-                  {activeGroupKey === 'A' ? 'A' : activeGroupKey === 'B' ? 'B' : 'C'}
-                </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+            <div className={`mpsc-schedule-banner group-${activeGroupKey.toLowerCase()}`}>
+              <div className="schedule-banner-top">
+                <div className="schedule-banner-left">
+                  <div className={`schedule-group-badge badge-${activeGroupKey.toLowerCase()}`}>
+                    {activeGroupKey === 'A' ? 'A' : activeGroupKey === 'B' ? 'B' : 'C'}
+                  </div>
+                  <div className="schedule-banner-titles">
+                    <div className="schedule-group-name">
                       {SCHEDULE_GROUPS[activeGroupKey]?.name}
-                    </strong>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    </div>
+                    <div className="schedule-group-days">
                       • {SCHEDULE_GROUPS[activeGroupKey]?.daysLabel}
-                    </span>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                    {activeGroupKey === 'A' && '🏛️ राज्यव्यवस्था + 📜 इतिहास + 📰 चालू घडामोडी + 📐 CSAT रोज'}
-                    {activeGroupKey === 'B' && '🌍 भूगोल + 🔬 सामान्य विज्ञान + 💰 अर्थव्यवस्था + 📐 CSAT रोज'}
-                    {activeGroupKey === 'C' && '🏆 नवीन वाचन शून्य: SRS रिव्हिजन + फुल मॉक + मिस्टेक बुक'}
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', background: 'rgba(0,0,0,0.25)', padding: '3px', borderRadius: '10px' }}>
-                  <button 
-                    onClick={() => handleApplyGroup('A')}
-                    style={{
-                      background: activeGroupKey === 'A' ? '#3b82f6' : 'transparent',
-                      color: activeGroupKey === 'A' ? '#fff' : 'var(--text-secondary)',
-                      border: 'none',
-                      padding: '5px 12px',
-                      borderRadius: '7px',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                    title="सोम, बुध, शुक्र: राज्यव्यवस्था, इतिहास, चालू घडामोडी + CSAT"
-                  >
-                    गट 'अ'
-                  </button>
-                  <button 
-                    onClick={() => handleApplyGroup('B')}
-                    style={{
-                      background: activeGroupKey === 'B' ? '#10b981' : 'transparent',
-                      color: activeGroupKey === 'B' ? '#fff' : 'var(--text-secondary)',
-                      border: 'none',
-                      padding: '5px 12px',
-                      borderRadius: '7px',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                    title="मंगळ, गुरु, शनि: भूगोल, विज्ञान, अर्थव्यवस्था + CSAT"
-                  >
-                    गट 'ब'
-                  </button>
-                  <button 
-                    onClick={() => handleApplyGroup('C')}
-                    style={{
-                      background: activeGroupKey === 'C' ? '#a855f7' : 'transparent',
-                      color: activeGroupKey === 'C' ? '#fff' : 'var(--text-secondary)',
-                      border: 'none',
-                      padding: '5px 12px',
-                      borderRadius: '7px',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      cursor: 'pointer'
-                    }}
-                    title="रविवार: उजळणी, मॉक टेस्ट, मिस्टेक बुक"
-                  >
-                    रविवार
-                  </button>
                 </div>
 
                 <button
                   onClick={() => setIsScheduleModalOpen(true)}
-                  className="btn"
-                  style={{
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1px solid var(--border-color)',
-                    color: 'var(--text-primary)',
-                    padding: '5px 12px',
-                    borderRadius: '8px',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    cursor: 'pointer'
-                  }}
+                  className="schedule-view-btn"
                   title="संपूर्ण आठवड्याचे ३+३ वेळापत्रक पहा"
                 >
-                  📅 वेळापत्रक
+                  📅 <span>वेळापत्रक</span>
+                </button>
+              </div>
+
+              {/* Subject pills */}
+              <div className="schedule-subjects-strip">
+                {getScheduleSubjectsPills(activeGroupKey).map((sub, i) => (
+                  <span key={i} className={`schedule-subject-pill ${sub.isCsat ? 'csat' : ''}`}>
+                    {sub.name}
+                  </span>
+                ))}
+              </div>
+
+              {/* Segmented Switcher Tabs */}
+              <div className="schedule-tabs-row">
+                <button 
+                  onClick={() => handleApplyGroup('A')}
+                  className={`schedule-tab-item ${activeGroupKey === 'A' ? 'active-a' : ''}`}
+                  title="सोम, बुध, शुक्र: राज्यव्यवस्था, इतिहास, चालू घडामोडी + CSAT"
+                >
+                  गट 'अ'
+                </button>
+                <button 
+                  onClick={() => handleApplyGroup('B')}
+                  className={`schedule-tab-item ${activeGroupKey === 'B' ? 'active-b' : ''}`}
+                  title="मंगळ, गुरु, शनि: भूगोल, विज्ञान, अर्थव्यवस्था + CSAT"
+                >
+                  गट 'ब'
+                </button>
+                <button 
+                  onClick={() => handleApplyGroup('C')}
+                  className={`schedule-tab-item ${activeGroupKey === 'C' ? 'active-c' : ''}`}
+                  title="रविवार: उजळणी, मॉक टेस्ट, मिस्टेक बुक"
+                >
+                  रविवार
                 </button>
               </div>
             </div>
 
-            <div className="flex-col gap-4">
+            <div className="flex-col gap-3">
               {(showAllTasks ? dailyTasks : dailyTasks.slice(0, 4)).map((task, idx) => (
                 <div 
                   key={task.id} 
-                  className="task-item" 
+                  className={`task-card-pro ${task.completed ? 'completed' : ''}`}
                   draggable={isEditingTasks}
                   onDragStart={(e) => { if(isEditingTasks) dragItem.current = idx; }}
                   onDragEnter={(e) => { if(isEditingTasks) dragOverItem.current = idx; }}
                   onDragEnd={isEditingTasks ? handleSort : undefined}
                   onDragOver={(e) => e.preventDefault()}
-                  style={{ background: task.completed ? 'rgba(34, 197, 94, 0.05)' : 'var(--glass-bg)', borderRadius: '12px', borderBottom: '1px solid var(--border-color)', opacity: task.completed ? 0.7 : 1, transition: 'all 0.3s ease', padding: '18px 16px', marginBottom: '8px', cursor: isEditingTasks ? 'grab' : 'default' }}
                 >
-                  <div className="flex-row gap-4" style={{ alignItems: 'center' }}>
-                    {isEditingTasks && (
-                       <div style={{ cursor: 'grab', color: 'var(--text-muted)' }}>
-                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                       </div>
-                    )}
-                    {isEditingTasks ? (
-                       <button onClick={() => handleDeleteTask(task.id)} style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Remove Task">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                       </button>
-                    ) : (
-                       task.completed ? <FiCheckCircle size={24} color="var(--success)" /> : <FiClock size={24} color="var(--accent-primary)" />
-                    )}
-                    <div className="flex-col gap-1" style={{ flex: 1 }}>
-                      <span style={{ fontWeight: 600, color: task.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>{task.title.replace(' (GKGS)', '')}</span>
-                      <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>
-                        🕒 {task.duration} {getTopicForTask(task.id) && <span>• <span style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', letterSpacing: '0.5px' }}>topic: {getTopicForTask(task.id)}</span></span>}
-                        {task.studyType && <span> • <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{task.studyType}</span></span>}
-                      </span>
+                  <div className="task-card-main-content">
+                    <div className="task-card-header">
+                      <div className="task-card-title-group">
+                        {isEditingTasks ? (
+                          <div style={{ cursor: 'grab', color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                          </div>
+                        ) : (
+                          <span className="task-status-icon">
+                            {task.completed ? <FiCheckCircle size={22} color="var(--success)" /> : <FiClock size={22} color="var(--accent-primary)" />}
+                          </span>
+                        )}
+                        <h4 className="task-card-title">
+                          {task.title.replace(' (GKGS)', '')}
+                        </h4>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span className="task-duration-badge">
+                          🕒 {task.duration}
+                        </span>
+                        {isEditingTasks && (
+                          <button onClick={() => handleDeleteTask(task.id)} style={{ background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', outline: 'none', padding: '2px', display: 'flex', alignItems: 'center' }} title="Remove Task">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    {!isEditingTasks && (
-                      task.completed ? (
-                        <button onClick={() => toggleTask(task.id, true)} className="btn task-action-btn" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)' }}>
-                          <span className="desktop-text">Undo</span>
-                          <FiRotateCcw className="mobile-icon" size={18} />
-                        </button>
-                      ) : (
-                        <div className="flex-row gap-2" style={{ alignItems: 'center' }}>
-                          <button 
-                            onClick={() => handleStartFocus(task)} 
-                            className="btn" 
-                            style={{ 
-                              background: 'var(--accent-glow)', 
-                              border: '1px solid var(--accent-primary)', 
-                              color: 'var(--accent-primary)', 
-                              padding: '6px 12px', 
-                              fontSize: '0.8rem', 
-                              fontWeight: 700, 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '4px',
-                              borderRadius: '8px',
-                              cursor: 'pointer'
-                            }} 
-                            title="या विषयासाठी डीप वर्क फोकस सुरू करा"
-                          >
-                            <FiPlay size={12} /> <span className="desktop-text">Focus</span>
-                          </button>
-                          <button onClick={() => toggleTask(task.id, false)} className="btn btn-primary task-action-btn">
-                            <span className="desktop-text">Complete</span>
-                            <FiCheck className="mobile-icon" size={18} />
-                          </button>
-                        </div>
-                      )
+
+                    {/* Topic and Study Type details */}
+                    {(getTopicForTask(task.id) || task.studyType) && (
+                      <div className="task-card-meta">
+                        {getTopicForTask(task.id) && (
+                          <span className="task-topic-chip">
+                            🎯 <strong>विषय:</strong> {getTopicForTask(task.id)}
+                          </span>
+                        )}
+                        {task.studyType && (
+                          <span className="task-study-type-chip">
+                            📝 {task.studyType}
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
+
+                  {/* Actions Bar */}
+                  {!isEditingTasks && (
+                    <div className="task-card-actions">
+                      {task.completed ? (
+                        <button onClick={() => toggleTask(task.id, true)} className="task-undo-btn">
+                          <FiRotateCcw size={15} /> <span>पुन्हा सुरू करा (Undo)</span>
+                        </button>
+                      ) : (
+                        <>
+                          <button 
+                            onClick={() => handleStartFocus(task)} 
+                            className="task-focus-btn" 
+                            title="या विषयासाठी डीप वर्क फोकस सुरू करा"
+                          >
+                            <FiPlay size={13} /> <span>Focus Timer</span>
+                          </button>
+                          <button 
+                            onClick={() => toggleTask(task.id, false)} 
+                            className="task-complete-btn" 
+                            title="टास्क पूर्ण मार्क करा"
+                          >
+                            <FiCheck size={16} /> <span>पूर्ण झाले (Done)</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
               {isEditingTasks && (
