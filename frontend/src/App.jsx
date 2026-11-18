@@ -174,10 +174,21 @@ function App() {
               applicationServerKey: 'BB9DI_XDO0ojtAPSffKN0pZ3F-WdnHmBaeibAbuHbe-0voUkJzatYvXA5awPLzSv8GyZQjYK6P9ZolQ3fahL5Mc' 
             });
 
-            new Notification("MahaPrep OS Active! 🚀", {
-              body: "Notifications are successfully enabled. You will get daily reminders!",
-              icon: "https://cdn-icons-png.flaticon.com/512/3242/3242257.png"
-            });
+            try {
+              if (swReg && swReg.showNotification) {
+                swReg.showNotification("MahaPrep OS Active! 🚀", {
+                  body: "Notifications are successfully enabled. You will get daily reminders!",
+                  icon: "https://cdn-icons-png.flaticon.com/512/3242/3242257.png"
+                });
+              } else {
+                new Notification("MahaPrep OS Active! 🚀", {
+                  body: "Notifications are successfully enabled. You will get daily reminders!",
+                  icon: "https://cdn-icons-png.flaticon.com/512/3242/3242257.png"
+                });
+              }
+            } catch (notifErr) {
+              console.warn("Push notification display bypassed on mobile:", notifErr);
+            }
           }
           
           await axios.post('https://mpsc-manager.onrender.com/api/notifications/subscribe', {
