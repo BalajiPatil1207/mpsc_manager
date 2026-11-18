@@ -525,6 +525,15 @@ const TakeTest = () => {
         timestamp: Date.now()
       });
       localStorage.setItem('mpsc_test_history', JSON.stringify(testHistory.slice(0, 30)));
+
+      // Record in mpsc_solved_tests set
+      try {
+        const solvedList = JSON.parse(localStorage.getItem('mpsc_solved_tests') || '[]');
+        if (!solvedList.includes(testId)) {
+          solvedList.push(testId);
+          localStorage.setItem('mpsc_solved_tests', JSON.stringify(solvedList));
+        }
+      } catch (e) {}
     } catch (histErr) {
       console.warn("Failed to store test history", histErr);
     }

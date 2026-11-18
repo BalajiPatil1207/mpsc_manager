@@ -740,6 +740,221 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ========================================================
+   CURVED ROTATING SPEED-DIAL ARC FOR MPSC TESTS (MOBILE)
+   ======================================================== */
+.bottom-nav-trigger {
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 6px;
+  font-family: inherit;
+}
+
+.arc-trigger-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
+}
+
+.arc-trigger-icon.open {
+  transform: rotate(90deg) scale(1.15);
+  color: var(--accent-primary, #6366f1);
+}
+
+.mock-arc-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 30, 0.58);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 997;
+  animation: arcBackdropFadeIn 0.25s ease forwards;
+}
+
+.mock-arc-container {
+  position: fixed;
+  bottom: 72px;
+  right: 0;
+  width: 320px;
+  height: 260px;
+  pointer-events: none;
+  z-index: 998;
+}
+
+.mock-arc-svg-trail {
+  position: absolute;
+  right: 12px;
+  bottom: 0px;
+  width: 175px;
+  height: 245px;
+  pointer-events: none;
+  opacity: 0.65;
+  animation: trailDraw 0.4s ease-out forwards;
+}
+
+.mock-arc-item {
+  position: absolute;
+  pointer-events: auto;
+}
+
+.mock-arc-item.item-practice {
+  bottom: 195px;
+  right: 12px;
+  animation: arcPop1 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.mock-arc-item.item-mega {
+  bottom: 130px;
+  right: 48px;
+  animation: arcPop2 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) 0.04s forwards;
+}
+
+.mock-arc-item.item-all {
+  bottom: 66px;
+  right: 86px;
+  animation: arcPop3 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) 0.08s forwards;
+}
+
+.mock-arc-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 0;
+  user-select: none;
+  transition: transform 0.15s ease;
+}
+
+.mock-arc-action-btn:active {
+  transform: scale(0.93);
+}
+
+.mock-arc-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+}
+
+.mock-arc-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.25;
+}
+
+.mock-arc-sub {
+  font-size: 0.66rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  line-height: 1.25;
+  margin-top: 1px;
+}
+
+.mock-arc-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  border: 2.5px solid rgba(255, 255, 255, 0.88);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mock-arc-action-btn:hover .mock-arc-circle {
+  transform: scale(1.06);
+}
+
+.circle-practice {
+  background: linear-gradient(135deg, #10b981, #059669);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45);
+}
+
+.circle-mega {
+  background: linear-gradient(135deg, #f97316, #ef4444);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
+}
+
+.circle-all {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+}
+
+@keyframes arcBackdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes trailDraw {
+  from {
+    opacity: 0;
+    stroke-dashoffset: 60;
+  }
+  to {
+    opacity: 0.65;
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes arcPop1 {
+  0% {
+    opacity: 0;
+    transform: translate(30px, 140px) scale(0.2) rotate(-90deg);
+  }
+  75% {
+    transform: translate(-3px, -4px) scale(1.05) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes arcPop2 {
+  0% {
+    opacity: 0;
+    transform: translate(25px, 90px) scale(0.2) rotate(-65deg);
+  }
+  75% {
+    transform: translate(-3px, -3px) scale(1.05) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes arcPop3 {
+  0% {
+    opacity: 0;
+    transform: translate(20px, 45px) scale(0.2) rotate(-45deg);
+  }
+  75% {
+    transform: translate(-3px, -2px) scale(1.05) rotate(4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1) rotate(0deg);
+  }
+}
+
+/* ========================================================
    NOTIFICATION CENTER STYLES
    ======================================================== */
 .notification-backdrop {

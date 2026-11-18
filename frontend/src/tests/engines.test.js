@@ -28,6 +28,12 @@ import {
   getCardIntervalPreviews
 } from '../utils/srsEngine.js';
 
+import {
+  doesTestMatchTodaySubjects,
+  getSolvedTestIds,
+  PYQ_DRILLS
+} from '../utils/testLauncher.js';
+
 // ==========================================
 // 1. Deficit Tracker Unit Tests
 // ==========================================
@@ -212,3 +218,48 @@ test('getScheduleForDate routes Sunday to Group C (Consolidation Day)', () => {
   assert.ok(taskIds.includes('mistake_book_audit'));
   assert.ok(taskIds.includes('backlog_recovery'));
 });
+
+// ==========================================
+// 4. Test Launcher Unit Tests
+// ==========================================
+
+test('doesTestMatchTodaySubjects correctly filters tests by timetable group', () => {
+  const polityTest = { subject: 'भारतीय राज्यव्यवस्था', title: 'संविधान सभा' };
+  const historyTest = { subject: 'इतिहास', title: 'समाजसुधारक' };
+  const geoTest = { subject: 'भूगोल', title: 'महाराष्ट्राच्या नद्या' };
+  const sciTest = { subject: 'सामान्य विज्ञान', title: 'जीवशास्त्र' };
+  const csatTest = { subject: 'CSAT', title: 'अंकगणित व बुद्धिमत्ता' };
+
+  // Group A (Mon/Wed/Fri): Polity, History, Current Affairs + CSAT
+  assert.equal(doesTestMatchTodaySubjects(polityTest, 'A'), true);
+  assert.equal(doesTestMatchTodaySubjects(historyTest, 'A'), true);
+  assert.equal(doesTestMatchTodaySubjects(csatTest, 'A'), true);
+  assert.equal(doesTestMatchTodaySubjects(geoTest, 'A'), false);
+  assert.equal(doesTestMatchTodaySubjects(sciTest, 'A'), false);
+
+  // Group B (Tue/Thu/Sat): Geography, Science, Economics + CSAT
+  assert.equal(doesTestMatchTodaySubjects(geoTest, 'B'), true);
+  assert.equal(doesTestMatchTodaySubjects(sciTest, 'B'), true);
+  assert.equal(doesTestMatchTodaySubjects(csatTest, 'B'), true);
+  assert.equal(doesTestMatchTodaySubjects(polityTest, 'B'), false);
+  assert.equal(doesTestMatchTodaySubjects(historyTest, 'B'), false);
+
+  // Group C (Sunday): All subjects eligible
+  assert.equal(doesTestMatchTodaySubjects(polityTest, 'C'), true);
+  assert.equal(doesTestMatchTodaySubjects(geoTest, 'C'), true);
+  assert.equal(doesTestMatchTodaySubjects(csatTest, 'C'), true);
+});
+
+test('getSolvedTestIds combines solved tests and history', () => {
+  localStorage.clear();
+  localStorage.setItem('mpsc_solved_tests', JSON.stringify(['test_1', 'test_2']));
+  localStorage.setItem('mpsc_test_history', JSON.stringify([{ testId: 'test_2' }, { testId: 'test_3' }]));
+
+  const solvedSet = getSolvedTestIds();
+  assert.equal(solvedSet.size, 3);
+  assert.ok(solvedSet.has('test_1'));
+  assert.ok(solvedSet.has('test_2'));
+  assert.ok(solvedSet.has('test_3'));
+  assert.ok(!solvedSet.has('test_4'));
+});
+
