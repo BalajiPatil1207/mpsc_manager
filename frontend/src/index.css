@@ -1006,7 +1006,43 @@ h1, h2, h3, h4, h5, h6 {
   .dashboard-panel {
     padding: 14px 12px !important;
   }
-  .stat-cards { grid-template-columns: 1fr 1fr; } 
+  .stat-cards {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 10px !important;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 12px 10px 12px !important;
+    margin: 0 -12px 18px -12px !important;
+    scrollbar-width: none;
+    width: calc(100% + 24px) !important;
+  }
+  .stat-cards::-webkit-scrollbar {
+    display: none;
+  }
+  .stat-cards .stat-card {
+    flex: 0 0 155px !important;
+    min-width: 155px !important;
+    max-width: 165px !important;
+    scroll-snap-align: start;
+    padding: 14px 12px !important;
+    margin: 0 !important;
+    border-radius: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    gap: 8px !important;
+  }
+  .stat-cards .stat-value {
+    font-size: 1.5rem !important;
+    line-height: 1.2 !important;
+  }
+  .stat-cards .stat-label {
+    font-size: 0.72rem !important;
+    letter-spacing: 0.5px !important;
+  } 
   .dashboard-grid { grid-template-columns: 1fr !important; } 
   .heading-gradient { font-size: 1.65rem !important; } 
   .date-input-theme { width: 100%; } 
