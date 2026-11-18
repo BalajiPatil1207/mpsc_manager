@@ -4,9 +4,9 @@
 // 2. Daily Mega Test: Instant launch of today's official 100 Qs Mega Test
 // 3. Mock Explorer: Standard navigation to full mock list
 
-import { getScheduleForDate, getLogicalDateString } from './deficitTracker';
-import { generateDynamicMpscTest } from './dynamicMockGenerator';
-import { MPSC_SEED_MOCKS } from '../data/mpscMockTestsSeed';
+import { getScheduleForDate, getLogicalDateString } from './deficitTracker.js';
+import { generateDynamicMpscTest } from './dynamicMockGenerator.js';
+import { MPSC_SEED_MOCKS } from '../data/mpscMockTestsSeed.js';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 

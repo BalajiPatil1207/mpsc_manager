@@ -145,7 +145,7 @@ const Sidebar = ({ user, isOpen, closeSidebar, onSync, isSyncing }) => {
         isDanger={true}
         onConfirm={async () => {
           setShowLogoutModal(false);
-          localStorage.removeItem('guest_user');
+          try { localStorage.setItem('guest_user', 'false'); } catch (e) {}
           try { await signOut(auth); } catch(e) {}
           navigate('/login');
         }}

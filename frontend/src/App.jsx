@@ -60,13 +60,31 @@ function App() {
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   
   const [showIntro, setShowIntro] = useState(() => {
-    return sessionStorage.getItem('intro_played') ? false : true;
+    try {
+      // Skip heavy 7.5MB video intro on mobile devices (< 768px) so app opens instantly without freezing
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        return false;
+      }
+      return sessionStorage.getItem('intro_played') ? false : true;
+    } catch (e) {
+      return false;
+    }
   });
 
   const hideIntro = () => {
-    sessionStorage.setItem('intro_played', 'true');
+    try {
+      sessionStorage.setItem('intro_played', 'true');
+    } catch (e) {}
     setShowIntro(false);
   };
+
+  // Intro safety auto-dismiss: never block user for more than 3.5s
+  useEffect(() => {
+    if (showIntro) {
+      const timer = setTimeout(hideIntro, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [showIntro]);
 
   useEffect(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
@@ -193,11 +211,14 @@ function App() {
         setUser(usr); // Set user after loading DB cache & features!
         registerPush(usr.uid, usr.email);
       } else {
-        const isGuest = localStorage.getItem('guest_user') === 'true';
-        if (isGuest) {
-          setUser({ uid: 'guest_user_101', displayName: 'MPSC Aspirant', email: 'aspirant@mpsc.local', features: {} });
-        } else {
+        const guestVal = localStorage.getItem('guest_user');
+        if (guestVal === 'false') {
+          // Explicitly logged out
           setUser(null);
+        } else {
+          // Default: Seamless instant access for all devices (mobile & desktop)
+          try { localStorage.setItem('guest_user', 'true'); } catch (e) {}
+          setUser({ uid: 'guest_user_101', displayName: 'MPSC Aspirant', email: 'aspirant@mpsc.local', features: {} });
         }
       }
       setLoading(false);
@@ -288,6 +309,7 @@ function App() {
            muted
            playsInline
            onEnded={hideIntro} 
+           onError={hideIntro}
            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
          />
          <button onClick={hideIntro} style={{ position: 'absolute', top: '20px', right: '20px', background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(10px)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', zIndex: 100000, fontSize: '0.875rem' }}>Skip Intro</button>

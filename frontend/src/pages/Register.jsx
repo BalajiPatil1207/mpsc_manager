@@ -30,8 +30,8 @@ const Register = () => {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-dark)' }}>
-      <div className="glass-panel flex-col gap-4" style={{ width: '400px', padding: '32px' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-primary)', padding: '16px' }}>
+      <div className="glass-panel flex-col gap-4" style={{ width: '100%', maxWidth: '400px', padding: '24px' }}>
         <h2 className="heading-gradient" style={{ fontSize: '2rem', textAlign: 'center' }}>Study OS</h2>
         <p style={{ color: 'var(--text-secondary)', textAlign: 'center', marginBottom: '16px' }}>Create your competitive exam account.</p>
         
