@@ -622,7 +622,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
             </button>
           </div>
           <div className="flex-row gap-2 align-center">
-            <h1 className="heading-gradient" style={{ fontSize: '2.5rem', margin: 0 }}>
+            <h1 className="heading-gradient dashboard-hero-title" style={{ margin: 0 }}>
               Good Morning, <span style={{ color: 'var(--accent-primary)', WebkitTextFillColor: 'var(--accent-primary)', textShadow: '0 0 20px var(--accent-glow)' }}>{user?.displayName ? user.displayName.split(' ')[0] : 'Student'}</span>
             </h1>
             <span style={{ fontSize: '2rem' }}>👋</span>
@@ -734,7 +734,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
 
       {/* Interactive Study Deficit & Backlog Banner */}
       <div 
-        className="glass-card" 
+        className="glass-card deficit-banner-card" 
         style={{ 
           padding: '20px 24px', 
           background: deficitState.deficitHours > 0 
@@ -749,7 +749,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           flexWrap: 'wrap'
         }}
       >
-        <div className="flex-row gap-4 align-center" style={{ flex: 1, minWidth: '280px' }}>
+        <div className="flex-row gap-4 align-center deficit-banner-content" style={{ flex: 1, minWidth: '280px' }}>
           <div style={{
             width: '48px',
             height: '48px',
@@ -792,10 +792,10 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           </div>
         </div>
 
-        <div className="flex-row gap-2 align-center">
+        <div className="flex-row gap-2 align-center deficit-banner-actions">
           <button 
             onClick={() => setIsDeficitModalOpen(true)}
-            className="btn"
+            className="btn deficit-action-btn"
             style={{ 
               background: deficitState.deficitHours > 0 ? 'var(--danger)' : 'var(--accent-primary)', 
               color: '#fff', 
@@ -814,7 +814,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           {deficitState.deficitHours > 0 && (
             <button
               onClick={handleRequestResetDeficit}
-              className="btn"
+              className="btn deficit-action-btn"
               style={{ 
                 background: 'rgba(239, 68, 68, 0.12)', 
                 color: 'var(--danger)', 
