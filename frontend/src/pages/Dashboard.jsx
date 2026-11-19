@@ -592,7 +592,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
   };
 
   return (
-    <div className="flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.6s ease-out' }}>
+    <div className="dashboard-wrapper flex-col gap-6" style={{ paddingBottom: '40px', animation: 'fadeIn 0.6s ease-out' }}>
       
       {showTaskVideo && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 99999, background: '#000' }}>
@@ -632,7 +632,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
         
         <div className="dashboard-header-actions stat-cards-carousel">
           {/* Days Left Card */}
-          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.8s ease-out', flex: 1, minWidth: '130px', gap: '8px', textAlign: 'center' }}>
+          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.8s ease-out', flex: 1, minWidth: 0, gap: '8px', textAlign: 'center' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', margin: '0 auto' }}>⏳</div>
             <div className="flex-col" style={{ alignItems: 'center' }}>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--danger)' }}><AnimatedNumber value={calculateDaysLeft()} /> <span style={{fontSize:'1rem'}}>Days</span></span>
@@ -648,7 +648,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
               padding: '16px', 
               animation: 'slideUp 0.85s ease-out', 
               flex: 1, 
-              minWidth: '130px', 
+              minWidth: 0, 
               gap: '8px', 
               textAlign: 'center',
               cursor: 'pointer',
@@ -688,7 +688,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
               padding: '16px', 
               animation: 'slideUp 0.88s ease-out', 
               flex: 1, 
-              minWidth: '130px', 
+              minWidth: 0, 
               gap: '8px', 
               textAlign: 'center',
               cursor: 'pointer',
@@ -722,7 +722,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           </div>
 
           {/* Total XP Card */}
-          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.9s ease-out', flex: 1, minWidth: '130px', gap: '8px', textAlign: 'center' }}>
+          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.9s ease-out', flex: 1, minWidth: 0, gap: '8px', textAlign: 'center' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '4px solid var(--accent-primary)', borderLeftColor: 'rgba(255,255,255,0.1)', transform: 'rotate(45deg)', margin: '0 auto' }}></div>
             <div className="flex-col" style={{ alignItems: 'center', marginTop: '4px' }}>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-secondary)' }}><AnimatedNumber value={parseFloat(localStorage.getItem('xp_total')) || 0} /></span>
@@ -749,7 +749,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           flexWrap: 'wrap'
         }}
       >
-        <div className="flex-row gap-4 align-center deficit-banner-content" style={{ flex: 1, minWidth: '280px' }}>
+        <div className="flex-row gap-4 align-center deficit-banner-content" style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             width: '48px',
             height: '48px',
@@ -879,8 +879,8 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           
           {/* Today's Tasks */}
           <div className="glass-panel dashboard-panel">
-            <div className="flex-row justify-between" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-              <div className="flex-col gap-1">
+            <div className="flex-row justify-between tasks-panel-header" style={{ marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+              <div className="flex-col gap-1" style={{ minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <h2 style={{ fontSize: '1.25rem', margin: 0 }}>📋 Today's Tasks</h2>
                   <span className="tasks-swipe-hint">👈 स्वाईप करा 👉</span>
@@ -889,7 +889,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
                   new tasks fetched: {localStorage.getItem('last_task_date') || new Date().toLocaleDateString('en-GB')} at {localStorage.getItem('last_task_time') || new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true }).toLowerCase()}
                 </span>
               </div>
-              <div className="flex-row gap-2">
+              <div className="flex-row gap-2 tasks-panel-actions">
                 <button onClick={() => setIsEditingTasks(!isEditingTasks)} className="btn" style={{ padding: '8px', background: isEditingTasks ? 'var(--warning)' : 'rgba(255,255,255,0.05)', color: isEditingTasks ? '#000' : 'var(--text-primary)', border: '1px solid var(--border-color)', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title={isEditingTasks ? "Done Editing" : "Edit Tasks"}>
                   {isEditingTasks ? <FiCheck size={16} /> : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>}
                 </button>
