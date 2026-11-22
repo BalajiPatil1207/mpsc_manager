@@ -16,15 +16,18 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import EditQuestionModal from '../components/EditQuestionModal';
+import { saveTestOverride, updateTestInAllCaches, applyTestOverrides } from './TakeTest';
 
 const MistakeBook = () => {
-  // 1. Instant 0ms hydration from local cache
+  // 1. Instant 0ms hydration from local cache with overrides applied
   const [mistakes, setMistakes] = useState(() => {
     try {
       const cached = localStorage.getItem('mpsc_cached_mistakes');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.map(m => applyTestOverrides(m, m.parentTestId || m.id || m._id));
+        }
       }
       return [];
     } catch (e) {
@@ -55,31 +58,66 @@ const MistakeBook = () => {
     if (!targetTest) return;
 
     const updatedQuestions = [...(targetTest.questions || [])];
-    if (!updatedQuestions[qIndex]) return;
+    const q = updatedQuestions[qIndex];
+    if (!q) return;
 
-    updatedQuestions[qIndex] = {
-      ...updatedQuestions[qIndex],
-      question,
-      options,
-      correctOption,
-      explanation
-    };
+    const originalQIdx = q.originalQIndex !== undefined ? q.originalQIndex : qIndex;
+    const oldQText = (q.question || '').trim();
+
+    // Check if the corrected option now matches what the user selected:
+    const isNowCorrect = q.userSelectedOption !== undefined && q.userSelectedOption === correctOption;
+
+    let nextQuestions;
+    if (isNowCorrect) {
+      nextQuestions = updatedQuestions.filter((_, idx) => idx !== qIndex);
+      toast.success("✨ हे उत्तर योग्य ठरल्यामुळे मिस्टेक बुकमधून हा प्रश्न हटवला गेला!", { icon: '🎉', duration: 4500 });
+    } else {
+      updatedQuestions[qIndex] = {
+        ...q,
+        question,
+        options,
+        correctOption,
+        explanation
+      };
+      nextQuestions = updatedQuestions;
+      toast.success("✅ प्रश्न आणि पर्याय यशस्वीरीत्या अपडेट केले!");
+    }
 
     const updatedMistakes = mistakes.map(m => {
       if ((m.id || m._id) === testId) {
-        return { ...m, questions: updatedQuestions };
+        return { 
+          ...m, 
+          questions: nextQuestions,
+          timeLimit: Math.max(nextQuestions.length, 5),
+          updatedAt: new Date().toISOString()
+        };
       }
       return m;
-    });
+    }).filter(m => (m.questions || []).length > 0);
 
     setMistakes(updatedMistakes);
     localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(updatedMistakes));
     window.dispatchEvent(new Event('mpsc_mistakes_updated'));
-    toast.success("✅ प्रश्न आणि पर्याय यशस्वीरीत्या अपडेट केले!");
+    window.dispatchEvent(new Event('storage'));
+
+    // Propagate to parent test & all caches so original test reflects these fixes too!
+    const parentId = targetTest.parentTestId || testId;
+    saveTestOverride(parentId, originalQIdx, oldQText, {
+      question,
+      options,
+      correctOption,
+      explanation
+    });
+    updateTestInAllCaches(parentId, originalQIdx, oldQText, {
+      question,
+      options,
+      correctOption,
+      explanation
+    });
 
     try {
       await axios.patch(`https://mpsc-manager.onrender.com/api/custom-tests/${testId}/edit-question`, {
-        questionIndex: qIndex,
+        questionIndex: originalQIdx,
         question,
         options,
         correctOption,
@@ -135,7 +173,7 @@ const MistakeBook = () => {
           }
         });
 
-        const combined = Array.from(mergedMap.values());
+        const combined = Array.from(mergedMap.values()).map(m => applyTestOverrides(m, m.parentTestId || m.id || m._id));
         setMistakes(combined);
         try {
           localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(combined));
@@ -161,7 +199,7 @@ const MistakeBook = () => {
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed)) {
-            setMistakes(parsed);
+            setMistakes(parsed.map(m => applyTestOverrides(m, m.parentTestId || m.id || m._id)));
           }
         }
       } catch (e) {}

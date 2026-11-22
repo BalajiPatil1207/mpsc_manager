@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 import { MPSC_SEED_MOCKS } from '../data/mpscMockTestsSeed';
 import { generateDynamicMpscTest } from '../utils/dynamicMockGenerator';
 import EditQuestionModal from '../components/EditQuestionModal';
-import { saveTestOverride, updateTestInAllCaches } from './TakeTest';
+import { saveTestOverride, updateTestInAllCaches, updateMistakeBookOnQuestionEdit, updateMistakeBookMetaOnTestEdit } from './TakeTest';
 
 const MockTests = () => {
   const [hasPlan, setHasPlan] = useState(false);
@@ -201,6 +201,12 @@ const MockTests = () => {
       const cachedPractice = JSON.parse(localStorage.getItem('mpsc_cached_practice') || '[]');
       const updatedP = cachedPractice.map(p => (p._id || p.id) === targetId ? { ...p, ...updatedTest } : p);
       localStorage.setItem('mpsc_cached_practice', JSON.stringify(updatedP));
+
+      updateMistakeBookMetaOnTestEdit(targetId, {
+        title: updatedTest.title,
+        subject: updatedTest.subject,
+        topic: updatedTest.topic
+      });
     } catch(e) {}
 
     try {
@@ -252,8 +258,14 @@ const MockTests = () => {
       explanation
     });
 
-    // 3. Update all local caches
+    // 3. Update all local caches (mocks, practice & mistake book)
     updateTestInAllCaches(targetId, originalQIdx, qText, {
+      question,
+      options,
+      correctOption,
+      explanation
+    });
+    updateMistakeBookOnQuestionEdit(targetId, originalQIdx, qText, {
       question,
       options,
       correctOption,

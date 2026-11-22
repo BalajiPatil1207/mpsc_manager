@@ -8,7 +8,7 @@ import { generateDynamicMpscTest } from '../utils/dynamicMockGenerator';
 import { normalizeTopicName } from '../utils/textUtils';
 import { CORE_MPSC_SUBJECTS, getSubjectXp } from '../utils/xpTracker';
 import EditQuestionModal from '../components/EditQuestionModal';
-import { saveTestOverride, updateTestInAllCaches } from './TakeTest';
+import { saveTestOverride, updateTestInAllCaches, updateMistakeBookOnQuestionEdit, updateMistakeBookMetaOnTestEdit } from './TakeTest';
 
 // Master catalog of MPSC PYQ Drills across core subjects
 const MPSC_PYQ_CATALOG = [
@@ -251,6 +251,12 @@ const Practice = () => {
       const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
       const updatedM = cachedMocks.map(m => (m._id || m.id) === targetId ? { ...m, ...updatedTest } : m);
       localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updatedM));
+
+      updateMistakeBookMetaOnTestEdit(targetId, {
+        title: updatedTest.title,
+        subject: updatedTest.subject,
+        topic: cleanTopic
+      });
     } catch(e) {}
 
     try {
@@ -302,8 +308,14 @@ const Practice = () => {
       explanation
     });
 
-    // 3. Update all local caches
+    // 3. Update all local caches (mocks, practice & mistake book)
     updateTestInAllCaches(targetId, originalQIdx, qText, {
+      question,
+      options,
+      correctOption,
+      explanation
+    });
+    updateMistakeBookOnQuestionEdit(targetId, originalQIdx, qText, {
       question,
       options,
       correctOption,

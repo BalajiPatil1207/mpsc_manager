@@ -153,6 +153,136 @@ export const saveTestOverride = (currentTestId, originalQIdx, qText, overrideDat
   }
 };
 
+export const updateMistakeBookOnQuestionEdit = (currentTestId, originalQIdx, oldQText, updatePayload, userAns = undefined) => {
+  try {
+    const raw = localStorage.getItem('mpsc_cached_mistakes');
+    if (!raw) return;
+    const cachedMistakes = JSON.parse(raw);
+    if (!Array.isArray(cachedMistakes) || cachedMistakes.length === 0) return;
+
+    const trimmedOld = (oldQText || '').trim();
+    const trimmedNew = (updatePayload.question || '').trim();
+    const newCorrect = updatePayload.correctOption;
+
+    let modified = false;
+
+    const updatedMistakes = cachedMistakes.map(mock => {
+      const mockId = mock._id || mock.id;
+      const isParentMatch = mockId === currentTestId || mock.parentTestId === currentTestId;
+      
+      if (!Array.isArray(mock.questions)) return mock;
+
+      let mockChanged = false;
+      const updatedQuestions = [];
+
+      mock.questions.forEach((mq) => {
+        const mqText = (mq.question || '').trim();
+        const isMatch = (
+          (isParentMatch && mq.originalQIndex !== undefined && mq.originalQIndex === originalQIdx) ||
+          (trimmedOld && mqText === trimmedOld) ||
+          (trimmedNew && mqText === trimmedNew)
+        );
+
+        if (isMatch) {
+          mockChanged = true;
+          modified = true;
+
+          // Determine user's selected answer: either explicitly passed or from the mistake question record
+          const selectedAns = userAns !== undefined ? userAns : mq.userSelectedOption;
+          const isNowCorrect = (selectedAns !== undefined && newCorrect !== undefined && selectedAns === newCorrect);
+
+          if (isNowCorrect) {
+            // It's no longer a mistake! Do not add to updatedQuestions (removes it from mistake book)
+            return;
+          }
+
+          // Otherwise update question text, options, correctOption, explanation
+          updatedQuestions.push({
+            ...mq,
+            question: updatePayload.question !== undefined ? updatePayload.question : mq.question,
+            options: updatePayload.options !== undefined ? updatePayload.options : mq.options,
+            correctOption: newCorrect !== undefined ? newCorrect : mq.correctOption,
+            explanation: updatePayload.explanation !== undefined ? updatePayload.explanation : mq.explanation,
+            originalQIndex: mq.originalQIndex !== undefined ? mq.originalQIndex : originalQIdx
+          });
+        } else {
+          updatedQuestions.push(mq);
+        }
+      });
+
+      if (mockChanged) {
+        return {
+          ...mock,
+          questions: updatedQuestions,
+          timeLimit: Math.max(updatedQuestions.length, 5),
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return mock;
+    }).filter(mock => Array.isArray(mock.questions) && mock.questions.length > 0);
+
+    if (modified) {
+      localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(updatedMistakes));
+
+      // Also sync to mpsc_cached_mocks if mistake mocks are mirrored there
+      try {
+        const rawMocks = localStorage.getItem('mpsc_cached_mocks');
+        if (rawMocks) {
+          const cachedMocks = JSON.parse(rawMocks);
+          const updatedMocks = cachedMocks.map(m => {
+            const mId = m._id || m.id;
+            const foundMistake = updatedMistakes.find(um => (um._id || um.id) === mId);
+            return foundMistake ? { ...m, ...foundMistake } : m;
+          }).filter(m => {
+            if (m.isMistakeMock) {
+              return updatedMistakes.some(um => (um._id || um.id) === (m._id || m.id));
+            }
+            return true;
+          });
+          localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updatedMocks));
+        }
+      } catch(e) {}
+
+      window.dispatchEvent(new Event('mpsc_mistakes_updated'));
+      window.dispatchEvent(new Event('storage'));
+    }
+  } catch (e) {
+    console.warn("Failed to sync mistake book on question edit:", e);
+  }
+};
+
+export const updateMistakeBookMetaOnTestEdit = (currentTestId, { title, subject, topic }) => {
+  try {
+    const raw = localStorage.getItem('mpsc_cached_mistakes');
+    if (!raw) return;
+    const cachedMistakes = JSON.parse(raw);
+    if (!Array.isArray(cachedMistakes) || cachedMistakes.length === 0) return;
+
+    let modified = false;
+    const updated = cachedMistakes.map(mock => {
+      if ((mock._id || mock.id) === currentTestId || mock.parentTestId === currentTestId) {
+        modified = true;
+        return {
+          ...mock,
+          title: title ? `Mistakes: ${title}` : mock.title,
+          subject: subject || mock.subject,
+          topic: topic || mock.topic,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return mock;
+    });
+
+    if (modified) {
+      localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(updated));
+      window.dispatchEvent(new Event('mpsc_mistakes_updated'));
+      window.dispatchEvent(new Event('storage'));
+    }
+  } catch (e) {
+    console.warn("Failed to sync mistake book meta:", e);
+  }
+};
+
 export const updateTestInAllCaches = (currentTestId, originalQIdx, qText, updatePayload) => {
   const cacheKeys = ['mpsc_cached_mocks', 'mpsc_cached_practice'];
   cacheKeys.forEach(key => {
@@ -191,51 +321,20 @@ export const updateTestInAllCaches = (currentTestId, originalQIdx, qText, update
       }
     } catch(e) {}
   });
+
+  // Always sync Mistake Book as well
+  updateMistakeBookOnQuestionEdit(currentTestId, originalQIdx, qText, updatePayload);
 };
 
 export const updateMistakeBookForQuestion = (currentTestId, questionObj, userAns) => {
-  try {
-    const cachedMistakes = JSON.parse(localStorage.getItem('mpsc_cached_mistakes') || '[]');
-    const isNowCorrect = userAns !== undefined && userAns === questionObj.correctOption;
-    
-    let changed = false;
-    const updated = cachedMistakes.map(mock => {
-      if ((mock._id || mock.id) === currentTestId || mock.parentTestId === currentTestId) {
-        if (Array.isArray(mock.questions)) {
-          if (isNowCorrect) {
-            const filtered = mock.questions.filter(mq => (mq.question || '').trim() !== (questionObj.question || '').trim());
-            if (filtered.length !== mock.questions.length) {
-              changed = true;
-              return { ...mock, questions: filtered, timeLimit: Math.max(filtered.length, 5) };
-            }
-          } else {
-            const mapped = mock.questions.map(mq => {
-              if ((mq.question || '').trim() === (questionObj.question || '').trim()) {
-                changed = true;
-                return {
-                  ...mq,
-                  correctOption: questionObj.correctOption,
-                  options: questionObj.options || mq.options,
-                  explanation: questionObj.explanation || mq.explanation
-                };
-              }
-              return mq;
-            });
-            return { ...mock, questions: mapped };
-          }
-        }
-      }
-      return mock;
-    }).filter(mock => !Array.isArray(mock.questions) || mock.questions.length > 0);
-
-    if (changed) {
-      localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(updated));
-      window.dispatchEvent(new Event('mpsc_mistakes_updated'));
-      window.dispatchEvent(new Event('storage'));
-    }
-  } catch (e) {
-    console.warn("Mistake book update error:", e);
-  }
+  const qText = (questionObj.question || '').trim();
+  const origIdx = questionObj.originalQIndex !== undefined ? questionObj.originalQIndex : 0;
+  updateMistakeBookOnQuestionEdit(currentTestId, origIdx, qText, {
+    question: questionObj.question,
+    options: questionObj.options,
+    correctOption: questionObj.correctOption,
+    explanation: questionObj.explanation
+  }, userAns);
 };
 
 export const updateTestHistoryScore = (currentTestId, newStats) => {
@@ -1051,13 +1150,19 @@ const TakeTest = () => {
       explanation
     });
 
-    // 2. Update all mock/practice caches
+    // 2. Update all mock/practice caches & mistake book
     updateTestInAllCaches(testId, originalQIdx, qText, {
       question,
       options,
       correctOption,
       explanation
     });
+    updateMistakeBookOnQuestionEdit(testId, originalQIdx, qText, {
+      question,
+      options,
+      correctOption,
+      explanation
+    }, answers[qIndex]);
 
     // 3. Recalculate score immediately if test was submitted
     if (submitted) {
