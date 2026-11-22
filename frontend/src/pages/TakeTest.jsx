@@ -1079,7 +1079,17 @@ const TakeTest = () => {
       }
       toast.success(scoreMsg, { id: 'edit-q-toast', duration: 4500, icon: '🎯' });
     } else {
-      toast.success('✅ बदल यशस्वीरीत्या सेव्ह झाले!', { id: 'edit-q-toast' });
+      // If ongoing test, update active session in localStorage immediately
+      try {
+        const sessionKey = `mpsc_active_test_${testId}`;
+        const savedSessionRaw = localStorage.getItem(sessionKey);
+        if (savedSessionRaw) {
+          const session = JSON.parse(savedSessionRaw);
+          session.questions = updatedQuestions;
+          localStorage.setItem(sessionKey, JSON.stringify(session));
+        }
+      } catch(e) {}
+      toast.success('✅ प्रश्न, पर्याय व बरोबर उत्तर तात्काळ सेव्ह झाले! टेस्ट सुरू ठेवा.', { id: 'edit-q-toast', duration: 4500, icon: '🎯' });
     }
 
     // 4. Sync to Backend
@@ -1889,8 +1899,38 @@ const TakeTest = () => {
               })()}
 
               {!submitted && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingQuestionModalData({
+                      qIndex,
+                      originalQIndex: q.originalQIndex !== undefined ? q.originalQIndex : qIndex,
+                      question: q.question,
+                      options: q.options || [],
+                      correctOption: q.correctOption,
+                      explanation: q.explanation || ''
+                    })}
+                    className="btn"
+                    style={{
+                      padding: '7px 14px',
+                      fontSize: '0.8rem',
+                      background: 'rgba(59, 130, 246, 0.12)',
+                      color: 'var(--info)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                    title="हा प्रश्न, पर्याय किंवा उत्तर बदलण्यासाठी येथे क्लिक करा"
+                  >
+                    <FiEdit size={13} /> ✏️ प्रश्न / पर्याय एडिट करा
+                  </button>
+
                   <button 
+                    type="button"
                     onClick={() => toggleReview(qIndex)}
                     style={{ 
                       padding: '8px 16px', background: reviews[qIndex] ? 'rgba(245, 158, 11, 0.2)' : 'var(--glass-bg)', 

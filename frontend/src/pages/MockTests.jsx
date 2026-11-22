@@ -6,9 +6,12 @@ import { auth } from '../firebase';
 import { toast } from 'react-hot-toast';
 import { MPSC_SEED_MOCKS } from '../data/mpscMockTestsSeed';
 import { generateDynamicMpscTest } from '../utils/dynamicMockGenerator';
+import EditQuestionModal from '../components/EditQuestionModal';
+import { saveTestOverride, updateTestInAllCaches } from './TakeTest';
 
 const MockTests = () => {
   const [hasPlan, setHasPlan] = useState(false);
+  const [editingQuestionModalData, setEditingQuestionModalData] = useState(null);
   const [history, setHistory] = useState(() => {
     try {
       const cached = localStorage.getItem('mpsc_cached_mocks');
@@ -163,6 +166,23 @@ const MockTests = () => {
     navigate(`/test/${newTest.id}`);
   };
 
+  const handleOpenEditTest = (testObj) => {
+    let fullTest = { ...testObj };
+    const targetId = fullTest._id || fullTest.id;
+    if (!Array.isArray(fullTest.questions) || fullTest.questions.length === 0) {
+      try {
+        const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+        const mMatch = cachedMocks.find(m => (m._id || m.id) === targetId);
+        if (mMatch?.questions) fullTest.questions = mMatch.questions;
+        else {
+          const sMatch = MPSC_SEED_MOCKS.find(s => (s._id || s.id) === targetId);
+          if (sMatch?.questions) fullTest.questions = sMatch.questions;
+        }
+      } catch(e) {}
+    }
+    setEditingTest(fullTest);
+  };
+
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     const updatedTest = { ...editingTest };
@@ -172,6 +192,17 @@ const MockTests = () => {
     setHistory(history.map(h => (h._id || h.id) === targetId ? updatedTest : h));
     setEditingTest(null);
 
+    // Update in local caches too
+    try {
+      const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+      const updatedM = cachedMocks.map(m => (m._id || m.id) === targetId ? { ...m, ...updatedTest } : m);
+      localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updatedM));
+
+      const cachedPractice = JSON.parse(localStorage.getItem('mpsc_cached_practice') || '[]');
+      const updatedP = cachedPractice.map(p => (p._id || p.id) === targetId ? { ...p, ...updatedTest } : p);
+      localStorage.setItem('mpsc_cached_practice', JSON.stringify(updatedP));
+    } catch(e) {}
+
     try {
       const res = await axios.put(`https://mpsc-manager.onrender.com/api/custom-tests/${targetId}`, {
         title: updatedTest.title,
@@ -180,10 +211,71 @@ const MockTests = () => {
         topic: updatedTest.topic
       });
       if(res.data.success) {
-        toast.success("Test updated successfully!");
+        toast.success("✅ चाचणी तपशील अपडेट झाले!");
       }
     } catch(err) {
-      toast.error("Failed to update test details on server");
+      toast.success("✅ बदल स्थानिक पातळीवर सेव्ह झाले!");
+    }
+  };
+
+  const handleSaveQuestionEdit = async (updatedData) => {
+    const { qIndex, question, options, correctOption, explanation } = updatedData;
+    if (!editingTest || !editingTest.questions) return;
+    
+    const targetId = editingTest._id || editingTest.id;
+    const q = editingTest.questions[qIndex];
+    if (!q) return;
+
+    const originalQIdx = q.originalQIndex !== undefined ? q.originalQIndex : qIndex;
+    const qText = (q.question || '').trim();
+
+    // 1. Update in editingTest state & history
+    const updatedQuestions = [...editingTest.questions];
+    updatedQuestions[qIndex] = {
+      ...q,
+      question,
+      options,
+      correctOption,
+      explanation
+    };
+
+    const updatedTest = { ...editingTest, questions: updatedQuestions };
+    setEditingTest(updatedTest);
+    setHistory(prev => prev.map(t => (t._id || t.id) === targetId ? updatedTest : t));
+    setEditingQuestionModalData(null);
+
+    // 2. Persist in test overrides
+    saveTestOverride(targetId, originalQIdx, qText, {
+      question,
+      options,
+      correctOption,
+      explanation
+    });
+
+    // 3. Update all local caches
+    updateTestInAllCaches(targetId, originalQIdx, qText, {
+      question,
+      options,
+      correctOption,
+      explanation
+    });
+
+    toast.success(`✅ प्रश्न #${qIndex + 1} व पर्याय यशस्वीरीत्या सेव्ह झाले!`, { icon: '🎯' });
+
+    // 4. Sync to backend
+    try {
+      await axios.patch(
+        `https://mpsc-manager.onrender.com/api/custom-tests/${targetId}/edit-question`,
+        {
+          questionIndex: originalQIdx,
+          question,
+          options,
+          correctOption,
+          explanation
+        }
+      );
+    } catch(err) {
+      console.warn("Backend sync notice (saved locally):", err?.message);
     }
   };
 
@@ -926,6 +1018,27 @@ const MockTests = () => {
                     </button>
 
                     <button 
+                      title="चाचणी व प्रश्न एडिट करा" 
+                      className="btn mock-icon-btn" 
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleOpenEditTest(test); }}
+                      style={{ 
+                        padding: '8px', 
+                        background: 'rgba(59, 130, 246, 0.1)', 
+                        color: '#60a5fa', 
+                        border: '1px solid rgba(59, 130, 246, 0.25)', 
+                        borderRadius: '10px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        minWidth: '36px', 
+                        minHeight: '36px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <FiEdit size={15} />
+                    </button>
+
+                    <button 
                       title="Start Test" 
                       className="btn btn-primary" 
                       onClick={() => navigate(`/test/${test._id || test.id}`)}
@@ -966,30 +1079,185 @@ const MockTests = () => {
       {/* Edit & Delete Modals */}
       {editingTest && (
         <div className="modal-overlay" onClick={() => setEditingTest(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', textAlign: 'left', minWidth: '300px' }}>
-            <h2 style={{ fontSize: '1.25rem', marginBottom: '16px' }}>✏️ Edit Test Details</h2>
-            <form onSubmit={handleEditSubmit} className="flex-col gap-4">
-              <div className="flex-col gap-1">
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Title</label>
-                <input type="text" required value={editingTest.title} onChange={e => setEditingTest({...editingTest, title: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()} 
+            style={{ 
+              background: 'var(--bg-primary)', 
+              border: '1px solid var(--border-color)', 
+              textAlign: 'left', 
+              width: '100%', 
+              maxWidth: '680px',
+              maxHeight: '88vh',
+              overflowY: 'auto',
+              borderRadius: '20px',
+              padding: '24px'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 800, color: 'var(--text-primary)' }}>
+                ✏️ चाचणी व प्रश्न संपादन (Edit Test & Questions)
+              </h2>
+              <button 
+                type="button" 
+                onClick={() => setEditingTest(null)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Basic Test Meta Form */}
+            <form onSubmit={handleEditSubmit} className="flex-col gap-3" style={{ background: 'var(--glass-bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--accent-primary)', textTransform: 'uppercase' }}>
+                📋 चाचणी तपशील (Test Meta)
               </div>
-              <div className="flex-col gap-1">
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Subject</label>
-                <input type="text" required value={editingTest.subject || ''} onChange={e => setEditingTest({...editingTest, subject: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                <div className="flex-col gap-1">
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>शीर्षक (Title)</label>
+                  <input type="text" required value={editingTest.title} onChange={e => setEditingTest({...editingTest, title: e.target.value})} className="glass-card" style={{ padding: '8px 12px', color: 'var(--text-primary)', outline: 'none', fontSize: '0.9rem' }} />
+                </div>
+                <div className="flex-col gap-1">
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>विषय (Subject)</label>
+                  <input type="text" required value={editingTest.subject || ''} onChange={e => setEditingTest({...editingTest, subject: e.target.value})} className="glass-card" style={{ padding: '8px 12px', color: 'var(--text-primary)', outline: 'none', fontSize: '0.9rem' }} />
+                </div>
+                <div className="flex-col gap-1">
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>घटक / उपविषय (Topic)</label>
+                  <input type="text" placeholder="e.g. Modern History..." value={editingTest.topic || ''} onChange={e => setEditingTest({...editingTest, topic: e.target.value})} className="glass-card" style={{ padding: '8px 12px', color: 'var(--text-primary)', outline: 'none', fontSize: '0.9rem' }} />
+                </div>
+                <div className="flex-col gap-1">
+                  <label style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>वेळ मर्यादा (Minutes)</label>
+                  <input type="number" required min="1" value={editingTest.timeLimit} onChange={e => setEditingTest({...editingTest, timeLimit: parseInt(e.target.value) || 0})} className="glass-card" style={{ padding: '8px 12px', color: 'var(--text-primary)', outline: 'none', fontSize: '0.9rem' }} />
+                </div>
               </div>
-              <div className="flex-col gap-1">
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Test Topic</label>
-                <input type="text" placeholder="e.g. Modern History, Algebra..." value={editingTest.topic || ''} onChange={e => setEditingTest({...editingTest, topic: e.target.value})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
-              </div>
-              <div className="flex-col gap-1">
-                <label style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>Time Limit (Minutes)</label>
-                <input type="number" required min="1" value={editingTest.timeLimit} onChange={e => setEditingTest({...editingTest, timeLimit: parseInt(e.target.value) || 0})} className="glass-card" style={{ padding: '10px', color: 'var(--text-primary)', outline: 'none' }} />
-              </div>
-              <div className="flex-row gap-4" style={{ marginTop: '12px' }}>
-                <button type="button" onClick={() => setEditingTest(null)} className="btn" style={{ flex: 1, background: 'var(--glass-bg)' }}>Cancel</button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save Changes</button>
+              <div className="flex-row gap-3" style={{ marginTop: '8px', justifyContent: 'flex-end' }}>
+                <button type="submit" className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.85rem' }}>
+                  💾 तपशील सेव्ह करा
+                </button>
               </div>
             </form>
+
+            {/* Questions & Options List Section */}
+            <div style={{ marginTop: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                  📝 प्रश्न व उत्तरे ({editingTest.questions?.length || 0} प्रश्न उपलब्ध)
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tId = editingTest._id || editingTest.id;
+                    setEditingTest(null);
+                    navigate(`/test/${tId}`);
+                  }}
+                  className="btn"
+                  style={{
+                    padding: '6px 14px',
+                    fontSize: '0.8rem',
+                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  🚀 ही टेस्ट थेट सोडवा
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {editingTest.questions && editingTest.questions.length > 0 ? (
+                  editingTest.questions.map((q, qIdx) => (
+                    <div key={qIdx} style={{
+                      background: 'rgba(255, 255, 255, 0.03)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '12px',
+                      padding: '14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                        <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                          <span style={{ color: 'var(--accent-primary)', marginRight: '6px' }}>#{qIdx + 1}.</span>
+                          {q.question}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setEditingQuestionModalData({
+                            qIndex: qIdx,
+                            originalQIndex: q.originalQIndex !== undefined ? q.originalQIndex : qIdx,
+                            question: q.question,
+                            options: q.options || [],
+                            correctOption: q.correctOption,
+                            explanation: q.explanation || ''
+                          })}
+                          className="btn"
+                          style={{
+                            padding: '5px 12px',
+                            fontSize: '0.78rem',
+                            background: 'rgba(59, 130, 246, 0.15)',
+                            color: '#60a5fa',
+                            border: '1px solid rgba(59, 130, 246, 0.3)',
+                            borderRadius: '6px',
+                            whiteSpace: 'nowrap',
+                            fontWeight: 700,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <FiEdit size={12} /> एडिट करा
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '6px', marginTop: '2px' }}>
+                        {q.options?.map((opt, oi) => {
+                          const isCorrect = oi === q.correctOption;
+                          return (
+                            <div key={oi} style={{
+                              fontSize: '0.8rem',
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              background: isCorrect ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.02)',
+                              border: isCorrect ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid var(--border-color)',
+                              color: isCorrect ? 'var(--success)' : 'var(--text-secondary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}>
+                              <strong style={{ color: isCorrect ? 'var(--success)' : 'var(--text-muted)' }}>({String.fromCharCode(65 + oi)})</strong>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt}</span>
+                              {isCorrect && <span style={{ marginLeft: 'auto', fontWeight: 800, fontSize: '0.72rem' }}>✓ बरोबर</span>}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', padding: '24px', background: 'var(--glass-bg)', borderRadius: '12px' }}>
+                    💡 या टेस्टमध्ये प्रश्न सूची लोड झाली नाही. टेस्ट थेट सुरू करूनही तुम्ही प्रश्न एडिट करू शकता.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button 
+                type="button" 
+                onClick={() => setEditingTest(null)} 
+                className="btn" 
+                style={{ padding: '8px 24px', background: 'var(--glass-bg)', color: 'var(--text-primary)' }}
+              >
+                बंद करा (Close)
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1236,6 +1504,14 @@ const MockTests = () => {
           </div>
         </div>
       )}
+
+      {/* Full Question and Options Edit Modal */}
+      <EditQuestionModal
+        isOpen={Boolean(editingQuestionModalData)}
+        initialData={editingQuestionModalData}
+        onClose={() => setEditingQuestionModalData(null)}
+        onSave={handleSaveQuestionEdit}
+      />
 
     </div>
   );
