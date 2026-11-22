@@ -59,17 +59,8 @@ function App() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   
-  const [showIntro, setShowIntro] = useState(() => {
-    try {
-      // Skip heavy 7.5MB video intro on mobile devices (< 768px) so app opens instantly without freezing
-      if (typeof window !== 'undefined' && window.innerWidth < 768) {
-        return false;
-      }
-      return sessionStorage.getItem('intro_played') ? false : true;
-    } catch (e) {
-      return false;
-    }
-  });
+  // Instant App Opening: Never block app startup on heavy video loading
+  const [showIntro, setShowIntro] = useState(false);
 
   const hideIntro = () => {
     try {
@@ -77,6 +68,24 @@ function App() {
     } catch (e) {}
     setShowIntro(false);
   };
+
+  // Preload critical bottom navigation pages during idle time for 0ms tab switching
+  useEffect(() => {
+    const preloadPages = () => {
+      import('./pages/Dashboard');
+      import('./pages/Practice');
+      import('./pages/MockTests');
+      import('./pages/TestMaker');
+      import('./pages/NoteReels');
+    };
+    if (typeof window !== 'undefined') {
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(preloadPages, { timeout: 1200 });
+      } else {
+        setTimeout(preloadPages, 600);
+      }
+    }
+  }, []);
 
   // Intro safety auto-dismiss: never block user for more than 3.5s
   useEffect(() => {
@@ -204,23 +213,30 @@ function App() {
 
     const unsub = onAuthStateChanged(auth, async (usr) => {
       if(usr) {
-        // Fetch source of truth from DB immediately
-        const { loadProgressFromDB } = await import('./utils/dbStore');
-        const loaded = await loadProgressFromDB(usr.uid);
+        // 🚀 INSTANT RENDER (<100ms): Show app immediately from local persistence
+        setUser(usr);
+        setLoading(false);
 
-        // Fetch / sync server feature flags
-        try {
-          const profileRes = await axios.post(`https://mpsc-manager.onrender.com/api/users/${usr.uid}/sync`, {
-            email: usr.email,
-            displayName: usr.displayName
-          }, { timeout: 4000 });
-          if (profileRes.data.success && profileRes.data.data?.features) {
-            usr.features = profileRes.data.data.features;
-          }
-        } catch (e) {}
+        // Fetch source of truth & features asynchronously in background without blocking UI
+        (async () => {
+          try {
+            const { loadProgressFromDB } = await import('./utils/dbStore');
+            await loadProgressFromDB(usr.uid);
+          } catch(e) {}
 
-        setUser(usr); // Set user after loading DB cache & features!
-        registerPush(usr.uid, usr.email);
+          try {
+            const profileRes = await axios.post(`https://mpsc-manager.onrender.com/api/users/${usr.uid}/sync`, {
+              email: usr.email,
+              displayName: usr.displayName
+            }, { timeout: 3500 });
+            if (profileRes.data.success && profileRes.data.data?.features) {
+              usr.features = profileRes.data.data.features;
+              setUser({ ...usr });
+            }
+          } catch (e) {}
+
+          registerPush(usr.uid, usr.email);
+        })();
       } else {
         const guestVal = localStorage.getItem('guest_user');
         if (guestVal === 'false') {
@@ -231,8 +247,8 @@ function App() {
           try { localStorage.setItem('guest_user', 'true'); } catch (e) {}
           setUser({ uid: 'guest_user_101', displayName: 'MPSC Aspirant', email: 'aspirant@mpsc.local', features: {} });
         }
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => {

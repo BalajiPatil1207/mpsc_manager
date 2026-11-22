@@ -14,6 +14,253 @@ import EditQuestionModal from '../components/EditQuestionModal';
 import { MPSC_SEED_MOCKS } from '../data/mpscMockTestsSeed';
 import { recordTestXp } from '../utils/xpTracker';
 
+// --- TEST SCORING & PERSISTENT OVERRIDES ENGINE ---
+export const calculateTestScore = (questionsList = [], userAnswers = {}, scheme = 'group_c') => {
+  const isRajyaseva = scheme === 'mpsc_rajyaseva';
+  const marksPerCorrect = isRajyaseva ? 2.0 : 1.0;
+  const penaltyPerWrong = isRajyaseva ? 0.66 : 0.25;
+
+  let correctCount = 0;
+  let wrongCount = 0;
+  let unattemptedCount = 0;
+  const wrongQuestionsList = [];
+
+  questionsList.forEach((q, idx) => {
+    const userAns = userAnswers[idx];
+    if (userAns === undefined) {
+      unattemptedCount++;
+    } else if (userAns === q.correctOption) {
+      correctCount++;
+    } else {
+      wrongCount++;
+      wrongQuestionsList.push({
+        question: q.question,
+        options: q.options,
+        correctOption: q.correctOption,
+        userSelectedOption: userAns,
+        explanation: q.explanation || '',
+        subject: q.subject || 'General',
+        topic: q.topic || 'General Practice',
+        markingScheme: scheme
+      });
+    }
+  });
+
+  const grossScore = Number((correctCount * marksPerCorrect).toFixed(2));
+  const penaltyScore = Number((wrongCount * penaltyPerWrong).toFixed(2));
+  const netScore = Number((grossScore - penaltyScore).toFixed(2));
+  const maxScore = Number((questionsList.length * marksPerCorrect).toFixed(2));
+  const totalAttempted = correctCount + wrongCount;
+  const accuracy = totalAttempted > 0 ? Number(((correctCount / totalAttempted) * 100).toFixed(1)) : 0;
+
+  return {
+    correctCount,
+    wrongCount,
+    unattemptedCount,
+    grossScore,
+    penaltyScore,
+    netScore,
+    maxScore,
+    accuracy,
+    wrongQuestionsList
+  };
+};
+
+export const applyTestOverrides = (targetTest, currentTestId) => {
+  if (!targetTest || !Array.isArray(targetTest.questions)) return targetTest;
+  try {
+    const raw = localStorage.getItem(`mpsc_test_overrides_${currentTestId}`);
+    if (!raw) return targetTest;
+    const overrides = JSON.parse(raw);
+    if (!overrides) return targetTest;
+
+    targetTest.questions = targetTest.questions.map((q, idx) => {
+      const origIdx = q.originalQIndex !== undefined ? q.originalQIndex : idx;
+      const textKey = (q.question || '').trim();
+      const override = (overrides.byIndex && overrides.byIndex[origIdx]) || (overrides.byText && overrides.byText[textKey]);
+      if (override) {
+        return {
+          ...q,
+          question: override.question !== undefined ? override.question : q.question,
+          options: override.options !== undefined ? override.options : q.options,
+          correctOption: override.correctOption !== undefined ? override.correctOption : q.correctOption,
+          explanation: override.explanation !== undefined ? override.explanation : q.explanation
+        };
+      }
+      return q;
+    });
+  } catch (err) {
+    console.warn("Error applying overrides:", err);
+  }
+  return targetTest;
+};
+
+export const applyTestOverridesToShuffled = (shuffledQuestions, currentTestId) => {
+  if (!Array.isArray(shuffledQuestions)) return shuffledQuestions;
+  try {
+    const raw = localStorage.getItem(`mpsc_test_overrides_${currentTestId}`);
+    if (!raw) return shuffledQuestions;
+    const ovr = JSON.parse(raw);
+    if (!ovr) return shuffledQuestions;
+
+    return shuffledQuestions.map((q, idx) => {
+      const origIdx = q.originalQIndex !== undefined ? q.originalQIndex : idx;
+      const textKey = (q.question || '').trim();
+      const match = (ovr.byIndex && ovr.byIndex[origIdx]) || (ovr.byText && ovr.byText[textKey]);
+      if (match) {
+        const updated = { ...q };
+        if (match.question) updated.question = match.question;
+        if (match.explanation) updated.explanation = match.explanation;
+        if (match.options && (!q.optionMapping || match.options.length !== q.options.length)) {
+          updated.options = match.options;
+          updated.optionMapping = null;
+          if (match.correctOption !== undefined) updated.correctOption = match.correctOption;
+        } else if (match.correctOption !== undefined) {
+          if (q.optionMapping) {
+            const visualIdx = q.optionMapping.findIndex(orig => orig === match.correctOption);
+            if (visualIdx !== -1) {
+              updated.correctOption = visualIdx;
+            } else {
+              updated.correctOption = match.correctOption;
+            }
+          } else {
+            updated.correctOption = match.correctOption;
+          }
+        }
+        return updated;
+      }
+      return q;
+    });
+  } catch (e) {
+    return shuffledQuestions;
+  }
+};
+
+export const saveTestOverride = (currentTestId, originalQIdx, qText, overrideData) => {
+  try {
+    const key = `mpsc_test_overrides_${currentTestId}`;
+    const existing = JSON.parse(localStorage.getItem(key) || '{"byIndex":{},"byText":{}}');
+    if (!existing.byIndex) existing.byIndex = {};
+    if (!existing.byText) existing.byText = {};
+
+    existing.byIndex[originalQIdx] = { ...(existing.byIndex[originalQIdx] || {}), ...overrideData };
+    if (qText) {
+      existing.byText[qText] = { ...(existing.byText[qText] || {}), ...overrideData };
+    }
+    localStorage.setItem(key, JSON.stringify(existing));
+  } catch (e) {
+    console.warn("Failed to persist override:", e);
+  }
+};
+
+export const updateTestInAllCaches = (currentTestId, originalQIdx, qText, updatePayload) => {
+  const cacheKeys = ['mpsc_cached_mocks', 'mpsc_cached_practice'];
+  cacheKeys.forEach(key => {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list)) return;
+      
+      let modified = false;
+      const updatedList = list.map(item => {
+        if ((item._id || item.id) === currentTestId) {
+          if (Array.isArray(item.questions)) {
+            const updatedQuestions = item.questions.map((q, idx) => {
+              const match = (idx === originalQIdx) || ((q.question || '').trim() === qText);
+              if (match) {
+                modified = true;
+                return {
+                  ...q,
+                  question: updatePayload.question !== undefined ? updatePayload.question : q.question,
+                  options: updatePayload.options !== undefined ? updatePayload.options : q.options,
+                  correctOption: updatePayload.correctOption !== undefined ? updatePayload.correctOption : q.correctOption,
+                  explanation: updatePayload.explanation !== undefined ? updatePayload.explanation : q.explanation
+                };
+              }
+              return q;
+            });
+            return { ...item, questions: updatedQuestions };
+          }
+        }
+        return item;
+      });
+
+      if (modified) {
+        localStorage.setItem(key, JSON.stringify(updatedList));
+      }
+    } catch(e) {}
+  });
+};
+
+export const updateMistakeBookForQuestion = (currentTestId, questionObj, userAns) => {
+  try {
+    const cachedMistakes = JSON.parse(localStorage.getItem('mpsc_cached_mistakes') || '[]');
+    const isNowCorrect = userAns !== undefined && userAns === questionObj.correctOption;
+    
+    let changed = false;
+    const updated = cachedMistakes.map(mock => {
+      if ((mock._id || mock.id) === currentTestId || mock.parentTestId === currentTestId) {
+        if (Array.isArray(mock.questions)) {
+          if (isNowCorrect) {
+            const filtered = mock.questions.filter(mq => (mq.question || '').trim() !== (questionObj.question || '').trim());
+            if (filtered.length !== mock.questions.length) {
+              changed = true;
+              return { ...mock, questions: filtered, timeLimit: Math.max(filtered.length, 5) };
+            }
+          } else {
+            const mapped = mock.questions.map(mq => {
+              if ((mq.question || '').trim() === (questionObj.question || '').trim()) {
+                changed = true;
+                return {
+                  ...mq,
+                  correctOption: questionObj.correctOption,
+                  options: questionObj.options || mq.options,
+                  explanation: questionObj.explanation || mq.explanation
+                };
+              }
+              return mq;
+            });
+            return { ...mock, questions: mapped };
+          }
+        }
+      }
+      return mock;
+    }).filter(mock => !Array.isArray(mock.questions) || mock.questions.length > 0);
+
+    if (changed) {
+      localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(updated));
+      window.dispatchEvent(new Event('mpsc_mistakes_updated'));
+      window.dispatchEvent(new Event('storage'));
+    }
+  } catch (e) {
+    console.warn("Mistake book update error:", e);
+  }
+};
+
+export const updateTestHistoryScore = (currentTestId, newStats) => {
+  try {
+    const testHistory = JSON.parse(localStorage.getItem('mpsc_test_history') || '[]');
+    const targetIdx = testHistory.findIndex(h => h.testId === currentTestId);
+    if (targetIdx !== -1) {
+      testHistory[targetIdx] = {
+        ...testHistory[targetIdx],
+        score: newStats.netScore,
+        grossScore: newStats.grossScore,
+        penaltyScore: newStats.penaltyScore,
+        correctCount: newStats.correctCount,
+        wrongCount: newStats.wrongCount,
+        unattemptedCount: newStats.unattemptedCount,
+        accuracy: newStats.accuracy
+      };
+      localStorage.setItem('mpsc_test_history', JSON.stringify(testHistory));
+      window.dispatchEvent(new Event('storage'));
+    }
+  } catch(e) {
+    console.warn("Test history update error:", e);
+  }
+};
+
 const TakeTest = () => {
   const { testId } = useParams();
   const [test, setTest] = useState(null);
@@ -179,6 +426,11 @@ const TakeTest = () => {
           }
         }
 
+        // Apply persistent overrides so user fixes/edits always load even for seed mocks!
+        if (fetchedTest) {
+          fetchedTest = applyTestOverrides(fetchedTest, testId);
+        }
+
         if (fetchedTest && fetchedTest.markingScheme) {
           setMarkingScheme(fetchedTest.markingScheme === 'mpsc_rajyaseva' ? 'group_c' : fetchedTest.markingScheme);
         }
@@ -196,6 +448,8 @@ const TakeTest = () => {
                 const elapsedSeconds = Math.max(0, Math.floor((Date.now() - (session.lastSavedTimestamp || Date.now())) / 1000));
                 const remainingTime = Math.max(0, (session.timeLeft ?? (fetchedTest.timeLimit * 60)) - elapsedSeconds);
                 
+                // Ensure overrides apply to restored session too
+                session.questions = applyTestOverridesToShuffled(session.questions, testId);
                 fetchedTest.questions = session.questions;
                 setTest(fetchedTest);
                 setAnswers(session.answers || {});
@@ -704,30 +958,65 @@ const TakeTest = () => {
     if (!editingCorrectOption || editingCorrectOption.qIndex !== qIndex) return;
     const newCorrect = editingCorrectOption.value;
     const q = test.questions[qIndex];
+    if (!q) return;
+
     // Map back to original DB indices
     const originalQIdx = q.originalQIndex !== undefined ? q.originalQIndex : qIndex;
     const originalCorrect = q.optionMapping ? q.optionMapping[newCorrect] : newCorrect;
+    const qText = (q.question || '').trim();
     
-    // Update UI immediately
+    // 1. Update UI state immediately
     const updatedQuestions = [...test.questions];
     updatedQuestions[qIndex] = { ...q, correctOption: newCorrect };
     setTest(prev => ({ ...prev, questions: updatedQuestions }));
     setEditingCorrectOption(null);
-    toast.loading('उत्तर दुरुस्त होत आहे...', { id: 'fix-ans' });
+
+    // 2. Persist in local overrides for this test (so retakes always have the right answer!)
+    saveTestOverride(testId, originalQIdx, qText, {
+      correctOption: originalCorrect
+    });
+
+    // 3. Update all mock/practice caches
+    updateTestInAllCaches(testId, originalQIdx, qText, {
+      correctOption: originalCorrect
+    });
+
+    // 4. Recalculate score immediately if test was submitted
+    if (submitted) {
+      const prevScore = score;
+      const newStats = calculateTestScore(updatedQuestions, answers, markingScheme);
+      setScore(newStats.netScore);
+
+      // Update test history
+      updateTestHistoryScore(testId, newStats);
+
+      // Update Mistake Book (remove if now correct, or update)
+      updateMistakeBookForQuestion(testId, updatedQuestions[qIndex], answers[qIndex]);
+
+      const diff = Number((newStats.netScore - prevScore).toFixed(2));
+      let scoreMsg = '';
+      if (diff > 0) {
+        scoreMsg = `🎯 उत्तर अपडेट झाले! स्कोअर: ${prevScore} ➔ ${newStats.netScore} (+${diff} गुण वाढले!) 🎉`;
+      } else if (diff < 0) {
+        scoreMsg = `🎯 उत्तर अपडेट झाले! स्कोअर: ${prevScore} ➔ ${newStats.netScore} (${diff} गुण कमी झाले)`;
+      } else {
+        scoreMsg = `🎯 उत्तर अपडेट झाले! नवीन स्कोअर: ${newStats.netScore} गुण.`;
+      }
+      toast.success(scoreMsg, { id: 'fix-ans', duration: 4500, icon: '⚡' });
+    } else {
+      toast.success('✅ उत्तर यशस्वीरित्या दुरुस्त केले!', { id: 'fix-ans' });
+    }
 
     try {
       const res = await axios.patch(
         `https://mpsc-manager.onrender.com/api/custom-tests/${testId}/fix-answer`,
         { questionIndex: originalQIdx, newCorrectOption: originalCorrect }
       );
-      if (res.data.success) {
-        toast.success('✅ उत्तर यशस्वीरित्या दुरुस्त केले!', { id: 'fix-ans' });
-      } else {
-        toast.error(res.data.message || 'Fix failed', { id: 'fix-ans' });
+      if (!res.data.success) {
+        console.warn('Backend fix warning:', res.data.message);
       }
     } catch (err) {
-      console.error('Fix answer error:', err);
-      toast.error('Server update failed: ' + (err.response?.data?.message || err.message), { id: 'fix-ans' });
+      console.warn('Backend fix answer sync notice (saved locally):', err?.message);
     }
   };
 
@@ -738,6 +1027,7 @@ const TakeTest = () => {
     if (!q) return;
 
     const originalQIdx = q.originalQIndex !== undefined ? q.originalQIndex : qIndex;
+    const qText = (q.question || '').trim();
     
     // In current test state:
     const updatedQuestions = [...test.questions];
@@ -746,35 +1036,55 @@ const TakeTest = () => {
       question,
       options,
       correctOption,
+      optionMapping: null, // explicit options replaced
       explanation
     };
 
     setTest(prev => ({ ...prev, questions: updatedQuestions }));
+    setEditingQuestionModalData(null);
 
-    // 1. Update local storage caches
-    try {
-      const cachedMistakes = JSON.parse(localStorage.getItem('mpsc_cached_mistakes') || '[]');
-      const mIdx = cachedMistakes.findIndex(m => (m._id || m.id) === testId);
-      if (mIdx !== -1) {
-        cachedMistakes[mIdx].questions = updatedQuestions;
-        localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(cachedMistakes));
-        window.dispatchEvent(new Event('mpsc_mistakes_updated'));
-      }
+    // 1. Save to persistent overrides
+    saveTestOverride(testId, originalQIdx, qText, {
+      question,
+      options,
+      correctOption,
+      explanation
+    });
 
-      const cachedPractice = JSON.parse(localStorage.getItem('mpsc_cached_practice') || '[]');
-      const pIdx = cachedPractice.findIndex(p => (p._id || p.id) === testId);
-      if (pIdx !== -1) {
-        cachedPractice[pIdx].questions = updatedQuestions;
-        localStorage.setItem('mpsc_cached_practice', JSON.stringify(cachedPractice));
+    // 2. Update all mock/practice caches
+    updateTestInAllCaches(testId, originalQIdx, qText, {
+      question,
+      options,
+      correctOption,
+      explanation
+    });
+
+    // 3. Recalculate score immediately if test was submitted
+    if (submitted) {
+      const prevScore = score;
+      const newStats = calculateTestScore(updatedQuestions, answers, markingScheme);
+      setScore(newStats.netScore);
+
+      updateTestHistoryScore(testId, newStats);
+      updateMistakeBookForQuestion(testId, updatedQuestions[qIndex], answers[qIndex]);
+
+      const diff = Number((newStats.netScore - prevScore).toFixed(2));
+      let scoreMsg = '';
+      if (diff > 0) {
+        scoreMsg = `✅ प्रश्न अपडेट झाला! स्कोअर: ${prevScore} ➔ ${newStats.netScore} (+${diff} गुण वाढले!) 🎉`;
+      } else if (diff < 0) {
+        scoreMsg = `✅ प्रश्न अपडेट झाला! स्कोअर: ${prevScore} ➔ ${newStats.netScore} (${diff} गुण)`;
+      } else {
+        scoreMsg = `✅ प्रश्न व पर्याय सेव्ह झाले! स्कोअर: ${newStats.netScore} गुण.`;
       }
-    } catch (e) {
-      console.warn("Local storage cache sync notice:", e);
+      toast.success(scoreMsg, { id: 'edit-q-toast', duration: 4500, icon: '🎯' });
+    } else {
+      toast.success('✅ बदल यशस्वीरीत्या सेव्ह झाले!', { id: 'edit-q-toast' });
     }
 
-    // 2. Sync to Backend
-    const toastId = toast.loading('प्रश्न व पर्याय अपडेट होत आहेत...');
+    // 4. Sync to Backend
     try {
-      const res = await axios.patch(
+      await axios.patch(
         `https://mpsc-manager.onrender.com/api/custom-tests/${testId}/edit-question`,
         {
           questionIndex: originalQIdx,
@@ -784,15 +1094,69 @@ const TakeTest = () => {
           explanation
         }
       );
-      if (res.data.success) {
-        toast.success('✅ प्रश्न व पर्याय यशस्वीरीत्या अपडेट झाले!', { id: toastId });
-      } else {
-        toast.success('✅ बदल स्थानिक पातळीवर सेव्ह झाले!', { id: toastId });
-      }
     } catch (err) {
-      // Offline / local fallback
-      toast.success('✅ बदल सुरक्षितपणे सेव्ह झाले!', { id: toastId });
+      console.warn("Backend edit sync note (saved locally):", err?.message);
     }
+  };
+
+  // Re-attempt test cleanly with all updated questions/answers
+  const handleReattemptTest = () => {
+    try {
+      localStorage.removeItem(`mpsc_active_test_${testId}`);
+    } catch(e) {}
+
+    let freshQuestions = JSON.parse(JSON.stringify(test?.questions || []));
+    if (freshQuestions.length > 0) {
+      const questionsWithIdx = freshQuestions.map((q, idx) => ({ 
+        q, 
+        originalQIndex: q.originalQIndex !== undefined ? q.originalQIndex : idx 
+      }));
+      questionsWithIdx.sort(() => Math.random() - 0.5);
+
+      freshQuestions = questionsWithIdx.map(item => {
+        const q = item.q;
+        q.originalQIndex = item.originalQIndex;
+        if (q.options && q.options.length > 0) {
+          const optionsWithIdx = q.options.map((opt, i) => ({ opt, originalIndex: i }));
+          optionsWithIdx.sort(() => Math.random() - 0.5);
+          const newCorrectIndex = optionsWithIdx.findIndex(o => o.originalIndex === q.correctOption);
+          q.options = optionsWithIdx.map(o => o.opt);
+          q.optionMapping = optionsWithIdx.map(o => o.originalIndex);
+          if (newCorrectIndex !== -1) {
+            q.correctOption = newCorrectIndex;
+          }
+        }
+        return q;
+      });
+    }
+
+    setTest(prev => ({ ...prev, questions: freshQuestions }));
+    setAnswers({});
+    setReviews({});
+    setSubmitted(false);
+    setShowAnswers(false);
+    setScore(0);
+    setActiveQuestion(0);
+    setEditingCorrectOption(null);
+    setEditingQuestionModalData(null);
+    const initialTime = (test?.timeLimit || 15) * 60;
+    setTimeLeft(initialTime);
+
+    try {
+      localStorage.setItem(`mpsc_active_test_${testId}`, JSON.stringify({
+        testId,
+        questions: freshQuestions,
+        answers: {},
+        reviews: {},
+        timeLeft: initialTime,
+        lastSavedTimestamp: Date.now(),
+        activeQuestion: 0,
+        markingScheme: markingScheme || 'group_c'
+      }));
+    } catch(e) {}
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    toast.success("🔄 टेस्ट पुन्हा सुरू झाली! सुधारित प्रश्नांसह सराव करा.", { icon: '🎯', duration: 4000 });
   };
 
   useEffect(() => {
@@ -1216,6 +1580,126 @@ const TakeTest = () => {
                   <button onClick={() => { setShowAnswers(true); setTestViewMode('question'); }} className="btn btn-primary" style={{ padding: '10px 24px', fontWeight: 700 }}>
                     📝 उत्तरे व स्पष्टीकरणे →
                   </button>
+                  <button 
+                    onClick={handleReattemptTest} 
+                    className="btn" 
+                    style={{ 
+                      padding: '10px 20px', 
+                      background: 'linear-gradient(135deg, #f59e0b, #d97706)', 
+                      color: '#fff', 
+                      border: 'none', 
+                      fontWeight: 700, 
+                      borderRadius: '8px', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '6px', 
+                      boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🔄 ही टेस्ट पुन्हा सोडवा
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 🌟 Live Updated Score Recap Banner (Visible in review mode after submit) */}
+          {submitted && showAnswers && (() => {
+            const isRajyaseva = markingScheme === 'mpsc_rajyaseva';
+            const marksPerCorrect = isRajyaseva ? 2.0 : 1.0;
+            const penaltyPerWrong = isRajyaseva ? 0.66 : 0.25;
+            let correctCount = 0, wrongCount = 0, unattemptedCount = 0;
+            test.questions.forEach((q, idx) => {
+              if (answers[idx] === undefined) unattemptedCount++;
+              else if (answers[idx] === q.correctOption) correctCount++;
+              else wrongCount++;
+            });
+            const gross = Number((correctCount * marksPerCorrect).toFixed(2));
+            const deducted = Number((wrongCount * penaltyPerWrong).toFixed(2));
+            const currentNetScore = Number((gross - deducted).toFixed(2));
+            const maxScore = Number((test.questions.length * marksPerCorrect).toFixed(2));
+            const finalFormattedScore = (currentNetScore % 1 === 0) ? currentNetScore : currentNetScore.toFixed(2);
+            const attempted = correctCount + wrongCount;
+            const accuracy = attempted > 0 ? ((correctCount / attempted) * 100).toFixed(1) : '0';
+
+            return (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98))',
+                border: '1px solid var(--accent-glow, rgba(56, 189, 248, 0.3))',
+                borderRadius: '16px',
+                padding: '16px 20px',
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
+                marginBottom: '10px',
+                animation: 'fadeIn 0.3s ease'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '1.4rem' }}>🎯</span>
+                      <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#f8fafc' }}>
+                        अपडेटेड स्कोअर: <span style={{ color: 'var(--accent-primary, #38bdf8)', fontSize: '1.35rem' }}>{finalFormattedScore}</span> / {maxScore}
+                      </span>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        background: markingScheme === 'group_c' ? 'rgba(56, 189, 248, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                        color: markingScheme === 'group_c' ? '#38bdf8' : '#fbbf24',
+                        padding: '3px 10px',
+                        borderRadius: '12px',
+                        border: '1px solid currentColor',
+                        fontWeight: 700
+                      }}>
+                        {markingScheme === 'group_c' ? '+१.०० / -०.२५ (१/४)' : '+२.०० / -०.६६ (१/३)'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '16px', marginTop: '8px', fontSize: '0.85rem', color: '#94a3b8', flexWrap: 'wrap' }}>
+                      <span>✅ बरोबर: <strong style={{ color: '#4ade80' }}>{correctCount}</strong> (+{gross})</span>
+                      <span>❌ निगेटिव्ह: <strong style={{ color: '#f87171' }}>{wrongCount}</strong> (-{deducted})</span>
+                      <span>⏭ सोडले: <strong style={{ color: '#cbd5e1' }}>{unattemptedCount}</strong></span>
+                      <span>🎯 अचूकता: <strong style={{ color: '#60a5fa' }}>{accuracy}%</strong></span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={handleReattemptTest}
+                      className="btn"
+                      style={{
+                        padding: '9px 18px',
+                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontWeight: 700,
+                        fontSize: '0.88rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)'
+                      }}
+                    >
+                      🔄 ही टेस्ट पुन्हा सोडवा
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowAnswers(false)}
+                      className="btn"
+                      style={{
+                        padding: '9px 14px',
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        color: '#e2e8f0',
+                        border: '1px solid rgba(255, 255, 255, 0.15)',
+                        borderRadius: '10px',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📊 निकाल सारांश
+                    </button>
+                  </div>
                 </div>
               </div>
             );

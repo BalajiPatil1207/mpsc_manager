@@ -21,6 +21,17 @@ const BottomNav = () => {
     { name: 'Mocks', path: '/mock', icon: <FiTarget size={22} />, isMockTrigger: true },
   ];
 
+  // Instant chunk prefetching on touch or hover for 0ms navigation
+  const prefetchRoute = (path) => {
+    try {
+      if (path === '/practice') import('../pages/Practice');
+      else if (path === '/mock') import('../pages/MockTests');
+      else if (path === '/test-maker') import('../pages/TestMaker');
+      else if (path === '/reels') import('../pages/NoteReels');
+      else if (path === '/') import('../pages/Dashboard');
+    } catch(e) {}
+  };
+
   const handlePracticeLaunch = (e) => {
     if (e) {
       e.preventDefault();
@@ -55,7 +66,6 @@ const BottomNav = () => {
         <div
           className="mock-arc-backdrop"
           onClick={() => setIsArcMenuOpen(false)}
-          onTouchEnd={() => setIsArcMenuOpen(false)}
           aria-label="Close menu"
         />
       )}
@@ -94,7 +104,6 @@ const BottomNav = () => {
               type="button"
               className="mock-arc-action-btn"
               onClick={handlePracticeLaunch}
-              onTouchEnd={handlePracticeLaunch}
             >
               <div className="mock-arc-badge">
                 <span className="mock-arc-title">🎯 दैनिक सराव चाचणी</span>
@@ -112,7 +121,6 @@ const BottomNav = () => {
               type="button"
               className="mock-arc-action-btn"
               onClick={handleMegaLaunch}
-              onTouchEnd={handleMegaLaunch}
             >
               <div className="mock-arc-badge">
                 <span className="mock-arc-title">🔥 दैनिक मेगा टेस्ट</span>
@@ -130,7 +138,6 @@ const BottomNav = () => {
               type="button"
               className="mock-arc-action-btn"
               onClick={handleMockExplorer}
-              onTouchEnd={handleMockExplorer}
             >
               <div className="mock-arc-badge">
                 <span className="mock-arc-title">📋 सर्व मॉक टेस्ट दालन</span>
@@ -155,6 +162,8 @@ const BottomNav = () => {
                 key={item.name}
                 type="button"
                 onClick={() => setIsArcMenuOpen((prev) => !prev)}
+                onTouchStart={() => prefetchRoute('/mock')}
+                onMouseEnter={() => prefetchRoute('/mock')}
                 className={`bottom-nav-item bottom-nav-trigger ${isActive || isArcMenuOpen ? 'active' : ''}`}
                 aria-expanded={isArcMenuOpen}
                 aria-label="MPSC Test Launch Options"
@@ -173,6 +182,8 @@ const BottomNav = () => {
             <Link
               key={item.name}
               to={item.path}
+              onTouchStart={() => prefetchRoute(item.path)}
+              onMouseEnter={() => prefetchRoute(item.path)}
               className={`bottom-nav-item ${isActive ? 'floating-active-item' : ''}`}
             >
               <div className="bottom-nav-icon">
