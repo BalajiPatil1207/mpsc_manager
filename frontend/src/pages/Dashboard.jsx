@@ -611,7 +611,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
       <NewsTicker user={user} />
 
       {/* Header Section */}
-      <div className="dashboard-header flex-row justify-between" style={{ alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="dashboard-header">
         <div className="flex-col gap-2">
           <div className="flex-row align-center justify-between" style={{ width: '100%' }}>
             <span style={{ color: 'var(--accent-primary)', fontWeight: 700, fontSize: '0.875rem', letterSpacing: '2px' }}>
