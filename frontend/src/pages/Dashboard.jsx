@@ -632,7 +632,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
         
         <div className="dashboard-header-actions stat-cards-carousel">
           {/* Days Left Card */}
-          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.8s ease-out', flex: 1, minWidth: 0, gap: '8px', textAlign: 'center' }}>
+          <div className="glass-card flex-col justify-center align-center" style={{ animation: 'slideUp 0.8s ease-out', gap: '8px', textAlign: 'center' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', margin: '0 auto' }}>⏳</div>
             <div className="flex-col" style={{ alignItems: 'center' }}>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--danger)' }}><AnimatedNumber value={calculateDaysLeft()} /> <span style={{fontSize:'1rem'}}>Days</span></span>
@@ -645,10 +645,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
             onClick={() => setIsDeficitModalOpen(true)}
             className="glass-card flex-col justify-center align-center" 
             style={{ 
-              padding: '16px', 
               animation: 'slideUp 0.85s ease-out', 
-              flex: 1, 
-              minWidth: 0, 
               gap: '8px', 
               textAlign: 'center',
               cursor: 'pointer',
@@ -685,10 +682,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
             onClick={() => handleStartFocus(dailyTasks.find(t => !t.completed) || dailyTasks[0])}
             className="glass-card flex-col justify-center align-center" 
             style={{ 
-              padding: '16px', 
               animation: 'slideUp 0.88s ease-out', 
-              flex: 1, 
-              minWidth: 0, 
               gap: '8px', 
               textAlign: 'center',
               cursor: 'pointer',
@@ -722,7 +716,7 @@ const Dashboard = ({ user, deferredPrompt, setDeferredPrompt }) => {
           </div>
 
           {/* Total XP Card */}
-          <div className="glass-card flex-col justify-center align-center" style={{ padding: '16px', animation: 'slideUp 0.9s ease-out', flex: 1, minWidth: 0, gap: '8px', textAlign: 'center' }}>
+          <div className="glass-card flex-col justify-center align-center" style={{ animation: 'slideUp 0.9s ease-out', gap: '8px', textAlign: 'center' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '50%', border: '4px solid var(--accent-primary)', borderLeftColor: 'rgba(255,255,255,0.1)', transform: 'rotate(45deg)', margin: '0 auto' }}></div>
             <div className="flex-col" style={{ alignItems: 'center', marginTop: '4px' }}>
               <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--accent-secondary)' }}><AnimatedNumber value={parseFloat(localStorage.getItem('xp_total')) || 0} /></span>

@@ -69,15 +69,25 @@ export const calculateTestScore = (questionsList = [], userAnswers = {}, scheme 
 export const applyTestOverrides = (targetTest, currentTestId) => {
   if (!targetTest || !Array.isArray(targetTest.questions)) return targetTest;
   try {
+    let ovrByIndex = {};
+    let ovrByText = {};
+
     const raw = localStorage.getItem(`mpsc_test_overrides_${currentTestId}`);
-    if (!raw) return targetTest;
-    const overrides = JSON.parse(raw);
-    if (!overrides) return targetTest;
+    if (raw) {
+      const overrides = JSON.parse(raw);
+      if (overrides.byIndex) ovrByIndex = overrides.byIndex;
+      if (overrides.byText) ovrByText = overrides.byText;
+    }
+
+    let globalOvr = {};
+    try {
+      globalOvr = JSON.parse(localStorage.getItem('mpsc_global_question_overrides') || '{}');
+    } catch(e) {}
 
     targetTest.questions = targetTest.questions.map((q, idx) => {
       const origIdx = q.originalQIndex !== undefined ? q.originalQIndex : idx;
       const textKey = (q.question || '').trim();
-      const override = (overrides.byIndex && overrides.byIndex[origIdx]) || (overrides.byText && overrides.byText[textKey]);
+      const override = ovrByIndex[origIdx] || ovrByText[textKey] || globalOvr[textKey];
       if (override) {
         return {
           ...q,
@@ -98,15 +108,25 @@ export const applyTestOverrides = (targetTest, currentTestId) => {
 export const applyTestOverridesToShuffled = (shuffledQuestions, currentTestId) => {
   if (!Array.isArray(shuffledQuestions)) return shuffledQuestions;
   try {
+    let ovrByIndex = {};
+    let ovrByText = {};
+
     const raw = localStorage.getItem(`mpsc_test_overrides_${currentTestId}`);
-    if (!raw) return shuffledQuestions;
-    const ovr = JSON.parse(raw);
-    if (!ovr) return shuffledQuestions;
+    if (raw) {
+      const ovr = JSON.parse(raw);
+      if (ovr.byIndex) ovrByIndex = ovr.byIndex;
+      if (ovr.byText) ovrByText = ovr.byText;
+    }
+
+    let globalOvr = {};
+    try {
+      globalOvr = JSON.parse(localStorage.getItem('mpsc_global_question_overrides') || '{}');
+    } catch(e) {}
 
     return shuffledQuestions.map((q, idx) => {
       const origIdx = q.originalQIndex !== undefined ? q.originalQIndex : idx;
       const textKey = (q.question || '').trim();
-      const match = (ovr.byIndex && ovr.byIndex[origIdx]) || (ovr.byText && ovr.byText[textKey]);
+      const match = ovrByIndex[origIdx] || ovrByText[textKey] || globalOvr[textKey];
       if (match) {
         const updated = { ...q };
         if (match.question) updated.question = match.question;
@@ -146,6 +166,12 @@ export const saveTestOverride = (currentTestId, originalQIdx, qText, overrideDat
     existing.byIndex[originalQIdx] = { ...(existing.byIndex[originalQIdx] || {}), ...overrideData };
     if (qText) {
       existing.byText[qText] = { ...(existing.byText[qText] || {}), ...overrideData };
+
+      try {
+        const globalOvr = JSON.parse(localStorage.getItem('mpsc_global_question_overrides') || '{}');
+        globalOvr[qText] = { ...(globalOvr[qText] || {}), ...overrideData };
+        localStorage.setItem('mpsc_global_question_overrides', JSON.stringify(globalOvr));
+      } catch (e) {}
     }
     localStorage.setItem(key, JSON.stringify(existing));
   } catch (e) {
@@ -364,11 +390,14 @@ const TakeTest = () => {
   const { testId } = useParams();
   const [test, setTest] = useState(null);
   const [loading, setLoading] = useState(true);
+  const rawTestQuestionsRef = useRef(null);
 
   const isMistake = Boolean(
+    (testId && testId.toString().toLowerCase().includes('mistake')) ||
     test?.isMistakeMock || 
-    (test?.title && test.title.toLowerCase().includes('mistake')) ||
-    (test?.topic && test.topic.toLowerCase().includes('mistake'))
+    test?.parentTestId ||
+    (test?.title && (test.title.toLowerCase().includes('mistake') || test.title.includes('चुका') || test.title.includes('रिव्हिजन'))) ||
+    (test?.topic && (test.topic.toLowerCase().includes('mistake') || test.topic.includes('चुका') || test.topic.includes('रिव्हिजन')))
   );
   
   // State
@@ -566,6 +595,10 @@ const TakeTest = () => {
             } catch(err) {
               console.error("Failed to restore test session", err);
             }
+          }
+
+          if (fetchedTest && fetchedTest.questions) {
+            rawTestQuestionsRef.current = JSON.parse(JSON.stringify(fetchedTest.questions));
           }
 
           if (!sessionRestored) {
@@ -970,12 +1003,55 @@ const TakeTest = () => {
       try {
         const cachedMistakes = JSON.parse(localStorage.getItem('mpsc_cached_mistakes') || '[]');
         if (wrongQuestionsList.length === 0) {
-          const filtered = cachedMistakes.filter(m => (m._id || m.id) !== testId);
+          // 1. Remove solved mistake test from local mistake cache
+          const filtered = cachedMistakes.filter(m => 
+            (m._id || m.id) !== testId && 
+            m.parentTestId !== testId &&
+            m.id !== test?._id &&
+            m._id !== test?.id
+          );
           localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(filtered));
+
+          // 2. Remove from local mock cache
+          try {
+            const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+            const filteredMocks = cachedMocks.filter(m => 
+              (m._id || m.id) !== testId && 
+              m.parentTestId !== testId &&
+              m.id !== test?._id &&
+              m._id !== test?.id
+            );
+            localStorage.setItem('mpsc_cached_mocks', JSON.stringify(filteredMocks));
+          } catch(e) {}
+
+          // 3. Blacklist in mpsc_deleted_mistakes so remote fetch never resurrects it
+          try {
+            const deletedMistakes = JSON.parse(localStorage.getItem('mpsc_deleted_mistakes') || '[]');
+            [testId, test?._id, test?.id, test?.parentTestId].filter(Boolean).forEach(id => {
+              if (!deletedMistakes.includes(id)) deletedMistakes.push(id);
+            });
+            localStorage.setItem('mpsc_deleted_mistakes', JSON.stringify(deletedMistakes));
+          } catch(e) {}
+
+          // 4. Delete on backend server
+          try {
+            const deleteTargetId = test?._id || testId;
+            axios.delete(`https://mpsc-manager.onrender.com/api/custom-tests/${deleteTargetId}`).catch(err => {
+              console.warn("Backend delete mistake notice:", err?.message);
+            });
+          } catch(e) {}
+
+          // 5. Notify all listeners
+          try {
+            window.dispatchEvent(new Event('mpsc_mistakes_updated'));
+            window.dispatchEvent(new Event('storage'));
+          } catch(e) {}
+
           toast.success("🎉 उत्कृष्ट! सर्व चुका दुरुस्त झाल्या. Mistake Book मधून टेस्ट क्लिअर झाली!", { icon: '✨', duration: 5000 });
         } else {
+          // Mistakes remaining: update with only the remaining wrong questions
           const updated = cachedMistakes.map(m => {
-            if ((m._id || m.id) === testId) {
+            if ((m._id || m.id) === testId || m.parentTestId === testId) {
               return {
                 ...m,
                 questions: wrongQuestionsList,
@@ -986,6 +1062,28 @@ const TakeTest = () => {
             return m;
           });
           localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(updated));
+
+          try {
+            const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+            const updatedMocks = cachedMocks.map(m => {
+              if ((m._id || m.id) === testId || m.parentTestId === testId) {
+                return {
+                  ...m,
+                  questions: wrongQuestionsList,
+                  timeLimit: Math.max(wrongQuestionsList.length, 5),
+                  updatedAt: new Date().toISOString()
+                };
+              }
+              return m;
+            });
+            localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updatedMocks));
+          } catch(e) {}
+
+          try {
+            window.dispatchEvent(new Event('mpsc_mistakes_updated'));
+            window.dispatchEvent(new Event('storage'));
+          } catch(e) {}
+
           toast.success(`प्रगती! आता फक्त ${wrongQuestionsList.length} चुका रिव्हिजनसाठी बाकी आहेत.`, { icon: '🎯', duration: 4000 });
         }
       } catch (err) {}
@@ -1220,17 +1318,49 @@ const TakeTest = () => {
       localStorage.removeItem(`mpsc_active_test_${testId}`);
     } catch(e) {}
 
-    let freshQuestions = JSON.parse(JSON.stringify(test?.questions || []));
-    if (freshQuestions.length > 0) {
-      const questionsWithIdx = freshQuestions.map((q, idx) => ({ 
+    // 1. Retrieve clean, un-shuffled base questions with all user edits/overrides applied
+    let baseQuestions = [];
+    if (rawTestQuestionsRef.current && Array.isArray(rawTestQuestionsRef.current) && rawTestQuestionsRef.current.length > 0) {
+      baseQuestions = JSON.parse(JSON.stringify(rawTestQuestionsRef.current));
+    } else {
+      // Un-shuffle current test questions back to base order using optionMapping
+      baseQuestions = (test?.questions || []).map((q, idx) => {
+        const cleanQ = { ...q };
+        if (q.optionMapping && Array.isArray(q.optionMapping) && Array.isArray(q.options)) {
+          const originalOptions = [];
+          q.options.forEach((opt, currentIdx) => {
+            const origI = q.optionMapping[currentIdx];
+            if (origI !== undefined) originalOptions[origI] = opt;
+          });
+          const originalCorrect = q.optionMapping[q.correctOption];
+          if (originalOptions.filter(Boolean).length === q.options.length) {
+            cleanQ.options = originalOptions;
+          }
+          if (originalCorrect !== undefined) {
+            cleanQ.correctOption = originalCorrect;
+          }
+        }
+        return cleanQ;
+      });
+    }
+
+    // Apply any persistent test overrides or global question overrides to base questions
+    const dummyTest = { questions: baseQuestions };
+    const overridden = applyTestOverrides(dummyTest, testId);
+    baseQuestions = overridden.questions;
+    rawTestQuestionsRef.current = JSON.parse(JSON.stringify(baseQuestions));
+
+    // Fresh shuffle questions and options cleanly (never compounding on previous attempt)
+    let freshQuestions = [];
+    if (baseQuestions.length > 0) {
+      const questionsWithIdx = baseQuestions.map((q, idx) => ({ 
         q, 
         originalQIndex: q.originalQIndex !== undefined ? q.originalQIndex : idx 
       }));
       questionsWithIdx.sort(() => Math.random() - 0.5);
 
       freshQuestions = questionsWithIdx.map(item => {
-        const q = item.q;
-        q.originalQIndex = item.originalQIndex;
+        const q = { ...item.q, originalQIndex: item.originalQIndex };
         if (q.options && q.options.length > 0) {
           const optionsWithIdx = q.options.map((opt, i) => ({ opt, originalIndex: i }));
           optionsWithIdx.sort(() => Math.random() - 0.5);
@@ -1254,6 +1384,7 @@ const TakeTest = () => {
     setActiveQuestion(0);
     setEditingCorrectOption(null);
     setEditingQuestionModalData(null);
+    setTestViewMode('question');
     const initialTime = (test?.timeLimit || 15) * 60;
     setTimeLeft(initialTime);
 
@@ -1271,7 +1402,7 @@ const TakeTest = () => {
     } catch(e) {}
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    toast.success("🔄 टेस्ट पुन्हा सुरू झाली! सुधारित प्रश्नांसह सराव करा.", { icon: '🎯', duration: 4000 });
+    toast.success("🔄 टेस्ट नव्याने रीलोड झाली आहे! सर्व बरोबर उत्तर अचूक सेट आहेत.", { icon: '🎯', duration: 4000 });
   };
 
   useEffect(() => {

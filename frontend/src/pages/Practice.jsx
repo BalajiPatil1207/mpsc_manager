@@ -341,6 +341,90 @@ const Practice = () => {
     }
   };
 
+  const handleQuickSetCorrectOption = async (qIndex, newCorrectOption) => {
+    if (!editingTest || !editingTest.questions) return;
+    const targetId = editingTest._id || editingTest.id;
+    const q = editingTest.questions[qIndex];
+    if (!q) return;
+
+    const originalQIdx = q.originalQIndex !== undefined ? q.originalQIndex : qIndex;
+    const qText = (q.question || '').trim();
+
+    const updatedQuestions = [...editingTest.questions];
+    updatedQuestions[qIndex] = {
+      ...q,
+      correctOption: newCorrectOption
+    };
+
+    const updatedTest = { ...editingTest, questions: updatedQuestions };
+    setEditingTest(updatedTest);
+    setHistory(prev => prev.map(t => (t._id || t.id) === targetId ? updatedTest : t));
+
+    const payload = {
+      question: q.question,
+      options: q.options,
+      correctOption: newCorrectOption,
+      explanation: q.explanation || ''
+    };
+
+    saveTestOverride(targetId, originalQIdx, qText, payload);
+    updateTestInAllCaches(targetId, originalQIdx, qText, payload);
+    updateMistakeBookOnQuestionEdit(targetId, originalQIdx, qText, payload);
+
+    toast.success(`✅ प्रश्न #${qIndex + 1}: पर्याय (${String.fromCharCode(65 + newCorrectOption)}) योग्य उत्तर म्हणून सेट झाले!`, { icon: '🎯', duration: 3000 });
+
+    try {
+      await axios.patch(
+        `https://mpsc-manager.onrender.com/api/custom-tests/${targetId}/edit-question`,
+        {
+          questionIndex: originalQIdx,
+          ...payload
+        }
+      );
+    } catch (e) {}
+  };
+
+  const handleDeleteSpecificQuestion = async (qIndex) => {
+    if (!editingTest || !editingTest.questions) return;
+    const q = editingTest.questions[qIndex];
+    if (!q) return;
+
+    if (!window.confirm(`प्रश्न #${qIndex + 1}:\n"${(q.question || '').slice(0, 60)}..."\n\nहा प्रश्न या टेस्ट मधून कायमचा काढायचा आहे का?`)) {
+      return;
+    }
+
+    const targetId = editingTest._id || editingTest.id;
+    const updatedQuestions = editingTest.questions.filter((_, idx) => idx !== qIndex);
+    const newTimeLimit = Math.max(updatedQuestions.length, 5);
+
+    const updatedTest = { 
+      ...editingTest, 
+      questions: updatedQuestions,
+      timeLimit: editingTest.timeLimit > newTimeLimit ? newTimeLimit : editingTest.timeLimit
+    };
+    setEditingTest(updatedTest);
+    setHistory(prev => prev.map(t => (t._id || t.id) === targetId ? updatedTest : t));
+
+    try {
+      const cachedPractice = JSON.parse(localStorage.getItem('mpsc_cached_practice') || '[]');
+      const updatedP = cachedPractice.map(p => (p._id || p.id) === targetId ? { ...p, ...updatedTest } : p);
+      localStorage.setItem('mpsc_cached_practice', JSON.stringify(updatedP));
+
+      const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
+      const updatedM = cachedMocks.map(m => (m._id || m.id) === targetId ? { ...m, ...updatedTest } : m);
+      localStorage.setItem('mpsc_cached_mocks', JSON.stringify(updatedM));
+
+      window.dispatchEvent(new Event('mpsc_mistakes_updated'));
+      window.dispatchEvent(new Event('storage'));
+    } catch(e) {}
+
+    toast.success(`🗑️ प्रश्न #${qIndex + 1} टेस्ट मधून काढला!`, { icon: '🗑️' });
+
+    try {
+      await axios.put(`https://mpsc-manager.onrender.com/api/custom-tests/${targetId}`, updatedTest);
+    } catch(e) {}
+  };
+
   const renderModals = () => (
     <>
       {/* Edit Test Modal with Questions & Answers Editor */}
@@ -436,6 +520,23 @@ const Practice = () => {
                 </button>
               </div>
 
+              {/* Quick Helper Banner */}
+              <div style={{
+                background: 'rgba(59, 130, 246, 0.08)',
+                border: '1px dashed rgba(59, 130, 246, 0.3)',
+                borderRadius: '10px',
+                padding: '10px 14px',
+                marginBottom: '12px',
+                fontSize: '0.82rem',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span style={{ fontSize: '1rem' }}>💡</span>
+                <span><strong>झटपट संपादन:</strong> योग्य उत्तरावर थेट क्लिक करा (ते लगेच हिरवे <strong style={{ color: 'var(--success)' }}>✓ बरोबर</strong> होईल). प्रश्न/पर्याय एडिट करण्यासाठी मजकुरावर किंवा ✏️ वर क्लिक करा, आणि अनावश्यक प्रश्न काढण्यासाठी 🗑️ वापरा.</span>
+              </div>
+
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {editingTest.questions && editingTest.questions.length > 0 ? (
                   editingTest.questions.map((q, qIdx) => (
@@ -446,15 +547,10 @@ const Practice = () => {
                       padding: '14px',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '8px'
+                      gap: '10px'
                     }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
-                        <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
-                          <span style={{ color: 'var(--accent-primary)', marginRight: '6px' }}>#{qIdx + 1}.</span>
-                          {q.question}
-                        </span>
-                        <button
-                          type="button"
+                        <div 
                           onClick={() => setEditingQuestionModalData({
                             qIndex: qIdx,
                             originalQIndex: q.originalQIndex !== undefined ? q.originalQIndex : qIdx,
@@ -463,44 +559,135 @@ const Practice = () => {
                             correctOption: q.correctOption,
                             explanation: q.explanation || ''
                           })}
-                          className="btn"
-                          style={{
-                            padding: '5px 12px',
-                            fontSize: '0.78rem',
-                            background: 'rgba(59, 130, 246, 0.15)',
-                            color: '#60a5fa',
-                            border: '1px solid rgba(59, 130, 246, 0.3)',
-                            borderRadius: '6px',
-                            whiteSpace: 'nowrap',
-                            fontWeight: 700,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            cursor: 'pointer'
-                          }}
+                          style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4, cursor: 'pointer', flex: 1 }}
+                          title="प्रश्न व पर्याय सविस्तर एडिट करण्यासाठी क्लिक करा"
                         >
-                          <FiEdit size={12} /> एडिट करा
-                        </button>
+                          <span style={{ color: 'var(--accent-primary)', marginRight: '6px' }}>#{qIdx + 1}.</span>
+                          <span>{q.question}</span>
+                          <span style={{ fontSize: '0.72rem', color: '#60a5fa', marginLeft: '8px', fontWeight: 500 }}>✏️ एडिट</span>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                          <button
+                            type="button"
+                            onClick={() => setEditingQuestionModalData({
+                              qIndex: qIdx,
+                              originalQIndex: q.originalQIndex !== undefined ? q.originalQIndex : qIdx,
+                              question: q.question,
+                              options: q.options || [],
+                              correctOption: q.correctOption,
+                              explanation: q.explanation || ''
+                            })}
+                            className="btn"
+                            title="प्रश्न, पर्याय व स्पष्टीकरण एडिट करा"
+                            style={{
+                              padding: '5px 10px',
+                              fontSize: '0.78rem',
+                              background: 'rgba(59, 130, 246, 0.15)',
+                              color: '#60a5fa',
+                              border: '1px solid rgba(59, 130, 246, 0.3)',
+                              borderRadius: '6px',
+                              fontWeight: 700,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <FiEdit size={12} /> एडिट
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSpecificQuestion(qIdx)}
+                            className="btn"
+                            title="हा प्रश्न या चाचणीतून कायमचा हटवा"
+                            style={{
+                              padding: '5px 10px',
+                              fontSize: '0.78rem',
+                              background: 'rgba(239, 68, 68, 0.12)',
+                              color: 'var(--danger)',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              borderRadius: '6px',
+                              fontWeight: 700,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <FiTrash2 size={12} /> हटवा
+                          </button>
+                        </div>
                       </div>
 
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '6px', marginTop: '2px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', marginTop: '2px' }}>
                         {q.options?.map((opt, oi) => {
                           const isCorrect = oi === q.correctOption;
                           return (
-                            <div key={oi} style={{
-                              fontSize: '0.8rem',
-                              padding: '6px 10px',
-                              borderRadius: '6px',
-                              background: isCorrect ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255, 255, 255, 0.02)',
-                              border: isCorrect ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid var(--border-color)',
-                              color: isCorrect ? 'var(--success)' : 'var(--text-secondary)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px'
-                            }}>
-                              <strong style={{ color: isCorrect ? 'var(--success)' : 'var(--text-muted)' }}>({String.fromCharCode(65 + oi)})</strong>
-                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{opt}</span>
-                              {isCorrect && <span style={{ marginLeft: 'auto', fontWeight: 800, fontSize: '0.72rem' }}>✓ बरोबर</span>}
+                            <div 
+                              key={oi}
+                              onClick={() => handleQuickSetCorrectOption(qIdx, oi)}
+                              title={isCorrect ? "हे सध्याचे योग्य उत्तर आहे" : "हे पर्याय योग्य उत्तर म्हणून सेट करण्यासाठी क्लिक करा"}
+                              style={{
+                                fontSize: '0.82rem',
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                background: isCorrect ? 'rgba(34, 197, 94, 0.18)' : 'rgba(255, 255, 255, 0.03)',
+                                border: isCorrect ? '2px solid rgba(34, 197, 94, 0.6)' : '1px solid var(--border-color)',
+                                color: isCorrect ? 'var(--success)' : 'var(--text-secondary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                                boxShadow: isCorrect ? '0 2px 8px rgba(34, 197, 94, 0.2)' : 'none'
+                              }}
+                            >
+                              <span style={{
+                                width: '22px',
+                                height: '22px',
+                                borderRadius: '50%',
+                                background: isCorrect ? 'var(--success)' : 'rgba(255, 255, 255, 0.08)',
+                                color: isCorrect ? '#fff' : 'var(--text-muted)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: 800,
+                                fontSize: '0.75rem',
+                                flexShrink: 0
+                              }}>
+                                {String.fromCharCode(65 + oi)}
+                              </span>
+                              <span style={{
+                                flex: 1,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                fontWeight: isCorrect ? 700 : 500
+                              }}>
+                                {opt}
+                              </span>
+                              {isCorrect ? (
+                                <span style={{
+                                  marginLeft: 'auto',
+                                  fontWeight: 800,
+                                  fontSize: '0.72rem',
+                                  background: 'rgba(34, 197, 94, 0.2)',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px'
+                                }}>
+                                  ✓ बरोबर
+                                </span>
+                              ) : (
+                                <span style={{
+                                  marginLeft: 'auto',
+                                  fontSize: '0.68rem',
+                                  color: 'var(--text-muted)',
+                                  opacity: 0.6
+                                }}>
+                                  निवडा
+                                </span>
+                              )}
                             </div>
                           );
                         })}

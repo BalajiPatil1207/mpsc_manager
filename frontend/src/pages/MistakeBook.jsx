@@ -143,17 +143,28 @@ const MistakeBook = () => {
   const fetchMistakes = async (isManual = false) => {
     if (isManual) setIsRefreshing(true);
     try {
+      const deletedMistakes = JSON.parse(localStorage.getItem('mpsc_deleted_mistakes') || '[]');
       const res = await axios.get('https://mpsc-manager.onrender.com/api/custom-tests/all', { timeout: 7000 });
       if (res.data.success && Array.isArray(res.data.data)) {
-        const remoteMistakes = res.data.data.filter(t => t.isMistakeMock === true);
+        const remoteMistakes = res.data.data.filter(t => 
+          t.isMistakeMock === true && 
+          !deletedMistakes.includes(t.id) && 
+          !deletedMistakes.includes(t._id) &&
+          !deletedMistakes.includes(t.parentTestId)
+        );
         
         // Merge with local cached mistakes without losing local questions
         const localCachedRaw = localStorage.getItem('mpsc_cached_mistakes');
         const localMistakes = localCachedRaw ? JSON.parse(localCachedRaw) : [];
+        const validLocal = localMistakes.filter(m => 
+          !deletedMistakes.includes(m.id) && 
+          !deletedMistakes.includes(m._id) && 
+          !deletedMistakes.includes(m.parentTestId)
+        );
 
         const mergedMap = new Map();
         // Local first (contains latest user answers and explanations)
-        localMistakes.forEach(m => {
+        validLocal.forEach(m => {
           if (m && (m.id || m._id)) {
             mergedMap.set(m.id || m._id, m);
           }
@@ -195,11 +206,17 @@ const MistakeBook = () => {
 
     const handleMistakesUpdated = () => {
       try {
+        const deletedMistakes = JSON.parse(localStorage.getItem('mpsc_deleted_mistakes') || '[]');
         const cached = localStorage.getItem('mpsc_cached_mistakes');
         if (cached) {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed)) {
-            setMistakes(parsed.map(m => applyTestOverrides(m, m.parentTestId || m.id || m._id)));
+            const valid = parsed.filter(m => 
+              !deletedMistakes.includes(m.id) && 
+              !deletedMistakes.includes(m._id) && 
+              !deletedMistakes.includes(m.parentTestId)
+            );
+            setMistakes(valid.map(m => applyTestOverrides(m, m.parentTestId || m.id || m._id)));
           }
         }
       } catch (e) {}
@@ -225,13 +242,19 @@ const MistakeBook = () => {
     setMistakes(updated);
     setDeletingTest(null);
 
-    // 2. Remove from local caches
+    // 2. Remove from local caches and blacklist in mpsc_deleted_mistakes
     try {
       localStorage.setItem('mpsc_cached_mistakes', JSON.stringify(updated));
 
       const cachedMocks = JSON.parse(localStorage.getItem('mpsc_cached_mocks') || '[]');
       const filteredMocks = cachedMocks.filter(m => (m.id || m._id) !== targetId);
       localStorage.setItem('mpsc_cached_mocks', JSON.stringify(filteredMocks));
+
+      const deletedMistakes = JSON.parse(localStorage.getItem('mpsc_deleted_mistakes') || '[]');
+      [targetId, testToDelete.parentTestId].filter(Boolean).forEach(id => {
+        if (!deletedMistakes.includes(id)) deletedMistakes.push(id);
+      });
+      localStorage.setItem('mpsc_deleted_mistakes', JSON.stringify(deletedMistakes));
     } catch (e) {}
 
     toast.success('मिस्टेक टेस्ट हटवली गेली! 🗑️');
